@@ -31,7 +31,7 @@ func TestLiveBatteryOneReadingsArePlausible(t *testing.T) {
 	defer cancel()
 
 	found, err := Driver{}.Find(ctx)
-	if errors.Is(err, sanshoku.ErrAbsent) {
+	if errors.Is(err, sanshoku.ErrAbsent) || errors.Is(err, sanshoku.ErrUnavailable) {
 		t.Skip("bluez is not answering, or nothing connected reports a Battery1 level")
 	}
 	require.NoError(t, err)
