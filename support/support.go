@@ -94,14 +94,17 @@ that wants to say what tier it is at.
 
 Precedence, among entries of the named driver: one naming the exact product
 of the vendor; then one covering every product of the vendor (nil Products);
-then one naming the chip, compared with name. A family entry sits beside the
-devices that confirmed it, so the exact product wins over the family.
+then one naming the chip, compared with name; then one with no Vendor and no
+Chips, which is a driver-wide family and covers every candidate of its driver
+("any connected device with Battery1"). A family entry sits beside the devices
+that confirmed it, so the exact product wins over the family.
 */
 func Lookup(entries []Entry, driver string, vendor, product uint16, name string) (Entry, bool) {
 	match := []func(Entry) bool{
 		func(e Entry) bool { return vendor != 0 && e.Vendor == vendor && slices.Contains(e.Products, product) },
 		func(e Entry) bool { return vendor != 0 && e.Vendor == vendor && e.Products == nil },
 		func(e Entry) bool { return name != "" && slices.Contains(e.Chips, name) },
+		func(e Entry) bool { return e.Vendor == 0 && e.Chips == nil },
 	}
 	for _, m := range match {
 		for _, e := range entries {

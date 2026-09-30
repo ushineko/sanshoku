@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -80,4 +81,15 @@ func permissionHint(id sanshoku.Identity) string {
 	}
 	return "permission denied: install the udev rule (docs/udev.md, packaging/60-sanshoku.rules), then replug:\n      " +
 		strings.Join(rules, "\n      ")
+}
+
+// bluezAddress is the address segment of a BlueZ object path,
+// /org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF.
+var bluezAddress = regexp.MustCompile(`(?i)dev(_[0-9a-f]{2}){6}`)
+
+// shownPath is a candidate's path as the bench prints it. A Bluetooth device's
+// D-Bus object path carries its address, which the bench never prints, so that
+// segment is masked.
+func shownPath(id sanshoku.Identity) string {
+	return bluezAddress.ReplaceAllString(id.Path, "dev_XX_XX_XX_XX_XX_XX")
 }

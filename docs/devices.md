@@ -18,6 +18,7 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | 001 |
 | logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | 002 |
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | 005 |
+| bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | 004 |
 
 ## Expected
 
@@ -36,6 +37,7 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | steelseries | Aerox 5 Wireless | vendor 1038, usage page 0xFFC0; 1038:1852 or 1038:1854 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
 | steelseries | Aerox 9 Wireless | vendor 1038, usage page 0xFFC0; 1038:1858 or 1038:185a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
 | steelseries | Prime Wireless | vendor 1038, usage page 0xFFC0; 1038:1840 or 1038:1842 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
+| apple | AirPods and other Apple audio accessories | connected BlueZ device, Modalias vendor 004c, audio icon or audio sink profile; L2CAP PSM 0x1001 | battery | per-ear and case levels over the accessory protocol, falling back to Battery1; measured by hayami on AirPods Pro, not on spec 004's bench | 004 |
 
 ## Listed
 

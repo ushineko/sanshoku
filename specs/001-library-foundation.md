@@ -231,7 +231,9 @@ can query and a page a reader can read, from one source.
   names) are the same rule for a program. `Lookup(entries, driver string,
   vendor, product uint16, name string) (Entry, bool)` finds the entry for a
   found device: among the driver's entries, the exact product first, then the
-  vendor with nil `Products`, then a chip equal to `name`. `Hardware` names
+  vendor with nil `Products`, then a chip equal to `name`, then an entry with
+  `Vendor` 0 and no `Chips`, a driver-wide family that covers every candidate
+  of its driver (added by spec 004 for "any connected device with Battery1"). `Hardware` names
   the product it was measured on, never the machine.
 - R9.2 Every driver package exports `Support() []support.Entry`.
   `all.Support()` concatenates them in driver order. An `Expected` entry
