@@ -1,0 +1,83 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/ushineko/sanshoku"
+	"github.com/ushineko/sanshoku/all"
+	"github.com/ushineko/sanshoku/support"
+)
+
+// openTimeout bounds one candidate's Open, so a device that hangs does not
+// hold up the rest of the bench.
+const openTimeout = 5 * time.Second
+
+// drivers is all.Drivers, or the one named.
+func drivers(name string) ([]sanshoku.Driver, error) {
+	every := all.Drivers()
+	if name == "" {
+		return every, nil
+	}
+	for _, d := range every {
+		if d.Name() == name {
+			return []sanshoku.Driver{d}, nil
+		}
+	}
+	names := make([]string, 0, len(every))
+	for _, d := range every {
+		names = append(names, d.Name())
+	}
+	return nil, fmt.Errorf("no driver %q; the drivers are %s", name, strings.Join(names, ", "))
+}
+
+// open opens a candidate with a bound of its own.
+func open(ctx context.Context, c sanshoku.Candidate) (sanshoku.Device, error) {
+	ctx, cancel := context.WithTimeout(ctx, openTimeout)
+	defer cancel()
+	return c.Open(ctx)
+}
+
+// entryFor finds the support entry that covers a candidate.
+func entryFor(entries []support.Entry, c sanshoku.Candidate) (support.Entry, bool) {
+	return support.Lookup(entries, c.Driver, c.Vendor, c.Product, c.Name)
+}
+
+// tierWords is a candidate's tier as the bench prints it.
+func tierWords(e support.Entry, ok bool) string {
+	if !ok {
+		return "not in the support table"
+	}
+	return e.Tier.String()
+}
+
+// reportHint is the line printed beside an Expected device.
+func reportHint(c sanshoku.Candidate) string {
+	return fmt.Sprintf("expected to work, not yet confirmed: run `sanshoku-bench read --json --driver %s` "+
+		"and open an issue at https://github.com/ushineko/sanshoku/issues with the output to promote it", c.Driver)
+}
+
+// udevRules is docs/udev.md's table, by vendor, for the line a permission
+// error prints.
+var udevRules = map[uint16][]string{
+	0x046d: {`KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="046d", TAG+="uaccess"`},
+	0x1532: {`KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1532", TAG+="uaccess"`},
+	0x1038: {`KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1038", TAG+="uaccess"`},
+	0x1e71: {
+		`KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"`,
+		`SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"`,
+	},
+}
+
+// permissionHint says what to install when a node could not be opened for
+// want of permission.
+func permissionHint(id sanshoku.Identity) string {
+	rules, ok := udevRules[id.Vendor]
+	if !ok {
+		return "permission denied: this user may not open the node; see docs/udev.md"
+	}
+	return "permission denied: install the udev rule (docs/udev.md, packaging/60-sanshoku.rules), then replug:\n      " +
+		strings.Join(rules, "\n      ")
+}

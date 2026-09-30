@@ -12,8 +12,10 @@ device code that [hayami](https://github.com/ushineko/hayami) and
 
 Three colours, for the range of things under one roof.
 
-> **Status**: specified, not yet built. Specs 001 to 005 in `specs/` are the
-> plan; nothing below the vocabulary exists yet.
+> **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
+> usbfs and hwmon transports, the capability types, the support table and the
+> testbench. The drivers (specs 002 to 005) are not; their packages hold only
+> a package comment.
 
 ## Contents
 
@@ -125,5 +127,14 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- Spec 001, the library foundation: the root vocabulary (`Identity`,
+  `Candidate`, `Device`, `Driver`, `Scan`, `ErrAbsent`, `ErrGone`,
+  `ErrUnsupported`, `IsPermission`, `Capabilities`); `hidraw` (sysfs
+  enumeration by vendor and descriptor, the item walker, report exchange with
+  deadlines, feature-report ioctls); `usbfs` (claim and bulk write);
+  `hwmon` (sensors by chip and label, the CPU and GPU tables, a scan-only
+  driver); the `battery`, `cooling` and `screen` capability types; the
+  `support` table and `all`; `sanshoku-bench` with `scan`, `read`, `verify`,
+  `support` and `screen`. `docs/devices.md` is now generated and CI checks it.
 - Specs 001 to 005 and the module skeleton: vocabulary, transports, five
   drivers, the testbench. No implementation yet.
