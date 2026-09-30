@@ -37,6 +37,10 @@ jobs:
     # driver change that did not regenerate it fails here.
     - name: The support page matches the drivers
       run: make check-support
+    # docs/api.md is generated from the doc comments (spec 008 R2); a change
+    # to the public surface that did not regenerate it fails here.
+    - name: The API reference matches the code
+      run: make check-api
 
   vuln:
     name: Vulnerability scan
