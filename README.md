@@ -157,6 +157,9 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- The Bluetooth live tests skip when BlueZ is unavailable, as they did when
+  that was absence; CI on a runner without BlueZ failed instead.
+
 - AirPods Pro over the accessory protocol are Tested: left and right read on
   the desk, which closes spec 004.
 

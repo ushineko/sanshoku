@@ -32,7 +32,7 @@ func TestLiveAirPodsReadingIsPlausible(t *testing.T) {
 	defer cancel()
 
 	found, err := Driver{}.Find(ctx)
-	if errors.Is(err, sanshoku.ErrAbsent) {
+	if errors.Is(err, sanshoku.ErrAbsent) || errors.Is(err, sanshoku.ErrUnavailable) {
 		t.Skip("bluez is not answering, or no Apple audio device is connected")
 	}
 	require.NoError(t, err)
