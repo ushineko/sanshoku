@@ -17,11 +17,14 @@ because OpenRGB holds the same node and takes replies. Its `Owner` coalesces
 reads within 250 ms because three consumers polled in the same second, and
 returns the panel to the firmware readout on close.
 
-hayami reads the same cooler through a `liquidctl --json status` subprocess
-and rejected importing hotaru's package because it "speaks HID to the device
-it also writes to". Whether hayami adopts this driver in phase 2 is hayami's
-decision; this spec makes the driver available and documents the
-contention it has measured.
+hayami reads the same cooler through a `liquidctl --json status` subprocess,
+inherited from the Python monitor it replaced, and its spec 006 declined to
+import hotaru's package because it "speaks HID to the device it also writes
+to". The rule now (`docs/design.md`, "What belongs here") is direct access
+wherever it is reasonable, so hayami adopts this driver in phase 2 and drops
+liquidctl. That makes two processes on one node (hotaru's service and
+hayami's panel) the normal case, and this spec measures it rather than
+leaving it to the consumer.
 
 This spec ports the driver as `nzxt`, on spec 001's `hidraw` and `usbfs`.
 Behaviour is preserved. Three shape changes, each required by
@@ -116,8 +119,9 @@ hotaru spec 012.
   the two udev rules. Naming: "Kraken Elite" in code and docs (hotaru used
   two names).
 - R6.2 README, changelog, `all.Drivers()`.
-- R6.3 `docs/contention.md`: what is known about sharing the node with
-  OpenRGB, liquidctl and a second consumer, for hayami's phase 2 decision.
+- R6.3 `docs/contention.md`: what the three bench runs showed about
+  sharing the node with OpenRGB and with a second consumer of this module,
+  as the record hayami's phase 2 spec cites.
 
 ## Acceptance Criteria
 
@@ -126,7 +130,8 @@ hotaru spec 012.
   chatter, and a `FF FF` reply is an error that is not cached.
 - [ ] Placement tests pass against hotaru's cases.
 - [ ] `sanshoku-bench read --driver nzxt` reports coolant, pump and fan;
-  `verify` agrees with liquidctl. Output pasted below.
+  `verify` agrees with liquidctl. Output pasted below for all three runs:
+  alone, with OpenRGB up, with hotaru's service up.
 - [ ] `sanshoku-bench screen --yes` shows the test image and the panel
   returns to its readout afterwards, observed by eye.
 - [ ] `docs/devices.md`, `docs/contention.md`, README and `all` updated in
@@ -137,8 +142,14 @@ hotaru spec 012.
 - **This driver writes to the device** (the LCD). It is the one place the
   module is not read-only; every write is behind an explicit call and the
   bench needs `--yes`.
-- **OpenRGB holds the node** while hotaru's service runs. The bench should
-  be run with and without OpenRGB up and the spec records both.
+- **OpenRGB and hotaru's service hold the node** in normal use. The bench
+  is run three ways and the spec records each: alone, with OpenRGB up, and
+  with hotaru's service up (which is what hayami's phase 2 looks like).
+  hidraw gives every open descriptor its own copy of each input report, so
+  the expected failure mode is interleaving and queue overflow, which the
+  drain and the three-attempt retry exist for. If the bench shows
+  something else, that is a finding for `docs/contention.md` and possibly
+  a sixth spec, not a reason to keep liquidctl.
 - **One cooler per machine** is assumed, as in hotaru.
 - **Rollback**: revert; hotaru keeps its copy until phase 2.
 

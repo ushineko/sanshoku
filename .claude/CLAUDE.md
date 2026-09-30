@@ -25,9 +25,11 @@ below.
   `internal/cooler`, hotaru's `internal/cooler`, as they stand at the commits
   named in each spec. Where the two disagree, `docs/design.md` records the
   choice. Rationale comments travel with the code.
-- **Not in scope**: lighting (OpenRGB's, in hotaru), liquidctl, headsetcontrol,
-  solaar and nvidia-smi subprocesses (the consumers' or the testbench's),
-  `/proc` readings.
+- **Rule of thumb**: if direct access can reasonably be supported without an
+  external tool call, it is. Lighting is the standing exception (OpenRGB's
+  breadth). liquidctl and headsetcontrol in hayami are inherited debts, not
+  decisions: the Kraken driver replaces liquidctl in phase 2 and a headset
+  driver is a candidate spec. See `docs/design.md`, "What belongs here".
 
 ---
 

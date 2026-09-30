@@ -51,9 +51,11 @@ Three colours, for the range of things under one roof.
 ## What it does not do
 
 Lighting. Every lit device is [OpenRGB](https://openrgb.org/)'s and stays
-in hotaru. Headsets are `headsetcontrol`'s. NVIDIA temperature is
-`nvidia-smi`'s. The rule is in [docs/design.md](docs/design.md): a protocol
-is written here only where no maintained tool serves.
+in hotaru; that breadth is the one thing not worth reimplementing. Everything
+else follows the rule in [docs/design.md](docs/design.md): if direct access
+can reasonably be done without an external tool, it is. Headsets are a
+candidate for a later spec; NVIDIA temperature stays with `nvidia-smi`
+because NVML is a vendor library, not a kernel node.
 
 ## Using it
 

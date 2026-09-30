@@ -49,23 +49,29 @@ reason in a comment at that point.
 
 ## What belongs here
 
-This module holds the direct device access that hayami and hotaru wrote
-themselves, and nothing else.
+This module holds direct device access: a protocol spoken to a kernel
+device node or socket. The rule of thumb is that **if direct access can
+reasonably be supported without an external tool call, it is**. An external
+tool is the exception and its reason is written down.
 
-- **In**: a protocol the module speaks to a kernel device node or socket.
-  Logitech HID++ over hidraw, Razer feature reports, SteelSeries rivalcfg
-  reports, Apple AAP over L2CAP, BlueZ Battery1 over D-Bus, NZXT Kraken over
-  hidraw and usbfs, hwmon by chip and label.
-- **Out**: anything a maintained tool already covers. Lighting is OpenRGB's
-  and stays in hotaru's `internal/openrgb`. liquidctl, headsetcontrol,
-  solaar and nvidia-smi are subprocesses in the consumer, not transports
-  here; the testbench may call them to cross-check a reading, which is the
-  only place they appear. `/proc/stat`, `/proc/meminfo`, `/proc/net/dev` and
-  DRM busy counters are not devices.
-- **The rule** (hotaru spec 012, "where this reasoning stops"): write a
-  protocol only where no integration point exists. A driver added here needs
-  the sentence in its spec that says which tool was checked and why it did
-  not serve.
+- **In**: Logitech HID++ over hidraw, Razer feature reports, SteelSeries
+  rivalcfg reports, Apple AAP over L2CAP, BlueZ Battery1 over D-Bus, NZXT
+  Kraken over hidraw and usbfs, hwmon by chip and label.
+- **The one standing exception is lighting.** OpenRGB is a maintained daemon
+  that speaks to every lit device on the machine, and reimplementing that
+  breadth is not reasonable. It stays in hotaru's `internal/openrgb`.
+- **Inherited subprocesses are debts, not decisions.** hayami reads the
+  Kraken through `liquidctl --json status` because the Python monitor it
+  replaced did; spec 005 is the direct driver and hayami adopts it in phase
+  2. `headsetcontrol` is the same shape of debt: the Arctis Nova Pro on the
+  desk answers on the SteelSeries usage page this module already scans, and
+  a headset battery driver is a candidate spec, not an exclusion.
+- **Out for now, with the reason**: `nvidia-smi` (NVML is a vendor library,
+  not a kernel node; the hwmon path covers AMD and nouveau); `/proc/stat`,
+  `/proc/meminfo`, `/proc/net/dev` and DRM busy counters (not devices, and
+  the consumer reads them in a few lines).
+- The testbench's `verify` shells out to liquidctl and solaar to cross-check
+  a reading. That is the only place a tool is called from this repository.
 
 ## The shape of a driver
 
@@ -148,8 +154,12 @@ its measured defence:
   exchange three times because a reply can be stolen.
 - Razer treats "busy" as silence, not failure.
 
-A driver does not lock a device against other processes. Cross-process
-locking is the consumer's decision and a later spec's problem.
+Two consumers of this module will open the same node once hayami adopts the
+Kraken driver while hotaru's service holds it. hidraw delivers every input
+report to every open descriptor, so the risk is interleaved commands and
+queue overflow, not a lost reply; the drain and the retry are the defence,
+and spec 005's bench runs with hotaru's service up to measure it. A driver
+does not lock a device against other processes.
 
 ## Errors
 

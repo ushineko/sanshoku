@@ -23,6 +23,12 @@ confirmed it.
 | Any BlueZ device with `Battery1` | – | D-Bus | `bluez` | battery | by protocol | 004 |
 | NZXT Kraken Elite, firmware 1.2.0 | `1e71:3012` | hidraw + usbfs | `nzxt` | cooling, screen | pending | 005 |
 
-Out of scope, on purpose: every lit device (OpenRGB), headsets
-(headsetcontrol), NVIDIA temperature (nvidia-smi), fan and pump duty writes
+Out of scope: every lit device (OpenRGB, the standing exception), NVIDIA
+temperature (nvidia-smi; NVML is a vendor library), fan and pump duty writes
 on the Kraken (the firmware discards them).
+
+Candidates for a later spec, by the rule that direct access is preferred
+wherever reasonable: SteelSeries Arctis Nova Pro battery (today via
+`headsetcontrol`; it sits on the 0xFFC0 usage page the `steelseries` driver
+already scans), and the SteelSeries legacy 0xAA protocol once a Rival is on
+the desk.
