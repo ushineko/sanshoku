@@ -21,6 +21,7 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | Razer Mouse Dock Pro with its mouse docked | – | 2026-09-29 | 003 |
 | razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | Razer Basilisk Ultimate, its dongle | – | 2026-09-29 | 003 |
 | steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) | – | 2026-09-29 | 003 |
+| steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 (X base station), or 1038:12e0 (base station, expected) | battery | SteelSeries Arctis Nova Pro Wireless, base station 1038:12e5 | – | 2026-09-29 | 006 |
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | 005 |
 | bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | 004 |
 
@@ -46,7 +47,6 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | steelseries | Rival 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1830 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
 | steelseries | Rival 3 Wireless Gen 2 | vendor 1038, usage page 0xFFC0; 1038:1872 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
 | steelseries | Rival 650 Wireless | vendor 1038, usage page 0xFFC0; 1038:172b | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
-| steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 | a headset on the same usage page as the keyboards; found, refused, never written to. Its battery is headsetcontrol's today and a candidate spec (docs/devices.md) | 003 |
 
 ## Out of scope
 
@@ -55,7 +55,5 @@ Every lit device (OpenRGB, the standing exception), NVIDIA temperature
 Kraken (the firmware discards them).
 
 Candidates for a later spec, by the rule that direct access is preferred
-wherever reasonable: SteelSeries Arctis Nova Pro battery (today via
-`headsetcontrol`; it sits on the 0xFFC0 usage page the `steelseries` driver
-already scans), and the SteelSeries legacy 0xAA protocol once a Rival is on
+wherever reasonable: the SteelSeries legacy 0xAA protocol once a Rival is on
 the desk.

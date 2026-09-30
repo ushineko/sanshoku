@@ -18,11 +18,12 @@ import (
 
 /*
 fake is a SteelSeries control endpoint that is not one, carrying only the
-behaviours spec 003 R3.2 lists and hayami measured:
+behaviours spec 003 R3.2 and spec 006 R4.2 list:
 
-  - It answers only the commands in reply, with the command echoed. A command
-    with no entry is silence, which is what the Apex does on the form its
-    connection does not take.
+  - It answers only the commands in reply, keyed by the request's second
+    byte (the command, after the Apex's report number or the base station's
+    report ID), with the reply as given. A command with no entry is silence,
+    which is what the Apex does on the form its connection does not take.
   - queued holds a packet that is not an answer to anything, as a late reply
     to an earlier question is: the echo is how the answer is told from it.
   - With t set, any write fails the test. "Wrote and got nothing back" is the
@@ -104,15 +105,54 @@ func TestTheWirelessFormIsAskedWhenTheWiredOneIsNotAnswered(t *testing.T) {
 	assert.True(t, f.closed)
 }
 
+// novaProNode is the Arctis Nova Pro Wireless X base station's 0xFFC0
+// endpoint as Nodes reports it.
+var novaProNode = hidraw.Node{
+	Path: "/dev/hidraw14", Name: "SteelSeries Arctis Nova Pro Wireless",
+	Vendor: steelseriesVendor, Product: 0x12E5, Bus: hidraw.BusUSB,
+}
+
+/*
+The base station is asked `06 b0`, once, and the reply that echoes it is read
+past a report that does not.
+
+The stale report is 0x07 with 0xb0 after it: the base station's descriptor
+declares report 0x07 on the same node, so a match on the second byte alone
+would take it. Nothing but the one 31-byte battery request is written.
+*/
+func TestTheNovaProIsAskedItsOwnQuestionAndMatchedOnTheEcho(t *testing.T) {
+	f := &fake{
+		reply:  map[byte][]byte{novaProBattery: novaProProbe},
+		queued: [][]byte{{0x07, novaProBattery, 0x00, 0x00, 0x00, 0x00, 0x08}},
+	}
+	c := candidate(novaProNode, 20*time.Millisecond, func(string) (node, error) { return f, nil })
+
+	dev, err := c.Open(context.Background())
+	require.NoError(t, err)
+	found, err := dev.(battery.Source).Batteries(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	assert.True(t, found[0].HasLevel)
+	assert.Equal(t, 75, found[0].Level)
+	assert.Equal(t, battery.Discharging, found[0].State)
+	assert.Equal(t, battery.KindHeadset, found[0].Kind)
+	assert.Equal(t, "SteelSeries Arctis Nova Pro Wireless", found[0].Name)
+	assert.Equal(t, []byte{novaProBattery}, f.asked, "one question, and only the battery")
+	require.NoError(t, dev.Close())
+}
+
 /*
 A SteelSeries product the allow-list does not name is found, refused by name,
 and never written to; so is one of the listed and unimplemented legacy family.
 
-The Arctis Nova Pro Wireless, 1038:12E5, is real, declares the 0xFFC0 page and
-speaks a different protocol entirely; hayami sent it 0x92 on every poll (hayami
-issue #62). It never answered, which is not the same as the command being safe.
-The fake fails the test on any write, and the open function on being called at
-all.
+What this guards is how the Arctis Nova Pro Wireless, 1038:12E5, was treated
+before spec 006 named it: a real device that declares the 0xFFC0 page and
+speaks a different protocol entirely, which hayami sent 0x92 on every poll
+(hayami issue #62). It never answered, which is not the same as the command
+being safe. The Nova Pro is in the allow-list now, so the product here is an ID
+the table does not name. The fake fails the test on any write, and the open
+function on being called at all.
 */
 func TestAnUnlistedProductIsFoundAndNeverWrittenTo(t *testing.T) {
 	root := t.TempDir()
@@ -121,7 +161,7 @@ func TestAnUnlistedProductIsFoundAndNeverWrittenTo(t *testing.T) {
 	t.Cleanup(func() { hidraw.SysRoot = sys })
 	dir := filepath.Join(root, "hidraw14", "device")
 	require.NoError(t, os.MkdirAll(dir, 0o755))
-	uevent := "HID_ID=0003:00001038:000012E5\nHID_NAME=SteelSeries Arctis Nova Pro Wireless\nHID_PHYS=usb-0000:00:14.0-2/input4\n"
+	uevent := "HID_ID=0003:00001038:00001234\nHID_NAME=SteelSeries Unlisted Device\nHID_PHYS=usb-0000:00:14.0-2/input4\n"
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "uevent"), []byte(uevent), 0o600))
 	// Usage Page (0xFFC0), Usage (1), Collection (Application), End Collection.
 	desc := []byte{0x06, 0xc0, 0xff, 0x09, 0x01, 0xa1, 0x01, 0xc0}

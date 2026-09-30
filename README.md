@@ -15,7 +15,8 @@ Three colours, for the range of things under one roof.
 > **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
 > usbfs and hwmon transports, the capability types, the support table and the
 > testbench. The Logitech HID++ driver is built (spec 002), and the Razer and
-> SteelSeries drivers (spec 003), the NZXT Kraken driver (spec 005), and the
+> SteelSeries drivers (spec 003, and the Arctis Nova Pro Wireless in spec
+> 006), the NZXT Kraken driver (spec 005), and the
 > Bluetooth drivers (spec 004): BlueZ `Battery1`, tested on a Sony
 > WH-1000XM6, and AirPods over the Accessory Protocol, expected and not yet
 > benched.
@@ -59,8 +60,9 @@ Three colours, for the range of things under one roof.
 Lighting. Every lit device is [OpenRGB](https://openrgb.org/)'s and stays
 in hotaru; that breadth is the one thing not worth reimplementing. Everything
 else follows the rule in [docs/design.md](docs/design.md): if direct access
-can reasonably be done without an external tool, it is. Headsets are a
-candidate for a later spec; NVIDIA temperature stays with `nvidia-smi`
+can reasonably be done without an external tool, it is. The Arctis Nova Pro
+Wireless is read directly (spec 006); other headsets are a candidate for a
+later spec. NVIDIA temperature stays with `nvidia-smi`
 because NVML is a vendor library, not a kernel node.
 
 ## Using it
@@ -95,7 +97,8 @@ the bench prints the tier beside every device it finds.
 
 `make bench` builds `sanshoku-bench` and runs `scan`, `read` and `verify`
 against whatever is on the desk. All three are read-only. `verify`
-cross-checks against `liquidctl` and `solaar` when they are on PATH.
+cross-checks against `liquidctl`, `solaar` and `headsetcontrol` when they
+are on PATH.
 `sanshoku-bench screen --yes` is the one write, and asks.
 
 ## Documentation
@@ -132,6 +135,16 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- `sanshoku-bench read` prints "off" rather than a state beside a battery
+  reading that has neither a level nor a band.
+
+- Spec 006, Arctis Nova Pro Wireless battery, direct: the `steelseries`
+  driver reads the headset through its base station (1038:12e5, and 12e0 by
+  protocol) with HeadsetControl's `06 b0` report, matched on its echo, and
+  sends it nothing else. New exported `steelseries.DecodeNovaPro`. A headset
+  that is switched off is a reading with no level, not an error. The entry
+  is Tested; `sanshoku-bench verify` compares the level and status with
+  `headsetcontrol -o json`.
 - Bench runs on two more machines promote the Razer Mouse Dock Pro, the
   Basilisk Ultimate dongle, the SteelSeries Apex Pro TKL Wireless Gen 3 and
   the Logitech K800 via Unifying to Tested; spec 003 is complete.

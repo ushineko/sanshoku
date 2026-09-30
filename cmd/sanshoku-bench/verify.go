@@ -59,11 +59,7 @@ func verify(ctx context.Context, args []string, out, errOut io.Writer) int {
 
 	disagree := verifyCooling(ctx, out, reports)
 	disagree = verifyBatteries(ctx, out, reports) || disagree
-	if _, err := exec.LookPath("headsetcontrol"); err == nil {
-		writeln(out, "headsetcontrol: on PATH; headsets are out of scope, not compared")
-	} else {
-		writeln(out, "headsetcontrol: not on PATH")
-	}
+	disagree = verifyHeadsets(ctx, out, reports) || disagree
 
 	if disagree {
 		return 1
@@ -206,6 +202,93 @@ func verifyBatteries(ctx context.Context, out io.Writer, reports []deviceReport)
 			verdict, disagree = "DISAGREE", true
 		}
 		writef(out, "%s battery: %s (ours %d%%, solaar %d%%)\n", m.name, verdict, m.level, v)
+	}
+	return disagree
+}
+
+/*
+headsetStates is how headsetcontrol's battery status reads as a battery.State,
+for the two it reports with a level. BATTERY_UNAVAILABLE is a headset that is
+off, which is a reading with no level here and is not compared.
+*/
+var headsetStates = map[string]string{
+	"BATTERY_CHARGING":  "charging",
+	"BATTERY_AVAILABLE": "discharging",
+}
+
+// verifyHeadsets compares every SteelSeries headset level with
+// `headsetcontrol -o json`: the level exactly, since both read the same byte
+// through the same arithmetic, and the status by headsetStates. Full is ours
+// alone; headsetcontrol calls it charging.
+func verifyHeadsets(ctx context.Context, out io.Writer, reports []deviceReport) bool {
+	type reading struct {
+		name, product string
+		b             batteryJSON
+	}
+	var mine []reading
+	for _, r := range reports {
+		if r.Driver != "steelseries" || r.Batteries == nil {
+			continue
+		}
+		for _, b := range r.Batteries.Readings {
+			if b.Kind == "headset" {
+				mine = append(mine, reading{r.Name, "0x" + r.Product, b})
+			}
+		}
+	}
+	if _, err := exec.LookPath("headsetcontrol"); err != nil {
+		writeln(out, "headsetcontrol: not on PATH, headsets not checked")
+		return false
+	}
+	if len(mine) == 0 {
+		writeln(out, "headsetcontrol: on PATH; no headset reading to compare")
+		return false
+	}
+	stdout, err := runTool(ctx, "headsetcontrol", "-o", "json")
+	if err != nil {
+		writef(out, "headsetcontrol: %v; headsets not checked\n", err)
+		return false
+	}
+	var theirs struct {
+		Devices []struct {
+			Product string `json:"id_product"`
+			Battery *struct {
+				Status string `json:"status"`
+				Level  int    `json:"level"`
+			} `json:"battery"`
+		} `json:"devices"`
+	}
+	if err := json.Unmarshal(stdout, &theirs); err != nil {
+		writef(out, "headsetcontrol: reading its output: %v; headsets not checked\n", err)
+		return false
+	}
+	disagree := false
+	for _, m := range mine {
+		if !m.b.hasLevel {
+			writef(out, "%s battery: headset off, no level; not compared\n", m.name)
+			continue
+		}
+		compared := false
+		for _, d := range theirs.Devices {
+			if !strings.EqualFold(d.Product, m.product) || d.Battery == nil {
+				continue
+			}
+			compared = true
+			state, known := headsetStates[d.Battery.Status]
+			if m.b.State == "full" {
+				m.b.State = "charging"
+			}
+			verdict := "agree"
+			if !known || d.Battery.Level != m.b.rawLevel || state != m.b.State {
+				verdict, disagree = "DISAGREE", true
+			}
+			writef(out, "%s battery: %s (ours %d%% %s, headsetcontrol %d%% %s)\n",
+				m.name, verdict, m.b.rawLevel, m.b.State, d.Battery.Level, d.Battery.Status)
+			break
+		}
+		if !compared {
+			writef(out, "%s battery: headsetcontrol did not report it, not checked\n", m.name)
+		}
 	}
 	return disagree
 }

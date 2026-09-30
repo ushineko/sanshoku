@@ -47,3 +47,58 @@ func DecodeModern(reply []byte) (battery.Battery, error) {
 	}
 	return b, nil
 }
+
+// The headset's status, byte 15 of the Nova Pro's reply, as HeadsetControl
+// names the two it acts on. 0x08 is online and is what the probe read with
+// the headset on.
+const (
+	novaProOffline  = 0x01
+	novaProCharging = 0x02
+)
+
+// novaProSteps is the top of the level's scale: HeadsetControl maps 0-8 onto
+// 0-100, and the probe's 6 was the 75% it reported at the same moment.
+const novaProSteps = 8
+
+/*
+DecodeNovaPro reads the Arctis Nova Pro Wireless base station's reply to
+`06 b0`: the headset's level in byte 6 on a scale of 0 to 8, and its status in
+byte 15.
+
+The level is `reply[6] * 100 / 8`, so the headset goes in steps of 12.5%,
+truncated, and a panel sees 75% and then 87%. A level above 8 is not a reading
+and is an error; so is a reply too short to hold byte 15.
+
+Status 0x01 is the headset switched off, or out of range, while the base
+station answers for it: the reading is returned with HasLevel false, as
+hayami's headset.go does, so a consumer shows the headset present with no
+level rather than nothing. 0x02 is charging on the cable, and Full at a level
+of 100. Anything else -- 0x08, online, is the one seen -- is Discharging, as
+HeadsetControl treats it. Kind is KindHeadset; the name is the caller's to set,
+from the kernel.
+*/
+func DecodeNovaPro(reply []byte) (battery.Battery, error) {
+	if len(reply) < 16 {
+		return battery.Battery{}, fmt.Errorf("an Arctis Nova Pro battery reply of %d bytes", len(reply))
+	}
+	b := battery.Battery{Kind: battery.KindHeadset}
+	status := reply[15]
+	if status == novaProOffline {
+		return b, nil
+	}
+
+	step := reply[6]
+	if step > novaProSteps {
+		return battery.Battery{}, fmt.Errorf("an Arctis Nova Pro battery level of %d of %d", step, novaProSteps)
+	}
+	b.Level, b.HasLevel = int(step)*100/novaProSteps, true
+	switch {
+	case status != novaProCharging:
+		b.State = battery.Discharging
+	case b.Level == 100:
+		b.State = battery.Full
+	default:
+		b.State = battery.Charging
+	}
+	return b, nil
+}
