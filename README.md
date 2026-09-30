@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.0.0
+**Version**: 0.1.0
 
 Direct device access for Linux, in Go, without cgo: peripheral batteries over
 HID++ and vendor report protocols, AirPods over Bluetooth, an NZXT Kraken's
@@ -12,14 +12,11 @@ device code that [hayami](https://github.com/ushineko/hayami) and
 
 Three colours, for the range of things under one roof.
 
-> **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
-> usbfs and hwmon transports, the capability types, the support table and the
-> testbench. The Logitech HID++ driver is built (spec 002), and the Razer and
-> SteelSeries drivers (spec 003, and the Arctis Nova Pro Wireless in spec
-> 006), the NZXT Kraken driver (spec 005), and the
-> Bluetooth drivers (spec 004): BlueZ `Battery1`, tested on a Sony
-> WH-1000XM6, and AirPods over the Accessory Protocol, expected and not yet
-> benched.
+> **Status**: v0.1.0. Every driver is built and bench-tested on real
+> hardware: Logitech HID++ 1.0 and 2.0, Razer, SteelSeries keyboards and the
+> Arctis Nova Pro Wireless, NZXT Kraken Elite telemetry and LCD, BlueZ
+> `Battery1`, and hwmon. AirPods over the Accessory Protocol are written and
+> not yet benched. No program imports the module yet; hayami is first.
 
 ## Contents
 
@@ -133,7 +130,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
-### Unreleased
+### 0.1.0 (2026-09-29)
 
 - Spec 007, a paired child node knows its own index: new
   `hidraw.PairedIndex` returns the `:N` of a paired child's `HID_PHYS`, and
