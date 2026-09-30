@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.3
+**Version**: 0.1.4
 
 Direct device access for Linux, in Go, without cgo: peripheral batteries over
 HID++ and vendor report protocols, AirPods over Bluetooth, an NZXT Kraken's
@@ -12,7 +12,7 @@ device code that [hayami](https://github.com/ushineko/hayami) and
 
 Three colours, for the range of things under one roof.
 
-> **Status**: v0.1.3. Every driver is built and bench-tested on real
+> **Status**: v0.1.4. Every driver is built and bench-tested on real
 > hardware: Logitech HID++ 1.0 and 2.0, Razer, SteelSeries keyboards and the
 > Arctis Nova Pro Wireless, NZXT Kraken Elite telemetry and LCD, BlueZ
 > `Battery1`, and hwmon. AirPods over the Accessory Protocol are written and
@@ -155,7 +155,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
-### Unreleased
+### 0.1.4 (2026-09-30)
 
 - **Fix**: the `steelseries` driver drains a held handle before every ask.
   hidraw copies every input report to every open handle, other programs'
