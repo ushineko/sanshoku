@@ -136,8 +136,10 @@ call. It is habit, not a gate.
 change, never as a follow-up:
 
 - A new package gets a row in the "What is in it" table.
-- A new device gets a row in `docs/devices.md` with its IDs, transport and
-  the machine it was measured on.
+- A new device gets a `support.Entry` in its driver's `Support()`, at the
+  tier it has reached, and `make generate` rewrites `docs/devices.md`. The
+  page is never edited by hand. A bench run that confirms an `Expected`
+  device promotes its entry to `Tested` with the hardware and date.
 - A new `make` target gets a line in the Development block.
 - Every change worth a spec gets a changelog entry under `### Unreleased`.
 

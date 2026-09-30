@@ -45,7 +45,8 @@ Three colours, for the range of things under one roof.
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
-| [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver, for a program that wants all of them. |
+| [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
+| [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
 | [`cmd/sanshoku-bench`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-bench) | The hardware testbench. |
 
 ## What it does not do
@@ -78,8 +79,12 @@ means the udev rule in [docs/udev.md](docs/udev.md) is missing.
 
 ## Devices
 
-The table is [docs/devices.md](docs/devices.md), one row per device measured
-or per protocol spoken.
+[docs/devices.md](docs/devices.md) is generated from `all.Support()` and
+has three tiers: **tested** on named hardware with the bench output in the
+spec, **expected** to work because the protocol is generic and the code
+path exists (run the bench on yours and report), and **listed** by ID but
+not implemented. A program can ask `support` the same question at runtime;
+the bench prints the tier beside every device it finds.
 
 ## Testbench
 
@@ -104,6 +109,8 @@ make test       # unit tests; opens no device
 make lint
 make build      # the testbench, CGO_ENABLED=0
 make bench      # the testbench against the hardware, read-only
+make generate   # docs/devices.md from the support table
+make check-support
 make vuln       # govulncheck
 ```
 

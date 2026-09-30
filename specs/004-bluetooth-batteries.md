@@ -88,11 +88,16 @@ its candidates.
 
 ### R5. Documentation
 
-- R5.1 `docs/devices.md`: AirPods (AAP, measured), "any BlueZ device with
-  Battery1" (by protocol; hayami issue #24 notes this path was never
-  verified on hardware, and the row says so until the bench has).
+- R5.1 `docs/devices.md` is regenerated from the entries in R5.3. hayami
+  issue #24 notes the Battery1 path was never verified on hardware; the
+  tier says so until the bench has.
 - R5.2 README, changelog, `all.Drivers()`. `docs/udev.md` already says
   Bluetooth needs no rule.
+- R5.3 `apple.Support()`: `Tested` for the AirPods generation measured
+  (named as the product reports it), `Expected` for other AAP accessories.
+  `bluez.Support()`: `Expected` for "any connected device with Battery1",
+  promoted to `Tested` only if the bench confirms it on a real device
+  during this spec.
 
 ## Acceptance Criteria
 
@@ -104,7 +109,8 @@ its candidates.
 - [ ] `sanshoku-bench read --driver apple` with AirPods connected reports
   left, right and case; `--driver bluez` reports any other connected device
   that has a level. Output pasted below, addresses absent from it.
-- [ ] `docs/devices.md`, README and `all` updated in the same commit.
+- [ ] Both `Support()` tables exist and `make check-support` passes;
+  README and `all` updated in the same commit.
 
 ## Risks & Assumptions
 

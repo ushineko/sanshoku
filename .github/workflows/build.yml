@@ -33,6 +33,8 @@ jobs:
       run: make lint
     - name: Build the testbench without cgo
       run: make build
+    - name: Support table is current
+      run: make check-support
 
   vuln:
     name: Vulnerability scan

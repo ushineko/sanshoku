@@ -115,10 +115,13 @@ hotaru spec 012.
 
 ### R6. Documentation
 
-- R6.1 `docs/devices.md`: Kraken Elite 1e71:3012, firmware 1.2.0, measured;
-  the two udev rules. Naming: "Kraken Elite" in code and docs (hotaru used
-  two names).
+- R6.1 `docs/devices.md` is regenerated from the entry in R6.4. Naming:
+  "Kraken Elite" in code and docs (hotaru used two names).
 - R6.2 README, changelog, `all.Drivers()`.
+- R6.4 `nzxt.Support()`: `Tested` for the Kraken Elite 1e71:3012 at the
+  firmware the bench saw, capabilities cooling and screen. No `Expected`
+  entries: hotaru measured one product and the allow-list is one product;
+  other Kraken models get an entry when someone runs the bench on one.
 - R6.3 `docs/contention.md`: what the three bench runs showed about
   sharing the node with OpenRGB and with a second consumer of this module,
   as the record hayami's phase 2 spec cites.
@@ -134,8 +137,8 @@ hotaru spec 012.
   alone, with OpenRGB up, with hotaru's service up.
 - [ ] `sanshoku-bench screen --yes` shows the test image and the panel
   returns to its readout afterwards, observed by eye.
-- [ ] `docs/devices.md`, `docs/contention.md`, README and `all` updated in
-  the same commit.
+- [ ] `nzxt.Support()` exists and `make check-support` passes;
+  `docs/contention.md`, README and `all` updated in the same commit.
 
 ## Risks & Assumptions
 

@@ -211,14 +211,45 @@ for four verbs and keeps the binary dependency-free.
 - R8.1 `all.Drivers() []sanshoku.Driver` returns every driver in the module
   in the order the specs land them. This spec: `hwmon.Driver{}` only.
 
-### R9. Documentation
+### R9. Support table
 
-- R9.1 `README.md` "What is in it" table lists every package; the changelog
+What is supported, what has been tested, and what is generic enough that
+another device would likely work pending confirmation, as data a program
+can query and a page a reader can read, from one source.
+
+- R9.1 Package `support`, importing nothing from this module:
+  `Tier` with `Tested` (the bench has run against named hardware and the
+  spec records the output), `Expected` (the protocol is generic and the
+  code path exists; no device has confirmed it; a report from a user
+  promotes it), `Listed` (recognised by ID, not implemented; `Open` returns
+  `ErrUnsupported`). `Entry{Driver, Device, Match string; Capabilities
+  []string; Tier Tier; Hardware, Firmware string; Tested time.Time; Spec
+  int; Notes string}`. `Match` is the rule in words ("vendor 046d, report
+  ID 0x10 on a vendor page", "1038:1644 or 1038:1646"). `Hardware` names the
+  product it was measured on, never the machine.
+- R9.2 Every driver package exports `Support() []support.Entry`.
+  `all.Support()` concatenates them in driver order. An `Expected` entry
+  for a protocol family ("any HID++ 2.0 device with feature 0x1004") sits
+  beside the `Tested` entries for the devices that confirmed it.
+- R9.3 `sanshoku-bench support` prints the table; `--markdown` prints
+  `docs/devices.md`. `scan` and `read` annotate each found device with its
+  tier, and for an `Expected` device print one line saying how to report
+  the result so it can be promoted (the bench `read --json` output and the
+  issue tracker).
+- R9.4 `make generate` writes `docs/devices.md` from `all.Support()`;
+  `make check-support` regenerates and fails on a diff, and CI runs it. The
+  page is never edited by hand; the entry is.
+- R9.5 A unit test asserts every driver in `all.Drivers()` has at least one
+  entry in `all.Support()` and every entry names a driver in
+  `all.Drivers()`.
+
+### R10. Documentation
+
+- R10.1 `README.md` "What is in it" table lists every package; the changelog
   under `### Unreleased` names this spec.
-- R9.2 `docs/devices.md` is the supported-device table (IDs, transport,
-  driver, the machine it was measured on, the spec). This spec adds the hwmon
-  rows.
-- R9.3 `packaging/60-sanshoku.rules`: the union of `docs/udev.md`.
+- R10.2 `docs/devices.md` is generated (R9.4). This spec's entries: the
+  hwmon sensor tables, `Tested` for the chips the two consumers measured.
+- R10.3 `packaging/60-sanshoku.rules`: the union of `docs/udev.md`.
 
 ## Acceptance Criteria
 
@@ -242,8 +273,11 @@ for four verbs and keeps the binary dependency-free.
   the labelled value; against an Intel tree returns `Package id 0`.
 - [ ] `sanshoku-bench scan` on the development machine lists the hwmon chips
   and exits 0; its output is pasted below.
-- [ ] `docs/devices.md`, `README.md` and `packaging/60-sanshoku.rules` exist
-  with the content R9 names.
+- [ ] `all.Support()` has the hwmon entries; `make check-support` passes;
+  the R9.5 test passes; `sanshoku-bench support --markdown` output equals
+  the committed `docs/devices.md`.
+- [ ] `README.md` and `packaging/60-sanshoku.rules` exist with the content
+  R10 names.
 
 ## Risks & Assumptions
 

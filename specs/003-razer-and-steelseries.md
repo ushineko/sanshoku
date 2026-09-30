@@ -82,10 +82,13 @@ only, an allow-list) and each is under 300 lines.
 
 ### R4. Documentation
 
-- R4.1 `docs/devices.md` rows for the dock, the Basilisk dongle, the Apex
-  and the allow-listed mice, marked measured or by protocol.
+- R4.1 `docs/devices.md` is regenerated from the entries in R4.3.
 - R4.2 README, changelog, `all.Drivers()`, and `docs/udev.md` rows
   confirmed.
+- R4.3 `razer.Support()` and `steelseries.Support()`: `Tested` for the
+  Mouse Dock Pro and the Apex Pro TKL Wireless Gen 3; `Expected` for the
+  Mouse Dock, the Basilisk dongle and the allow-listed Aerox and Prime
+  mice; `Listed` for the Rival 3 Wireless, Rival 3 Gen 2 and Rival 650.
 
 ## Acceptance Criteria
 
@@ -96,7 +99,8 @@ only, an allow-list) and each is under 300 lines.
 - [ ] `sanshoku-bench read --driver razer` and `--driver steelseries` on the
   machine with the dock and the Apex report levels that match the devices'
   own indicators. Output pasted below.
-- [ ] `docs/devices.md`, README and `all` updated in the same commit.
+- [ ] Both `Support()` tables exist and `make check-support` passes;
+  README and `all` updated in the same commit.
 
 ## Risks & Assumptions
 

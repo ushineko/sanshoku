@@ -110,11 +110,14 @@ Ported from `logitech.go` `discover`.
 
 ### R8. Documentation
 
-- R8.1 `docs/devices.md` rows: G502 X PLUS via Lightspeed (measured), K800
-  via Unifying (HID++ 1.0, measured), "any HID++ 2.0 device with feature
-  0x1004 or 0x1000" (by protocol).
+- R8.1 `docs/devices.md` is regenerated from the entries in R8.3.
 - R8.2 README table row and changelog entry. `all.Drivers()` gains
   `logitech.Driver{}`.
+- R8.3 `logitech.Support()`: `Tested` entries for the G502 X PLUS via
+  Lightspeed and the K800 via Unifying with the bench date; `Expected`
+  entries for "any HID++ 2.0 device with feature 0x1004 or 0x1000" and
+  "any HID++ 1.0 device with register 0x0D or 0x07". `make check-support`
+  passes.
 
 ## Acceptance Criteria
 
@@ -128,7 +131,8 @@ Ported from `logitech.go` `discover`.
 - [ ] `sanshoku-bench read --driver logitech` on the development machine
   reports the mouse and keyboard on the desk with plausible levels, and
   `verify` agrees with solaar if installed. Output pasted below.
-- [ ] `docs/devices.md`, README and `all` updated in the same commit.
+- [ ] `logitech.Support()` entries exist and `make check-support` passes;
+  README and `all` updated in the same commit.
 
 ## Risks & Assumptions
 
