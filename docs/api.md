@@ -248,6 +248,10 @@ State is what a battery is doing, as distinct from how full it is.
 - `const Full State`: Full is charged, and is separate from Charging because a device says so itself and a panel that showed it as still filling would be wrong for as long as it stayed on the cable.
 - `func (s State) String() string`: String names a state for display and for a test's failure message.
 
+### Functions
+
+- `func Product(vendor, name string) string`: Product is a device's name without the vendor's: "SteelSeries Arctis Nova Pro Wireless" from a SteelSeries driver is "Arctis Nova Pro Wireless".
+
 ## bluez
 
 `import "github.com/ushineko/sanshoku/bluez"`

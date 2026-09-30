@@ -36,6 +36,11 @@ const driverName = "razer"
 // razerVendor is Razer's USB vendor ID.
 const razerVendor = 0x1532
 
+// vendorWord is how Razer writes its own name at the front of a device's, and
+// what battery.Product takes off a battery's name so the product is what is
+// left to read.
+const vendorWord = "Razer"
+
 // The usage pages a Razer control interface declares. The Mouse Dock Pro
 // declares 0xFF00; OpenRazer's devices use one or the other.
 const (
@@ -239,7 +244,7 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 	}
 
 	b := battery.Battery{
-		Name:     d.id.Name,
+		Name:     battery.Product(vendorWord, d.id.Name),
 		Kind:     kinds[d.id.Product],
 		Level:    level,
 		HasLevel: true,

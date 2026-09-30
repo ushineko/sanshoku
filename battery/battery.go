@@ -43,9 +43,10 @@ func (s State) String() string {
 
 // Battery is one device's reading.
 type Battery struct {
-	// Name is the device's own name, as the device or the kernel gives it. It
-	// identifies the device across polls, so a level is never carried onto a
-	// different device.
+	// Name is the device's own name, as the device or the kernel gives it,
+	// without a leading vendor word where the driver knows the vendor (see
+	// Product). It identifies the device across polls, so a level is never
+	// carried onto a different device.
 	Name string
 
 	// Level is a percentage. HasLevel is false for a device that is present

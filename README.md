@@ -163,6 +163,16 @@ MIT. See [LICENSE](LICENSE).
 - AirPods Pro over the accessory protocol are Tested: left and right read on
   the desk, which closes spec 004.
 
+- **Visible to consumers**: battery names from the `logitech`, `razer` and
+  `steelseries` drivers no longer start with the vendor.
+  `battery.Product(vendor, name)` drops a leading vendor word (and a
+  corporate suffix after it), so the Arctis reads "Arctis Nova Pro
+  Wireless" and a K800 "K800"; a HID++ 2.0 name such as "G502 X PLUS" is
+  unchanged. A consumer that keys anything by `Battery.Name` (hayami's
+  last-reading memory) sees each such device under its new name once.
+  `Identity.Name`, the support table and error messages are unchanged
+  (spec 009, issue #22).
+
 ### 0.1.2 (2026-09-30)
 
 - `hidraw` undoubles a vendor that carries a corporate suffix: "NZXT, Inc.

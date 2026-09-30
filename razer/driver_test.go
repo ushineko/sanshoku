@@ -90,7 +90,7 @@ func TestTheTransactionIDIsFoundRememberedAndKeptThroughBusy(t *testing.T) {
 	assert.Equal(t, 100, found[0].Level)
 	assert.Equal(t, battery.Full, found[0].State, "charging at 100 is full")
 	assert.Equal(t, battery.KindMouse, found[0].Kind)
-	assert.Equal(t, "Razer Mouse Dock Pro", found[0].Name, "the battery is named after the node")
+	assert.Equal(t, "Mouse Dock Pro", found[0].Name, "the battery is named after the node, without the vendor")
 	assert.Equal(t, transactions[:3], f.tried[:3], "the list is tried in order until one answers")
 
 	f.tried = nil

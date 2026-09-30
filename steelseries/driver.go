@@ -36,6 +36,11 @@ const driverName = "steelseries"
 // steelseriesVendor is SteelSeries' USB vendor ID.
 const steelseriesVendor = 0x1038
 
+// vendorWord is how SteelSeries writes its own name at the front of a device's, and
+// what battery.Product takes off a battery's name so the product is what is
+// left to read.
+const vendorWord = "SteelSeries"
+
 // The SteelSeries vendor protocol, as hayami measured it on the Apex.
 const (
 	// controlPage is the usage page of the control endpoint. A keyboard
@@ -316,7 +321,7 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 		if err != nil {
 			continue
 		}
-		b.Name = d.id.Name
+		b.Name = battery.Product(vendorWord, d.id.Name)
 		// KindOther, and deliberately not a guess. The control endpoint says
 		// nothing about what the device is, and the interfaces beside it are
 		// ambiguous in both directions: the Apex presents a mouse interface
@@ -383,6 +388,6 @@ func (d *device) headset(ctx context.Context) ([]battery.Battery, error) {
 	if err != nil {
 		return nil, err
 	}
-	b.Name = d.id.Name
+	b.Name = battery.Product(vendorWord, d.id.Name)
 	return []battery.Battery{b}, nil
 }
