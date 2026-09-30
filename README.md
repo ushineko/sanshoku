@@ -131,6 +131,9 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- `sanshoku-bench screen --hold D` keeps the test card on the panel for D (at
+  least its floor), so a person can look at it.
+
 - Spec 005, NZXT Kraken: the `nzxt` driver, ported from hotaru's
   `internal/cooler`. Coolant, pump and fan over hidraw (`74 01` → `75 01`,
   drained before every question, twelve reports per search, three attempts),

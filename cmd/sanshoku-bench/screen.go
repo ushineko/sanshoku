@@ -29,6 +29,7 @@ func screenPush(ctx context.Context, args []string, out, errOut io.Writer) int {
 	fs := flag.NewFlagSet("screen", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	yes := fs.Bool("yes", false, "allow writing to the device's display")
+	hold := fs.Duration("hold", 0, "keep the test card on the panel this long (at least its floor)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -49,7 +50,7 @@ func screenPush(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		if p, ok := dev.(screen.Panel); ok {
 			screens++
-			if !push(ctx, out, c, p) {
+			if !push(ctx, out, c, p, *hold) {
 				code = 1
 			}
 		}
@@ -66,7 +67,7 @@ func screenPush(ctx context.Context, args []string, out, errOut io.Writer) int {
 
 // push draws the test card on one panel, waits its floor, and returns it to
 // its readout, printing each step with its timing.
-func push(ctx context.Context, out io.Writer, c sanshoku.Candidate, p screen.Panel) bool {
+func push(ctx context.Context, out io.Writer, c sanshoku.Candidate, p screen.Panel, hold time.Duration) bool {
 	w, h := p.Size()
 	card := testCard(w, h)
 	var encoded bytes.Buffer
@@ -74,15 +75,17 @@ func push(ctx context.Context, out io.Writer, c sanshoku.Candidate, p screen.Pan
 		writef(out, "%s: encoding the test card: %v\n", c.Identity, err)
 		return false
 	}
-	floor := p.Floor(encoded.Len())
-	writef(out, "%s  %s  panel %dx%d, test card %d bytes, floor %s\n", c.Driver, c.Identity, w, h, encoded.Len(), floor)
+	// The card stays up for at least the floor, so it lands, and for longer
+	// when someone wants to look at it.
+	wait := max(p.Floor(encoded.Len()), hold)
+	writef(out, "%s  %s  panel %dx%d, test card %d bytes, floor %s\n", c.Driver, c.Identity, w, h, encoded.Len(), p.Floor(encoded.Len()))
 
 	ok := step(ctx, out, "image", func(ctx context.Context) error { return p.Image(ctx, card) })
 	if ok {
 		select {
 		case <-ctx.Done():
-		case <-time.After(floor):
-			writef(out, "  waited %s\n", floor)
+		case <-time.After(wait):
+			writef(out, "  waited %s\n", wait)
 		}
 	}
 	// The readout goes back whatever happened above, on a context of its own

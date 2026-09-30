@@ -2,7 +2,7 @@
 
 **Issue**: #5
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -142,10 +142,12 @@ hotaru spec 012.
 - [x] `sanshoku-bench read --driver nzxt` reports coolant, pump and fan;
   `verify` agrees with liquidctl. Output pasted below for all three runs:
   alone, with OpenRGB up, with hotaru's service up.
-- [ ] `sanshoku-bench screen --yes` shows the test image and the panel
-  returns to its readout afterwards, observed by eye. **For the reviewer**:
-  the implementer could not see the panel. Every step reported success and
-  liquidctl read the cooler normally afterwards (below).
+- [x] `sanshoku-bench screen --yes` shows the test image and the panel
+  returns to its readout afterwards, observed by eye. Observed 2026-09-29
+  with `--hold 10s` (the flag added for this check) and hotaru stopped: the
+  test card appeared on the pump head's LCD, held, and the readout returned.
+  Every step reported success and liquidctl read the cooler normally
+  afterwards (below).
 - [x] `nzxt.Support()` exists and `make check-support` passes;
   `docs/contention.md`, README and `all` updated in the same commit.
 
@@ -273,8 +275,9 @@ nzxt  NZXT, Inc. NZXT Kraken Elite V2 (1e71:3012)  /dev/hidraw6  [tested]
 exit 0
 ```
 
-Whether the card appeared and the readout returned was not observed: the
-implementer cannot see the panel. That box is left for the reviewer.
+The by-eye check was done by the author at the desk with `screen --yes --hold 10s`
+(see the acceptance criterion above).
+
 
 ### Where the port differs from hotaru
 
