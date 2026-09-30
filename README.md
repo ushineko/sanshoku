@@ -14,8 +14,9 @@ Three colours, for the range of things under one roof.
 
 > **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
 > usbfs and hwmon transports, the capability types, the support table and the
-> testbench. The Logitech HID++ driver is built (spec 002). The other drivers
-> (specs 003 to 005) are not; their packages hold only a package comment.
+> testbench. The Logitech HID++ driver is built (spec 002), and the Razer and
+> SteelSeries drivers (spec 003). The other drivers (specs 004 and 005) are
+> not; their packages hold only a package comment.
 
 ## Contents
 
@@ -127,6 +128,25 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- `sanshoku-bench` treats a device a driver recognised and refused
+  (`ErrUnsupported`) as a state, "unsupported", not a failure: `read` exits
+  0 on it and `scan` shows it in the capabilities column. The Arctis Nova Pro
+  Wireless has a Listed entry so the table names it.
+
+- Spec 003, Razer and SteelSeries batteries: the `razer` and `steelseries`
+  drivers, ported from hayami. `razer` reads a battery through feature
+  reports on the node declaring usage page 0xFF00 or 0xFF01, including a
+  mouse behind a Mouse Dock Pro through its RF relay: the checksum is
+  verified, the transaction ID is searched in OpenRazer's order and
+  remembered, and busy, timeout and not-supported are silence. `steelseries`
+  reads the 0x92 command, then 0xD2, on usage page 0xFFC0, and only for
+  products in its allow-list; any other product (the Arctis Nova Pro among
+  them) and the listed legacy Rival family are candidates whose `Open`
+  returns `ErrUnsupported` with the device's name, never written to. This
+  replaces hayami's `Unsupported()` side channel. Exports `Driver`, `Support`
+  and `razer.Decode`, `steelseries.DecodeModern`. `all.Drivers()` includes
+  both; every entry is Expected or Listed until a bench run reads the Mouse
+  Dock Pro and the Apex.
 - Spec 002, Logitech HID++ batteries: the `logitech` driver, ported from
   hayami. One `Device` per HID++ hidraw node, held open; HID++ 2.0 features
   0x1004 and 0x1000 with the name and kind from 0x0005, HID++ 1.0 registers

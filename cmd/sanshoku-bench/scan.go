@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -39,14 +40,17 @@ func scan(ctx context.Context, args []string, out, errOut io.Writer) int {
 		entry, known := entryFor(entries, c)
 		caps := "-"
 		dev, err := open(ctx, c)
-		if err != nil {
+		switch {
+		case errors.Is(err, sanshoku.ErrUnsupported):
+			caps = "unsupported"
+		case err != nil:
 			caps = "open failed"
 			note := fmt.Sprintf("%s: %v", c.Identity, err)
 			if sanshoku.IsPermission(err) {
 				note += "\n    " + permissionHint(c.Identity)
 			}
 			notes = append(notes, note)
-		} else {
+		default:
 			if names := sanshoku.Capabilities(dev); len(names) > 0 {
 				caps = strings.Join(names, ",")
 			}

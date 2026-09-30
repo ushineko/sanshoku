@@ -27,10 +27,23 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | HID++ 1.0, register 0x07 band; measured by hayami, not on spec 002's bench | 002 |
 | logitech | Any HID++ 2.0 device with feature 0x1004 or 0x1000 | vendor 046d, report ID 0x10 on a vendor page | battery | wired on index 0xFF or paired on 1..6 | 002 |
 | logitech | Any HID++ 1.0 device with register 0x0D or 0x07 | vendor 046d, report ID 0x10 on a vendor page, on a paired device's own node | battery | 0x0D is a percentage; 0x07 is a band of four | 002 |
+| razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | the mouse is read through the dock's RF relay, transaction 0x1F; measured by hayami, not on spec 003's bench | 003 |
+| razer | Mouse Dock | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:007e | battery | OpenRazer addresses it on transaction 0x3F; a charger that may answer not-supported | 003 |
+| razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | in hayami's product table; not read by hayami or this module | 003 |
+| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery | 0x92 wired, 0xD2 through the dongle; measured by hayami, not on spec 003's bench | 003 |
+| steelseries | Aerox 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1838 or 1038:183a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
+| steelseries | Aerox 5 Wireless | vendor 1038, usage page 0xFFC0; 1038:1852 or 1038:1854 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
+| steelseries | Aerox 9 Wireless | vendor 1038, usage page 0xFFC0; 1038:1858 or 1038:185a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
+| steelseries | Prime Wireless | vendor 1038, usage page 0xFFC0; 1038:1840 or 1038:1842 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
 
 ## Listed
 
-None yet.
+| Driver | Device | Match | Why | Spec |
+|---|---|---|---|---|
+| steelseries | Rival 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1830 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
+| steelseries | Rival 3 Wireless Gen 2 | vendor 1038, usage page 0xFFC0; 1038:1872 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
+| steelseries | Rival 650 Wireless | vendor 1038, usage page 0xFFC0; 1038:172b | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
+| steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 | a headset on the same usage page as the keyboards; found, refused, never written to. Its battery is headsetcontrol's today and a candidate spec (docs/devices.md) | 003 |
 
 ## Out of scope
 
