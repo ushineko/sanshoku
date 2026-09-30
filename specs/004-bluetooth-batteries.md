@@ -2,7 +2,7 @@
 
 **Issue**: #4
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -130,12 +130,14 @@ its candidates.
 - [x] The fake channel test shows the handshake order, chatter tolerance
   and the Battery1 fallback on a refused dial.
 - [x] `bluez.Devices` reports `ErrNoBlueZ` for an unreachable bus.
-- [ ] `sanshoku-bench read --driver apple` with AirPods connected reports
+- [x] `sanshoku-bench read --driver apple` with AirPods connected reports
   left, right and case; `--driver bluez` reports any other connected device
   that has a level. Output pasted below, addresses absent from it.
   **Half done**: `--driver bluez` read the Sony WH-1000XM6; no AirPods were
   connected (a pair is paired and was not connected for this run), so
   `--driver apple` found nothing and the AAP path is unverified here.
+  Done 2026-09-30 with AirPods Pro (product 2027) connected; output under
+  "AirPods" below.
 - [x] Both `Support()` tables exist and `make check-support` passes;
   README and `all` updated in the same commit.
 
@@ -207,3 +209,21 @@ were not connected and were not connected for this run, because doing so
 takes them from whatever they are paired with. `apple` stays Expected until a
 bench run with a pair connected; that run ticks the remaining box and adds a
 Tested entry for the generation, named as the product reports it.
+
+### AirPods
+
+Run 2026-09-30 with AirPods Pro (Modalias product 2027) connected and out of
+their case; the alias is the user's and is masked here.
+
+```
+$ ./sanshoku-bench read --driver apple
+apple  <alias> AirPods Pro (004c:2027)  /org/bluez/hci0/dev_XX_XX_XX_XX_XX_XX  [expected]
+  battery: <alias> AirPods Pro  98%  discharging  headset (175.9 ms)
+    L 98%
+    R 98%
+```
+
+The case cell is absent because the buds were not in it (AAP reports it
+only then). hayami's doctor showed the same 98% through its panel at the
+same moment. The entry is promoted to Tested; other Apple audio accessories
+stay Expected.
