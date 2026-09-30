@@ -15,9 +15,10 @@ Three colours, for the range of things under one roof.
 > **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
 > usbfs and hwmon transports, the capability types, the support table and the
 > testbench. The Logitech HID++ driver is built (spec 002), and the Razer and
-> SteelSeries drivers (spec 003), and the NZXT Kraken driver (spec 005). The
-> Bluetooth drivers (spec 004) are not; their packages hold only a package
-> comment.
+> SteelSeries drivers (spec 003), the NZXT Kraken driver (spec 005), and the
+> Bluetooth drivers (spec 004): BlueZ `Battery1`, tested on a Sony
+> WH-1000XM6, and AirPods over the Accessory Protocol, expected and not yet
+> benched.
 
 ## Contents
 
@@ -131,6 +132,26 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- Spec 004, Bluetooth batteries: the `l2cap` transport, the `bluez`
+  transport and driver, and the `apple` driver, ported from hayami's
+  `internal/peripherals`. `l2cap.Dial` connects a sequenced-packet socket
+  non-blocking with the address in written order (x/sys reverses it), awaits
+  `EINPROGRESS` with `poll` and `SO_ERROR`, and retries `EINTR` with the
+  deadline recomputed; `Conn` has `Send`, `Receive(ctx)` and `Close`, and
+  `ParseAddress` reads a printed address. `bluez.Devices` lists connected
+  devices from the system bus's ObjectManager, with the vendor and product
+  from the Modalias, and reports an unreachable bus as `ErrNoBlueZ`, which
+  wraps `ErrAbsent`. `bluez.Driver` reads `Battery1` for every connected
+  device with a level except Apple audio; `apple.Driver` reads left, right
+  and case over the Accessory Protocol on PSM 0x1001 and falls back to
+  `Battery1`. Exports `bluez.Device`, `bluez.Devices`, `bluez.ErrNoBlueZ`,
+  `apple.DecodeBattery`, `apple.ErrNoBatteryPacket`, both `Driver`s and
+  `Support`s. A Bluetooth candidate's address is in `Identity.Phys` and in
+  no error message; the bench masks it in the D-Bus object path it prints.
+  `support.Lookup` gains a fourth rule: an entry with no vendor and no chips
+  covers every candidate of its driver. `all.Drivers()` includes both; the
+  `Battery1` path is Tested on a Sony WH-1000XM6 (hayami never verified it),
+  and AirPods are Expected. Adds `github.com/godbus/dbus/v5` v5.2.2.
 - `sanshoku-bench screen --hold D` keeps the test card on the panel for D (at
   least its floor), so a person can look at it.
 

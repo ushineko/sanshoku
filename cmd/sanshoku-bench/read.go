@@ -104,7 +104,7 @@ func readAll(ctx context.Context, ds []sanshoku.Driver) ([]deviceReport, error) 
 			Vendor:       fmt.Sprintf("%04x", c.Vendor),
 			Product:      fmt.Sprintf("%04x", c.Product),
 			Bus:          c.Bus.String(),
-			Path:         c.Path,
+			Path:         shownPath(c.Identity),
 			Tier:         tierWords(entry, known),
 			expected:     known && entry.Tier == support.Expected,
 			Capabilities: []string{},
