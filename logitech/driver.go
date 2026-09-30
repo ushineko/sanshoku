@@ -21,6 +21,11 @@ const driverName = "logitech"
 // logitechVendor is Logitech's USB vendor ID.
 const logitechVendor = 0x046D
 
+// vendorWord is how Logitech writes its own name at the front of a device's, and
+// what battery.Product takes off a battery's name so the product is what is
+// left to read.
+const vendorWord = "Logitech"
+
 // vendorPage is the first usage page of the vendor-defined range. A HID++
 // node declares report 0x10 on a page at or above it.
 const vendorPage = 0xFF00
@@ -376,7 +381,7 @@ func (d *device) read(ctx context.Context, loc located) (battery.Battery, error)
 		if err != nil {
 			return battery.Battery{}, err
 		}
-		b.Name = loc.name
+		b.Name = battery.Product(vendorWord, loc.name)
 		if b.Name == "" {
 			b.Name = defaultName
 		}
@@ -391,7 +396,11 @@ func (d *device) read(ctx context.Context, loc located) (battery.Battery, error)
 		return battery.Battery{}, err
 	}
 
-	b.Name, b.Kind = d.identify(ctx, loc.index)
+	// The name the device gives is already the product's; Product is a no-op
+	// on it and is applied anyway so no battery name skips the rule.
+	var name string
+	name, b.Kind = d.identify(ctx, loc.index)
+	b.Name = battery.Product(vendorWord, name)
 	return b, nil
 }
 

@@ -247,7 +247,7 @@ func TestAnOldDeviceIsReadOnItsOwnNodeOnly(t *testing.T) {
 	found, err := child.Batteries(context.Background())
 	require.NoError(t, err)
 	require.Len(t, found, 1)
-	assert.Equal(t, "Logitech K800", found[0].Name)
+	assert.Equal(t, "K800", found[0].Name)
 	assert.True(t, found[0].HasBand)
 	assert.Equal(t, battery.BandGood, found[0].Band)
 	assert.False(t, found[0].HasLevel)

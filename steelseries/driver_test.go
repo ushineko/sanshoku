@@ -97,7 +97,7 @@ func TestTheWirelessFormIsAskedWhenTheWiredOneIsNotAnswered(t *testing.T) {
 	require.Len(t, found, 1)
 	assert.Equal(t, 95, found[0].Level)
 	assert.Equal(t, battery.Discharging, found[0].State)
-	assert.Equal(t, "SteelSeries Apex Pro TKL Wireless Gen 3", found[0].Name)
+	assert.Equal(t, "Apex Pro TKL Wireless Gen 3", found[0].Name)
 	assert.Equal(t, battery.KindOther, found[0].Kind)
 	assert.Equal(t, []byte{batteryCommand, batteryCommand | wirelessFlag}, f.asked,
 		"the wired form is asked first and the wireless one only after it fails")
@@ -137,7 +137,7 @@ func TestTheNovaProIsAskedItsOwnQuestionAndMatchedOnTheEcho(t *testing.T) {
 	assert.Equal(t, 75, found[0].Level)
 	assert.Equal(t, battery.Discharging, found[0].State)
 	assert.Equal(t, battery.KindHeadset, found[0].Kind)
-	assert.Equal(t, "SteelSeries Arctis Nova Pro Wireless", found[0].Name)
+	assert.Equal(t, "Arctis Nova Pro Wireless", found[0].Name)
 	assert.Equal(t, []byte{novaProBattery}, f.asked, "one question, and only the battery")
 	require.NoError(t, dev.Close())
 }
