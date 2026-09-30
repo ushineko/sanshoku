@@ -99,3 +99,18 @@ func TestPairedIndexIsTheNumberAfterTheColon(t *testing.T) {
 		assert.Equal(t, tc.ok, PairedChild(tc.phys), tc.phys)
 	}
 }
+
+// A manufacturer string with a corporate suffix doubles the vendor the same
+// way a bare one does, and reads the same once undoubled.
+func TestUndoubleDropsACorporateSuffixWithTheVendor(t *testing.T) {
+	cases := map[string]string{
+		"Razer Razer Mouse Dock Pro":      "Razer Mouse Dock Pro",
+		"NZXT, Inc. NZXT Kraken Elite V2": "NZXT Kraken Elite V2",
+		"SteelSeries Apex Pro TKL":        "SteelSeries Apex Pro TKL",
+		"Logitech USB Receiver":           "Logitech USB Receiver",
+		"NZXT":                            "NZXT",
+	}
+	for in, want := range cases {
+		assert.Equal(t, want, undouble(in), in)
+	}
+}

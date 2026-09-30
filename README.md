@@ -155,6 +155,11 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
+### Unreleased
+
+- `hidraw` undoubles a vendor that carries a corporate suffix: "NZXT, Inc.
+  NZXT Kraken Elite V2" reads as "NZXT Kraken Elite V2" (hotaru spec 059).
+
 ### 0.1.1 (2026-09-29)
 
 - `sanshoku.ErrUnavailable`: a driver that could not look because its
