@@ -2,7 +2,7 @@
 
 **Issue**: #3
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -105,12 +105,13 @@ only, an allow-list) and each is under 300 lines.
 - [x] The Razer CRC check rejects a corrupted reply and the transaction
   search remembers the answering ID.
 - [x] The SteelSeries fake proves an unlisted product receives no write.
-- [ ] `sanshoku-bench read --driver razer` and `--driver steelseries` on the
+- [x] `sanshoku-bench read --driver razer` and `--driver steelseries` on the
   machine with the dock and the Apex report levels that match the devices'
-  own indicators. Output pasted below. **Open**: neither the Mouse Dock Pro
-  nor the Apex Pro TKL Wireless Gen 3 was plugged in at the bench run; the
-  only SteelSeries device present was the Arctis Nova Pro, refused as
-  unlisted. The two entries stay `Expected` until this runs.
+  own indicators. Run on 2026-09-29 on the two other machines (output under
+  "Other machines" below): the Mouse Dock Pro read the docked mouse at 100%
+  full, the Apex on its cable at 100% full, and the Basilisk Ultimate 63%
+  discharging through its dongle. The older Mouse Dock answered nothing with
+  the mouse off it and stays `Expected`.
 - [x] Both `Support()` tables exist and `make check-support` passes;
   README and `all` updated in the same commit.
 
@@ -160,3 +161,39 @@ steelseries  SteelSeries Arctis Nova Pro Wireless (1038:12e5)  /dev/hidraw14  [l
 The Arctis is never opened, let alone written to: under
 `strace -f -e trace=openat,write,ioctl`, the only accesses to hidraw14 are
 its sysfs `uevent` and `report_descriptor`; `/dev/hidraw14` is not opened.
+
+### Other machines
+
+Run on 2026-09-29 with the static bench copied over SSH, read-only verbs
+only. Neither machine has solaar or headsetcontrol; hayami is not installed
+on either, so the cross-check is the devices' own indicators.
+
+Machine with the Mouse Dock Pro and the Apex (Intel `coretemp`, udev rules
+from liquidctl and OpenRazer present):
+
+```
+$ ./sanshoku-bench scan   (hwmon rows omitted)
+razer        Razer Mouse Dock Pro (1532:00a4)                     /dev/hidraw0             battery       expected
+steelseries  SteelSeries Apex Pro TKL Wireless Gen 3 (1038:1646)  /dev/hidraw5             battery       expected
+10 found
+$ ./sanshoku-bench read
+razer  Razer Mouse Dock Pro (1532:00a4)  /dev/hidraw0  [expected]
+  battery: Razer Mouse Dock Pro  100%  full  mouse (141.5 ms)
+steelseries  SteelSeries Apex Pro TKL Wireless Gen 3 (1038:1646)  /dev/hidraw5  [expected]
+  battery: SteelSeries Apex Pro TKL Wireless Gen 3  100%  full  other (1.6 ms)
+```
+
+Machine with the Basilisk Ultimate, its dock and dongle (AMD `k10temp`,
+udev rules from hotaru; the devices sleep and were woken by hand first):
+
+```
+$ ./sanshoku-bench read --driver razer
+razer  Razer Mouse Dock (1532:007e)  /dev/hidraw0  [expected]
+  battery: no reading (384.0 ms)
+razer  Razer Basilisk Ultimate Dongle (1532:0088)  /dev/hidraw3  [expected]
+  battery: Razer Basilisk Ultimate Dongle  63%  discharging  mouse (152.9 ms)
+```
+
+Before the devices were woken, every Razer and Logitech node on that machine
+answered nothing, and the kernel's own `hidpp_battery_0` reported the K800
+offline; a silent device and an absent one look the same from here.

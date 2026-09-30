@@ -17,6 +17,10 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 |---|---|---|---|---|---|---|---|
 | hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | 001 |
 | logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | 002 |
+| logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | Logitech K800, Unifying receiver | – | 2026-09-29 | 002 |
+| razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | Razer Mouse Dock Pro with its mouse docked | – | 2026-09-29 | 003 |
+| razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | Razer Basilisk Ultimate, its dongle | – | 2026-09-29 | 003 |
+| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) | – | 2026-09-29 | 003 |
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | 005 |
 | bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | 004 |
 
@@ -26,13 +30,9 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 |---|---|---|---|---|---|
 | hwmon | AMD CPU | `k10temp` / `Tdie`, `Tctl`; `zenpower` / `Tdie` | temperature | Tctl only where Tdie is absent: it carries a fan-curve offset | 001 |
 | hwmon | AMD GPU, nouveau | `amdgpu` / `edge`, `amdgpu`, `nouveau` | temperature | NVIDIA's own driver registers no hwmon | 001 |
-| logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | HID++ 1.0, register 0x07 band; measured by hayami, not on spec 002's bench | 002 |
 | logitech | Any HID++ 2.0 device with feature 0x1004 or 0x1000 | vendor 046d, report ID 0x10 on a vendor page | battery | wired on index 0xFF or paired on 1..6 | 002 |
 | logitech | Any HID++ 1.0 device with register 0x0D or 0x07 | vendor 046d, report ID 0x10 on a vendor page, on a paired device's own node | battery | 0x0D is a percentage; 0x07 is a band of four | 002 |
-| razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | the mouse is read through the dock's RF relay, transaction 0x1F; measured by hayami, not on spec 003's bench | 003 |
-| razer | Mouse Dock | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:007e | battery | OpenRazer addresses it on transaction 0x3F; a charger that may answer not-supported | 003 |
-| razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | in hayami's product table; not read by hayami or this module | 003 |
-| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery | 0x92 wired, 0xD2 through the dongle; measured by hayami, not on spec 003's bench | 003 |
+| razer | Mouse Dock | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:007e | battery | OpenRazer addresses it on transaction 0x3F; found on a bench and answered nothing with the mouse off it, as a charger does | 003 |
 | steelseries | Aerox 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1838 or 1038:183a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
 | steelseries | Aerox 5 Wireless | vendor 1038, usage page 0xFFC0; 1038:1852 or 1038:1854 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
 | steelseries | Aerox 9 Wireless | vendor 1038, usage page 0xFFC0; 1038:1858 or 1038:185a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |

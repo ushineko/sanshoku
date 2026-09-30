@@ -27,8 +27,8 @@ const hidppMatch = "vendor 046d, report ID 0x10 on a vendor page"
 Support is the logitech driver's support table.
 
 The G502 X PLUS through its Lightspeed receiver is Tested: spec 002's bench read
-it and solaar agreed. The K800 through a Unifying receiver is Expected: hayami
-measured it, and it was not on the machine spec 002 was benched on. The two
+it and solaar agreed. The K800 through a Unifying receiver is Tested: the bench
+on the machine that has it read the register 0x07 band on 2026-09-29. The two
 protocol families are Expected, because every device that speaks them goes
 through the same code path.
 */
@@ -54,9 +54,11 @@ func Support() []support.Entry {
 			Vendor:       logitechVendor,
 			Products:     []uint16{productUnifying, productK800},
 			Capabilities: []string{"battery"},
-			Tier:         support.Expected,
+			Tier:         support.Tested,
+			Hardware:     "Logitech K800, Unifying receiver",
+			Tested:       benched,
 			Spec:         2,
-			Notes:        "HID++ 1.0, register 0x07 band; measured by hayami, not on spec 002's bench",
+			Notes:        "HID++ 1.0, register 0x07 band; read Good, discharging; the read costs 9.7 s (issue #11)",
 		},
 		{
 			Driver:       driverName,

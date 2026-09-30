@@ -3,6 +3,7 @@
 /sanshoku-bench
 /sanshoku-*
 coverage.out
+/.cache/
 
 # Editor / OS
 .idea/
