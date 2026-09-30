@@ -1,0 +1,51 @@
+name: Build
+
+# Spec 001 R1.4. Everything here is Linux-only: hidraw, usbfs and L2CAP are
+# Linux kernel interfaces and the module does not pretend otherwise. No cgo.
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test, lint, build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        check-latest: true
+    - name: No binaries in the repository
+      run: make check-no-binaries
+    - name: Test
+      run: go test -race ./...
+    - name: Lint
+      run: make lint
+    - name: Build the testbench without cgo
+      run: make build
+
+  vuln:
+    name: Vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    # The test job builds with the minimum Go from go.mod. This job uses the
+    # latest stable Go instead, because govulncheck also reports standard
+    # library findings and the minimum's stdlib is behind on patches by design.
+    - uses: actions/setup-go@v6
+      with:
+        go-version: stable
+    - name: govulncheck
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...

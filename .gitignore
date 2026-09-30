@@ -1,0 +1,14 @@
+# Build output
+/bin/
+/sanshoku-bench
+/sanshoku-*
+coverage.out
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local agent state
+.claude/settings.local.json

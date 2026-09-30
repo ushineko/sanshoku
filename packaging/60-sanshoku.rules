@@ -1,0 +1,17 @@
+# The union of docs/udev.md: every vendor the module drives, tagged so the
+# logged-in user may open the node. systemd-logind puts an ACL on a device
+# tagged "uaccess" for whoever is at the seat; without it the driver finds
+# the device and cannot open it, and the reason is invisible.
+#
+# Matched by vendor, not product, so this file does not have to be edited in
+# step with a driver's allow-list.
+
+# Logitech (HID++ receivers and wired devices)
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="046d", TAG+="uaccess"
+# Razer (docks and dongles)
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1532", TAG+="uaccess"
+# SteelSeries
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1038", TAG+="uaccess"
+# NZXT: the status channel as hidraw, the LCD's bulk endpoint as the USB node
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"
