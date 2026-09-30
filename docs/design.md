@@ -55,23 +55,26 @@ reasonably be supported without an external tool call, it is**. An external
 tool is the exception and its reason is written down.
 
 - **In**: Logitech HID++ over hidraw, Razer feature reports, SteelSeries
-  rivalcfg reports, Apple AAP over L2CAP, BlueZ Battery1 over D-Bus, NZXT
-  Kraken over hidraw and usbfs, hwmon by chip and label.
+  rivalcfg reports and the Arctis Nova Pro base station's battery report,
+  Apple AAP over L2CAP, BlueZ Battery1 over D-Bus, NZXT Kraken over hidraw
+  and usbfs, hwmon by chip and label.
 - **The one standing exception is lighting.** OpenRGB is a maintained daemon
   that speaks to every lit device on the machine, and reimplementing that
   breadth is not reasonable. It stays in hotaru's `internal/openrgb`.
 - **Inherited subprocesses are debts, not decisions.** hayami reads the
   Kraken through `liquidctl --json status` because the Python monitor it
   replaced did; spec 005 is the direct driver and hayami adopts it in phase
-  2. `headsetcontrol` is the same shape of debt: the Arctis Nova Pro on the
-  desk answers on the SteelSeries usage page this module already scans, and
-  a headset battery driver is a candidate spec, not an exclusion.
+  2. `headsetcontrol` was the same shape of debt for the Arctis Nova Pro on
+  the desk, which answers on the SteelSeries usage page this module already
+  scans; spec 006 reads its battery directly, and hayami adopts it in phase
+  2. Other headsets stay a candidate, not an exclusion.
 - **Out for now, with the reason**: `nvidia-smi` (NVML is a vendor library,
   not a kernel node; the hwmon path covers AMD and nouveau); `/proc/stat`,
   `/proc/meminfo`, `/proc/net/dev` and DRM busy counters (not devices, and
   the consumer reads them in a few lines).
-- The testbench's `verify` shells out to liquidctl and solaar to cross-check
-  a reading. That is the only place a tool is called from this repository.
+- The testbench's `verify` shells out to liquidctl, solaar and
+  headsetcontrol to cross-check a reading. That is the only place a tool is
+  called from this repository.
 
 ## The shape of a driver
 

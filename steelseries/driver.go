@@ -55,6 +55,29 @@ const (
 	reportSize = 64
 )
 
+/*
+The Arctis Nova Pro Wireless base station's battery report, from HeadsetControl
+4.0.0 (lib/devices/steelseries_arctis_nova_pro_wireless.hpp) and a probe of the
+base station 1038:12e5 on 2026-09-29.
+
+The base station's 0xFFC0 collection numbers its reports: its descriptor
+declares report 0x06 with 63 bytes of input and 63 of output, so the report ID
+is the first byte on hidraw both ways and an input report is 64 bytes with it.
+*/
+const (
+	// novaProReport and novaProBattery are the request, `06 b0`, and the
+	// first two bytes of its reply, which echoes them.
+	novaProReport  = 0x06
+	novaProBattery = 0xB0
+
+	// novaProRequestSize is HeadsetControl's PACKET_SIZE_31: the request is
+	// 31 bytes, zero after the two that say what it is.
+	novaProRequestSize = 31
+
+	// novaProReplySize is the input report with its ID: 1 + 63 bytes.
+	novaProReplySize = 64
+)
+
 // defaultTimeout is how long the device has to answer one command. Short: a
 // consumer polls on a timer, and a keyboard that is not going to reply does
 // not start (hayami, SteelSeriesTimeout).
@@ -78,6 +101,10 @@ const (
 	// rest a level in steps of five.
 	modern
 
+	// novaPro is the Arctis Nova Pro Wireless base station's `06 b0`: one
+	// report each way, the headset's level on a 0-8 scale and its status.
+	novaPro
+
 	// legacy is command 0xAA 0x01 with a three-byte reply. rivalcfg names the
 	// devices that speak it; this module cannot read it.
 	//
@@ -100,11 +127,13 @@ usage page is broad -- broad enough that the Arctis Nova Pro Wireless on
 hayami's development machine matched it and was being sent `0x92` on every
 poll, a command from a family it does not speak (hayami issue #62). Finding a
 device and being entitled to talk to it are separate questions and this is the
-second one.
+second one. The Nova Pro is in the table now, as its own family, and is sent
+only its own command.
 
 The Apex appears twice because its product ID moves with its connection, and
-both were measured. Everything else is from rivalcfg's device profiles, which
-is the only place this protocol is written down at all.
+both were measured. The keyboards and mice are from rivalcfg's device profiles,
+which is the only place their protocol is written down at all; the headset
+family is from HeadsetControl's, and speaks something else entirely.
 */
 var products = map[uint16]protocol{
 	// Measured by hayami, spec 016: 2.4 GHz and cable.
@@ -120,6 +149,11 @@ var products = map[uint16]protocol{
 	0x185A: modern, // Aerox 9 Wireless, wired
 	0x1840: modern, // Prime Wireless
 	0x1842: modern, // Prime Wireless, wired
+
+	// HeadsetControl's Nova Pro Wireless family, spec 006: the base
+	// station, not the headset, is the USB device and answers for it.
+	0x12E0: novaPro, // Arctis Nova Pro Wireless base station, by protocol
+	0x12E5: novaPro, // Arctis Nova Pro Wireless X base station, measured
 
 	// rivalcfg's 0xAA family. Unverified: no hardware here speaks it, which is
 	// exactly why the table exists -- it cannot reach anything else.
@@ -198,13 +232,13 @@ func candidate(n hidraw.Node, timeout time.Duration, open func(string) (node, er
 				return nil, fmt.Errorf("%s: not a product this driver speaks to: %w", id, sanshoku.ErrUnsupported)
 			case legacy:
 				return nil, fmt.Errorf("%s: rivalcfg's 0xAA battery protocol is not implemented: %w", id, sanshoku.ErrUnsupported)
-			case modern:
+			case modern, novaPro:
 			}
 			nd, err := open(n.Path)
 			if err != nil {
 				return nil, err
 			}
-			return &device{id: id, timeout: timeout, rd: nd}, nil
+			return &device{id: id, family: products[n.Product], timeout: timeout, rd: nd}, nil
 		},
 	}
 }
@@ -223,7 +257,9 @@ func identity(n hidraw.Node) sanshoku.Identity {
 
 // device is one open SteelSeries control endpoint of an allow-listed product.
 type device struct {
-	id      sanshoku.Identity
+	id sanshoku.Identity
+	// family is which protocol the product speaks: modern or novaPro.
+	family  protocol
 	timeout time.Duration
 
 	mu sync.Mutex
@@ -247,7 +283,8 @@ func (d *device) Close() error {
 }
 
 /*
-Batteries reads the device's battery.
+Batteries reads the device's battery. A headset base station is asked the one
+question its family answers (see headset); a keyboard or mouse as follows.
 
 Both command forms are tried, wired first, because the device does not say
 which it wants: the product ID moves with the connection -- 0x1644 on 2.4 GHz
@@ -262,6 +299,9 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 	defer d.mu.Unlock()
 	if d.rd == nil {
 		return nil, fmt.Errorf("reading %s: %w", d.id.Path, os.ErrClosed)
+	}
+	if d.family == novaPro {
+		return d.headset(ctx)
 	}
 
 	for _, cmd := range []byte{batteryCommand, batteryCommand | wirelessFlag} {
@@ -311,4 +351,38 @@ func (d *device) ask(ctx context.Context, cmd byte) ([]byte, error) {
 		return nil, fmt.Errorf("asking a SteelSeries device for %#02x: %w", cmd, err)
 	}
 	return reply, nil
+}
+
+/*
+headset reads the Arctis Nova Pro Wireless through its base station.
+
+One command, and it is the only one this driver sends the base station. The
+others in HeadsetControl's profile -- sidetone, lights, inactivity, equaliser --
+write the headset's settings, and a battery reader has no business there.
+
+The base station is on USB and does not sleep, so a reply that does not come,
+or does not decode, is an error rather than silence, as it is in
+HeadsetControl. A headset that is switched off is neither: the base station
+answers and says so, and that is a reading without a level.
+*/
+func (d *device) headset(ctx context.Context) ([]battery.Battery, error) {
+	actx, cancel := context.WithTimeout(ctx, d.timeout)
+	defer cancel()
+
+	req := make([]byte, novaProRequestSize)
+	req[0], req[1] = novaProReport, novaProBattery
+	// The echo is the match, as on the keyboards: the same node carries
+	// report 0x07 from the base station's second collection, and a reply
+	// that is not this one's is not read as it.
+	matches := func(r []byte) bool { return len(r) > 1 && r[0] == novaProReport && r[1] == novaProBattery }
+	reply, err := hidraw.Exchange(actx, d.rd, req, matches, novaProReplySize)
+	if err != nil {
+		return nil, fmt.Errorf("asking a SteelSeries base station for its headset's battery: %w", err)
+	}
+	b, err := DecodeNovaPro(reply)
+	if err != nil {
+		return nil, err
+	}
+	b.Name = d.id.Name
+	return []battery.Battery{b}, nil
 }

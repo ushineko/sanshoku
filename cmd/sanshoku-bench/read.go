@@ -298,7 +298,13 @@ func printText(out io.Writer, reports []deviceReport, sensors []sensorReport) {
 				writef(out, "  battery: no reading (%.1f ms)%s\n", b.ElapsedMS, presenceWords(r.presence))
 			}
 			for _, j := range b.Readings {
-				writef(out, "  battery: %s  %s  %s  %s (%.1f ms)\n", j.Name, level(j), j.State, j.Kind, b.ElapsedMS)
+				// A reading with neither a level nor a band has no state worth
+				// printing: a headset that is off is not "discharging".
+				state := j.State
+				if !j.hasLevel && j.Band == "" {
+					state = "off"
+				}
+				writef(out, "  battery: %s  %s  %s  %s (%.1f ms)\n", j.Name, level(j), state, j.Kind, b.ElapsedMS)
 				for _, c := range j.Cells {
 					charging := ""
 					if c.Charging {

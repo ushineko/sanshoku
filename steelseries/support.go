@@ -16,8 +16,11 @@ the allow-list.
 The Apex Pro TKL Wireless Gen 3 is Tested: the bench on the machine that has
 it read 100% full on its cable on 2026-09-29. The Aerox and Prime mice are rivalcfg's 0x92 family and Expected.
 The Rival family speaks rivalcfg's 0xAA protocol, which is not implemented, and
-is Listed, as is the Arctis Nova Pro Wireless, the headset that shares the
-usage page. A SteelSeries product in none of these is found and refused.
+is Listed. The Arctis Nova Pro Wireless is Tested on its X base station
+(1038:12e5), which the bench read at 75% on 2026-09-29 in agreement with
+headsetcontrol; the other base station, 1038:12e0, shares the entry by
+HeadsetControl's protocol table. A SteelSeries product in none of these is
+found and refused.
 */
 func Support() []support.Entry {
 	modernEntry := func(device, ids string, products ...uint16) support.Entry {
@@ -54,15 +57,18 @@ func Support() []support.Entry {
 	apex.Notes = "0x92 wired, 0xD2 through the dongle; read 100% full on the cable"
 
 	arctis := support.Entry{
-		Driver:   driverName,
-		Device:   "Arctis Nova Pro Wireless",
-		Match:    steelseriesMatch + "; 1038:12e5",
-		Vendor:   steelseriesVendor,
-		Products: []uint16{0x12E5},
-		Tier:     support.Listed,
-		Spec:     3,
-		Notes: "a headset on the same usage page as the keyboards; found, refused, never written to. " +
-			"Its battery is headsetcontrol's today and a candidate spec (docs/devices.md)",
+		Driver:       driverName,
+		Device:       "Arctis Nova Pro Wireless",
+		Match:        steelseriesMatch + "; 1038:12e5 (X base station), or 1038:12e0 (base station, expected)",
+		Vendor:       steelseriesVendor,
+		Products:     []uint16{0x12E0, 0x12E5},
+		Capabilities: []string{"battery"},
+		Tier:         support.Tested,
+		Hardware:     "SteelSeries Arctis Nova Pro Wireless, base station 1038:12e5",
+		Tested:       novaProBenched,
+		Spec:         6,
+		Notes: "HeadsetControl's 06 b0 battery report through the base station; " +
+			"12e0 is by protocol, not measured",
 	}
 
 	return []support.Entry{
@@ -80,3 +86,7 @@ func Support() []support.Entry {
 
 // benched is the date of the bench run on the machine with the Apex.
 var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
+
+// novaProBenched is the date of the bench run against the Nova Pro Wireless X
+// base station (spec 006).
+var novaProBenched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)

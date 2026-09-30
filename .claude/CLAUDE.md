@@ -27,9 +27,9 @@ below.
   choice. Rationale comments travel with the code.
 - **Rule of thumb**: if direct access can reasonably be supported without an
   external tool call, it is. Lighting is the standing exception (OpenRGB's
-  breadth). liquidctl and headsetcontrol in hayami are inherited debts, not
-  decisions: the Kraken driver replaces liquidctl in phase 2 and a headset
-  driver is a candidate spec. See `docs/design.md`, "What belongs here".
+  breadth). liquidctl and headsetcontrol in hayami were inherited debts, not
+  decisions: the Kraken driver (spec 005) and the Arctis driver (spec 006)
+  replace them in phase 2. See `docs/design.md`, "What belongs here".
 
 ---
 
