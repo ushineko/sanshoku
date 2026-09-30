@@ -157,6 +157,11 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- `sanshoku.ErrUnavailable`: a driver that could not look because its
+  transport is missing. `bluez.ErrNoBlueZ` wraps it instead of `ErrAbsent`,
+  so `Scan` reports it and hayami can say "no Bluetooth adapter" (hayami
+  spec 020 found `Scan` was hiding it).
+
 - Spec 008, a README and API reference that cannot drift (issue #16):
   `readme_test.go` fails when a package or command has no row in the
   "What is in it" table, a documented `make` target is missing from the

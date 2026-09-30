@@ -37,7 +37,7 @@ func (Driver) Name() string { return driverName }
 
 /*
 Find returns one candidate per connected device that reports a Battery1 level
-and is not Apple audio. ErrNoBlueZ, which wraps sanshoku.ErrAbsent, when BlueZ
+and is not Apple audio. ErrNoBlueZ, which wraps sanshoku.ErrUnavailable, when BlueZ
 is not answering; sanshoku.ErrAbsent when nothing connected has a level. Find
 opens nothing.
 */

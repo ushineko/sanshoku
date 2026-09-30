@@ -167,9 +167,13 @@ device against other processes.
 
 ## Errors
 
-Three sentinels at the root, wrapped with `%w` everywhere:
+Four sentinels at the root, wrapped with `%w` everywhere:
 
 - `ErrAbsent`: nothing to find. Not an error a program shows in red.
+- `ErrUnavailable`: the driver could not look, because the transport it
+  needs is not there (no BlueZ). Not absence: nothing was searched. `Scan`
+  returns it, where it drops `ErrAbsent`, so a program can say "no Bluetooth
+  adapter" rather than "no Bluetooth device".
 - `ErrGone`: the device was there and is not now. Rescan.
 - `ErrUnsupported`: the device is known and this driver will not speak to it.
 

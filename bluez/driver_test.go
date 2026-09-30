@@ -171,10 +171,11 @@ func TestAnUnreachableBusIsErrNoBlueZ(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrNoBlueZ,
 		"an unreachable system bus was reported as a failure rather than as no Bluetooth")
-	assert.ErrorIs(t, err, sanshoku.ErrAbsent, "no BlueZ is absence, which Scan does not report")
+	assert.ErrorIs(t, err, sanshoku.ErrUnavailable, "no BlueZ is a missing transport, which Scan reports")
+	assert.NotErrorIs(t, err, sanshoku.ErrAbsent, "no BlueZ was reported as no device, which Scan would hide")
 
 	_, err = Driver{}.Find(context.Background())
-	assert.ErrorIs(t, err, sanshoku.ErrAbsent)
+	assert.ErrorIs(t, err, sanshoku.ErrUnavailable)
 }
 
 /*

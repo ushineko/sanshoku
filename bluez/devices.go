@@ -40,7 +40,7 @@ var audioUUIDs = map[string]bool{
 // ErrNoBlueZ is BlueZ not being there to ask: no daemon, no system bus, a
 // machine with no Bluetooth at all. It wraps sanshoku.ErrAbsent, because that
 // is what it is: nothing to find, not a fault.
-var ErrNoBlueZ = fmt.Errorf("bluez is not answering: %w", sanshoku.ErrAbsent)
+var ErrNoBlueZ = fmt.Errorf("bluez is not answering: %w", sanshoku.ErrUnavailable)
 
 // Device is what BlueZ knows about one connected device.
 type Device struct {
