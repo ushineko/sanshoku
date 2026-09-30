@@ -126,6 +126,8 @@ the floor), so a person can look at it.
 - [docs/udev.md](docs/udev.md): the rules a consumer ships.
 - [docs/contention.md](docs/contention.md): what sharing the Kraken's nodes
   with OpenRGB and a second program measured.
+- [docs/credits.md](docs/credits.md): the projects each protocol was learned
+  from, and their licences.
 - [docs/api.md](docs/api.md): every exported identifier with its signature
   and first sentence, generated from the doc comments.
 - `specs/`: one spec per cycle of work.
@@ -151,9 +153,16 @@ Linux only. No cgo. Runtime dependencies are `golang.org/x/sys` and
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
+open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- `docs/credits.md`: the projects each protocol was learned from (liquidctl,
+  HeadsetControl, Solaar, OpenRazer, rivalcfg, LibrePods, the kernel) with
+  their licences, and what each taught this module.
 
 ### 0.1.4 (2026-09-30)
 
