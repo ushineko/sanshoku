@@ -33,11 +33,12 @@ Silence costs nothing here: the fake reports the deadline at once rather than
 waiting it out.
 */
 type fake struct {
-	t      *testing.T
-	reply  map[byte][]byte
-	queued [][]byte
-	asked  []byte
-	closed bool
+	t       *testing.T
+	reply   map[byte][]byte
+	queued  [][]byte
+	asked   []byte
+	closed  bool
+	drained int
 }
 
 func (f *fake) Write(req []byte) error {
@@ -65,6 +66,10 @@ func (f *fake) Read(ctx context.Context, buf []byte) (int, error) {
 }
 
 func (f *fake) Close() error { f.closed = true; return nil }
+
+// Drain discards what is queued, as the kernel's queue is emptied. drained
+// counts the calls so a test can say the driver asked for it.
+func (f *fake) Drain(int) { f.drained++; f.queued = nil }
 
 // apexNode is the Apex's control endpoint as Nodes reports it.
 var apexNode = hidraw.Node{
@@ -189,4 +194,25 @@ func TestAnUnlistedProductIsFoundAndNeverWrittenTo(t *testing.T) {
 		assert.Contains(t, err.Error(), n.Name, "the refusal names the device")
 		assert.Empty(t, f.asked)
 	}
+}
+
+/*
+A handle held across polls receives every other program's replies too, so a
+same-prefix report from before the question would be read as its answer and
+the reading frozen at the state of the headset when the handle was opened
+(issue #24). The driver drains before it asks.
+*/
+func TestAHeldBaseStationIsDrainedBeforeItIsAsked(t *testing.T) {
+	stale := append([]byte{novaProReport, novaProBattery, 0, 0, 1, 0, 0, 8, 0x0a, 0, 0, 0x0a, 4, 0, 4, novaProOffline}, make([]byte, 48)...)
+	fresh := append([]byte{novaProReport, novaProBattery, 0, 0, 1, 0, 6, 8, 0x0a, 0, 0, 0x0a, 4, 0, 8, 0x08}, make([]byte, 48)...)
+	f := &fake{reply: map[byte][]byte{novaProBattery: fresh}, queued: [][]byte{stale, stale, stale}}
+	d := &device{id: sanshoku.Identity{Name: "SteelSeries Arctis Nova Pro Wireless"}, family: novaPro, timeout: time.Second, rd: f}
+
+	got, err := d.Batteries(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.True(t, got[0].HasLevel, "the stale off report was read as the answer")
+	assert.Equal(t, 75, got[0].Level)
+	assert.Equal(t, 1, f.drained, "the driver did not drain before asking")
 }

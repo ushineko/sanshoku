@@ -155,6 +155,14 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
+### Unreleased
+
+- **Fix**: the `steelseries` driver drains a held handle before every ask.
+  hidraw copies every input report to every open handle, other programs'
+  replies included, so a handle held across polls read the oldest queued
+  report and froze at the state the headset had when the handle was opened
+  (#24).
+
 ### 0.1.3 (2026-09-30)
 
 - The Bluetooth live tests skip when BlueZ is unavailable, as they did when

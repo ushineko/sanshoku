@@ -212,6 +212,9 @@ func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 type node interface {
 	hidraw.ReportDevice
 	io.Closer
+	// Drain discards reports that arrived before the question is asked. See
+	// drain.
+	Drain(depth int)
 }
 
 // openNode opens a real control endpoint.
@@ -351,6 +354,7 @@ func (d *device) ask(ctx context.Context, cmd byte) ([]byte, error) {
 	req := make([]byte, reportSize+1) // a leading report number of zero
 	req[1] = cmd
 	matches := func(r []byte) bool { return len(r) > 1 && r[0] == cmd }
+	d.rd.Drain(hidraw.QueueDepth)
 	reply, err := hidraw.Exchange(actx, d.rd, req, matches, reportSize)
 	if err != nil {
 		return nil, fmt.Errorf("asking a SteelSeries device for %#02x: %w", cmd, err)
@@ -380,6 +384,17 @@ func (d *device) headset(ctx context.Context) ([]battery.Battery, error) {
 	// report 0x07 from the base station's second collection, and a reply
 	// that is not this one's is not read as it.
 	matches := func(r []byte) bool { return len(r) > 1 && r[0] == novaProReport && r[1] == novaProBattery }
+	/*
+		Drain first. hidraw hands every open handle a copy of every input
+		report, including the base station's replies to other programs'
+		questions, so a handle held across polls accumulates `06 b0` reports
+		faster than one read a poll consumes them, and a read that took the
+		oldest answered with the state of the headset when the handle was
+		opened: a panel opened with the headset off said "off" four minutes
+		after it was switched on, while a fresh process read 75%. The same
+		rule the Kraken driver and liquidctl's clear_enqueued_reports follow.
+	*/
+	d.rd.Drain(hidraw.QueueDepth)
 	reply, err := hidraw.Exchange(actx, d.rd, req, matches, novaProReplySize)
 	if err != nil {
 		return nil, fmt.Errorf("asking a SteelSeries base station for its headset's battery: %w", err)
