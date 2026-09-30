@@ -2,7 +2,7 @@
 
 **Issue**: #1
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -224,16 +224,22 @@ can query and a page a reader can read, from one source.
   promotes it), `Listed` (recognised by ID, not implemented; `Open` returns
   `ErrUnsupported`). `Entry{Driver, Device, Match string; Capabilities
   []string; Tier Tier; Hardware, Firmware string; Tested time.Time; Spec
-  int; Notes string}`. `Match` is the rule in words ("vendor 046d, report
-  ID 0x10 on a vendor page", "1038:1644 or 1038:1646"). `Hardware` names the
-  product it was measured on, never the machine.
+  int; Notes string; Vendor uint16; Products []uint16; Chips []string}`.
+  `Match` is the rule in words ("vendor 046d, report ID 0x10 on a vendor
+  page", "1038:1644 or 1038:1646") and is what the page prints; `Vendor`,
+  `Products` (nil means any product of the vendor) and `Chips` (hwmon chip
+  names) are the same rule for a program. `Lookup(entries, driver string,
+  vendor, product uint16, name string) (Entry, bool)` finds the entry for a
+  found device: among the driver's entries, the exact product first, then the
+  vendor with nil `Products`, then a chip equal to `name`. `Hardware` names
+  the product it was measured on, never the machine.
 - R9.2 Every driver package exports `Support() []support.Entry`.
   `all.Support()` concatenates them in driver order. An `Expected` entry
   for a protocol family ("any HID++ 2.0 device with feature 0x1004") sits
   beside the `Tested` entries for the devices that confirmed it.
 - R9.3 `sanshoku-bench support` prints the table; `--markdown` prints
   `docs/devices.md`. `scan` and `read` annotate each found device with its
-  tier, and for an `Expected` device print one line saying how to report
+  tier through `support.Lookup`, and for an `Expected` device print one line saying how to report
   the result so it can be promoted (the bench `read --json` output and the
   issue tracker).
 - R9.4 `make generate` writes `docs/devices.md` from `all.Support()`;
@@ -253,30 +259,30 @@ can query and a page a reader can read, from one source.
 
 ## Acceptance Criteria
 
-- [ ] `make test` passes on a machine with no supported device present.
-- [ ] `make lint` passes.
-- [ ] `CGO_ENABLED=0 make build` produces `sanshoku-bench`.
-- [ ] `hidraw.Nodes` against a fake sysfs tree returns the nodes matching a
+- [x] `make test` passes on a machine with no supported device present.
+- [x] `make lint` passes.
+- [x] `CGO_ENABLED=0 make build` produces `sanshoku-bench`.
+- [x] `hidraw.Nodes` against a fake sysfs tree returns the nodes matching a
   vendor and usage page and ignores others; a missing root returns nil, nil.
-- [ ] `hidraw.Walk` parses a captured G502 descriptor and a captured Kraken
-  descriptor (bytes committed as fixtures; they carry no identifier) and
+- [x] `hidraw.Walk` parses descriptor fixtures written by hand from the G502
+  and Kraken descriptor shapes (bytes committed; they carry no identifier) and
   reports the vendor page and report IDs hayami's tests expect.
-- [ ] `hidraw.Exchange` returns `context.DeadlineExceeded` on a handle that
+- [x] `hidraw.Exchange` returns `context.DeadlineExceeded` on a handle that
   never answers, within the deadline. (Tested with an `os.Pipe` pair, not a
   device.)
-- [ ] `sanshoku.Scan` with one fake driver returning two candidates and one
+- [x] `sanshoku.Scan` with one fake driver returning two candidates and one
   returning `ErrAbsent` yields two candidates and a nil error; with one
   returning another error yields the candidates and that error.
-- [ ] `sanshoku.Capabilities` on a fake device implementing `battery.Source`
+- [x] `sanshoku.Capabilities` on a fake device implementing `battery.Source`
   returns `["battery"]`.
-- [ ] `hwmon.First(CPU)` against a fake tree with a renumbered chip returns
+- [x] `hwmon.First(CPU)` against a fake tree with a renumbered chip returns
   the labelled value; against an Intel tree returns `Package id 0`.
-- [ ] `sanshoku-bench scan` on the development machine lists the hwmon chips
+- [x] `sanshoku-bench scan` on the development machine lists the hwmon chips
   and exits 0; its output is pasted below.
-- [ ] `all.Support()` has the hwmon entries; `make check-support` passes;
+- [x] `all.Support()` has the hwmon entries; `make check-support` passes;
   the R9.5 test passes; `sanshoku-bench support --markdown` output equals
   the committed `docs/devices.md`.
-- [ ] `README.md` and `packaging/60-sanshoku.rules` exist with the content
+- [x] `README.md` and `packaging/60-sanshoku.rules` exist with the content
   R10 names.
 
 ## Risks & Assumptions
@@ -303,4 +309,67 @@ can query and a page a reader can read, from one source.
 
 ## Verification
 
-Bench output goes here when the spec is done.
+Run on 2026-09-29 on an Intel Core i9-14900K desktop (NVIDIA graphics on the
+proprietary driver), with a Logitech Lightspeed receiver, a SteelSeries Arctis
+Nova Pro and an NZXT Kraken Elite plugged in. Only `hwmon` is a driver in this spec, so those
+devices do not appear yet.
+
+`make test`, `make lint` (0 issues), `CGO_ENABLED=0 make build` (statically
+linked ELF), `make check-support` and `govulncheck ./...` (no
+vulnerabilities) all pass.
+
+`./sanshoku-bench scan` (exit 0):
+
+```
+DRIVER  DEVICE                  PATH                      CAPABILITIES  TIER
+hwmon   acpitz (0000:0000)      /sys/class/hwmon/hwmon0   -             not in the support table
+hwmon   nvme (0000:0000)        /sys/class/hwmon/hwmon1   -             not in the support table
+hwmon   coretemp (0000:0000)    /sys/class/hwmon/hwmon10  -             tested
+hwmon   spd5118 (0000:0000)     /sys/class/hwmon/hwmon11  -             not in the support table
+hwmon   iwlwifi_1 (0000:0000)   /sys/class/hwmon/hwmon12  -             not in the support table
+hwmon   nvme (0000:0000)        /sys/class/hwmon/hwmon2   -             not in the support table
+hwmon   nvme (0000:0000)        /sys/class/hwmon/hwmon3   -             not in the support table
+hwmon   nct6798 (0000:0000)     /sys/class/hwmon/hwmon4   -             not in the support table
+hwmon   corsairpsu (0000:0000)  /sys/class/hwmon/hwmon5   -             not in the support table
+hwmon   asus (0000:0000)        /sys/class/hwmon/hwmon6   -             not in the support table
+hwmon   spd5118 (0000:0000)     /sys/class/hwmon/hwmon7   -             not in the support table
+hwmon   spd5118 (0000:0000)     /sys/class/hwmon/hwmon8   -             not in the support table
+hwmon   spd5118 (0000:0000)     /sys/class/hwmon/hwmon9   -             not in the support table
+13 found
+```
+
+`./sanshoku-bench read` (exit 0). The chips satisfy no capability (R6.4); the
+two sensor lines are `hwmon.First` over `hwmon.CPU` and `hwmon.GPU`, the call
+both consumers make, and are the reading behind the Intel entry's `Tested`
+tier. The GPU table reads nothing because NVIDIA's driver registers no hwmon.
+
+```
+13 opened with no readable capability: acpitz, nvme, coretemp, spd5118, iwlwifi_1, nvme, nvme, nct6798, corsairpsu, asus, spd5118, spd5118, spd5118
+sensor cpu: coretemp/Package id 0  69.0 °C (0.2 ms)
+sensor gpu: no such sensor on this machine: looked for amdgpu/edge, amdgpu, nouveau (0.4 ms)
+```
+
+`./sanshoku-bench verify` (exit 0): nothing to compare until specs 002 and 005.
+
+```
+liquidctl: on PATH; no cooling reading to compare
+solaar: on PATH; no HID++ level to compare
+headsetcontrol: on PATH; headsets are out of scope, not compared
+```
+
+`./sanshoku-bench screen` refuses (exit 2); `screen --yes` prints "no screen
+driver yet" (exit 0).
+
+Support tiers. R10.2 asks for `Tested` entries for the chips the two
+consumers measured. Only `coretemp` was measured, in both, and the bench above
+confirms it, so it is `Tested`. The AMD CPU and AMD/nouveau GPU sensors have
+no recorded measurement in either consumer's specs (hayami's AMD support came
+from issue #72 and is tested against a fake tree; hotaru's development machine
+runs NVIDIA's driver), so they are `Expected`, not `Tested` as the hand-written
+page had them. The regenerated `docs/devices.md` holds only the hwmon
+entries: the other drivers' rows return with their specs.
+
+The two descriptor fixtures are written by hand, not captured, per the public
+repository rule; the G502 one is byte-for-byte what the Lightspeed receiver's
+HID++ interface declares on this machine, and the Kraken one is the real
+descriptor's shape shortened to five of its report IDs.

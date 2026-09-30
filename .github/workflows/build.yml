@@ -33,8 +33,10 @@ jobs:
       run: make lint
     - name: Build the testbench without cgo
       run: make build
-    # `make check-support` joins this job when spec 001 lands the bench's
-    # `support` verb (R9.4); until then the stub binary prints nothing.
+    # docs/devices.md is generated from all.Support() (spec 001 R9.4); a
+    # driver change that did not regenerate it fails here.
+    - name: The support page matches the drivers
+      run: make check-support
 
   vuln:
     name: Vulnerability scan
