@@ -1,6 +1,10 @@
 package razer
 
-import "github.com/ushineko/sanshoku/support"
+import (
+	"time"
+
+	"github.com/ushineko/sanshoku/support"
+)
 
 // The product IDs the entries name, as hayami's kinds table has them.
 const (
@@ -15,10 +19,11 @@ const razerMatch = "vendor 1532, usage page 0xFF00 or 0xFF01"
 /*
 Support is the razer driver's support table.
 
-Every entry is Expected. The Mouse Dock Pro was measured by hayami (spec 016)
-and was not on the desk when spec 003's bench ran, so it waits for a bench run
-to be promoted to Tested. The older Mouse Dock and the Basilisk Ultimate's
-dongle are in hayami's product table and have not been read by either.
+The Mouse Dock Pro and the Basilisk Ultimate's dongle are Tested: the bench
+read the mouse through each on the two machines that have them, on
+2026-09-29. The older Mouse Dock is Expected: it was found and answered
+nothing with the mouse off it, which is what a charger with nothing on it
+does, and no run has yet caught the mouse sitting on it.
 */
 func Support() []support.Entry {
 	return []support.Entry{
@@ -29,9 +34,11 @@ func Support() []support.Entry {
 			Vendor:       razerVendor,
 			Products:     []uint16{productMouseDockPro},
 			Capabilities: []string{"battery"},
-			Tier:         support.Expected,
+			Tier:         support.Tested,
+			Hardware:     "Razer Mouse Dock Pro with its mouse docked",
+			Tested:       benched,
 			Spec:         3,
-			Notes:        "the mouse is read through the dock's RF relay, transaction 0x1F; measured by hayami, not on spec 003's bench",
+			Notes:        "the mouse is read through the dock's RF relay, transaction 0x1F; read 100% full on the dock",
 		},
 		{
 			Driver:       driverName,
@@ -42,7 +49,7 @@ func Support() []support.Entry {
 			Capabilities: []string{"battery"},
 			Tier:         support.Expected,
 			Spec:         3,
-			Notes:        "OpenRazer addresses it on transaction 0x3F; a charger that may answer not-supported",
+			Notes:        "OpenRazer addresses it on transaction 0x3F; found on a bench and answered nothing with the mouse off it, as a charger does",
 		},
 		{
 			Driver:       driverName,
@@ -51,9 +58,14 @@ func Support() []support.Entry {
 			Vendor:       razerVendor,
 			Products:     []uint16{productBasiliskUlt},
 			Capabilities: []string{"battery"},
-			Tier:         support.Expected,
+			Tier:         support.Tested,
+			Hardware:     "Razer Basilisk Ultimate, its dongle",
+			Tested:       benched,
 			Spec:         3,
-			Notes:        "in hayami's product table; not read by hayami or this module",
+			Notes:        "read 63% discharging through the dongle",
 		},
 	}
 }
+
+// benched is the date of the bench runs on the two machines with Razer devices.
+var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)

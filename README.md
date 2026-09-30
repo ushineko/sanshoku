@@ -132,6 +132,12 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- Bench runs on two more machines promote the Razer Mouse Dock Pro, the
+  Basilisk Ultimate dongle, the SteelSeries Apex Pro TKL Wireless Gen 3 and
+  the Logitech K800 via Unifying to Tested; spec 003 is complete.
+- `make lint` keeps its cache under the checkout, so git worktrees stop
+  reporting findings against each other's deleted files.
+
 - Spec 004, Bluetooth batteries: the `l2cap` transport, the `bluez`
   transport and driver, and the `apple` driver, ported from hayami's
   `internal/peripherals`. `l2cap.Dial` connects a sequenced-packet socket

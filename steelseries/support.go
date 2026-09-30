@@ -1,6 +1,10 @@
 package steelseries
 
-import "github.com/ushineko/sanshoku/support"
+import (
+	"time"
+
+	"github.com/ushineko/sanshoku/support"
+)
 
 // steelseriesMatch is the rule Find matches by, in words.
 const steelseriesMatch = "vendor 1038, usage page 0xFFC0"
@@ -9,9 +13,8 @@ const steelseriesMatch = "vendor 1038, usage page 0xFFC0"
 Support is the steelseries driver's support table, one entry per product in
 the allow-list.
 
-The Apex Pro TKL Wireless Gen 3 was measured by hayami (spec 016) and was not
-on the desk when spec 003's bench ran, so it is Expected until a bench run
-promotes it. The Aerox and Prime mice are rivalcfg's 0x92 family and Expected.
+The Apex Pro TKL Wireless Gen 3 is Tested: the bench on the machine that has
+it read 100% full on its cable on 2026-09-29. The Aerox and Prime mice are rivalcfg's 0x92 family and Expected.
 The Rival family speaks rivalcfg's 0xAA protocol, which is not implemented, and
 is Listed, as is the Arctis Nova Pro Wireless, the headset that shares the
 usage page. A SteelSeries product in none of these is found and refused.
@@ -45,7 +48,10 @@ func Support() []support.Entry {
 	}
 
 	apex := modernEntry("Apex Pro TKL Wireless Gen 3", "1038:1644 (2.4 GHz) or 1038:1646 (cable)", 0x1644, 0x1646)
-	apex.Notes = "0x92 wired, 0xD2 through the dongle; measured by hayami, not on spec 003's bench"
+	apex.Tier = support.Tested
+	apex.Hardware = "SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646)"
+	apex.Tested = benched
+	apex.Notes = "0x92 wired, 0xD2 through the dongle; read 100% full on the cable"
 
 	arctis := support.Entry{
 		Driver:   driverName,
@@ -71,3 +77,6 @@ func Support() []support.Entry {
 		arctis,
 	}
 }
+
+// benched is the date of the bench run on the machine with the Apex.
+var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)

@@ -215,3 +215,23 @@ time with `Quiet` 0.
 reads at fifteen-second intervals after the change all read the mouse
 (27 ms to 0.9 s), so that line has not been seen on the hardware yet.
 
+
+### Other machines
+
+Run on 2026-09-29 on the machine with the Unifying receiver, after its
+devices were woken by hand (they answered nothing asleep, as did the
+kernel's own `hidpp_battery_0`). The K800 promotes to Tested. The
+Performance MX is a pairing the receiver still lists for a mouse that no
+longer exists; the receiver node answers "not reachable" for every index in
+224 ms, and each child node costs nine seconds of silence, which is issue
+#11.
+
+```
+$ ./sanshoku-bench read --driver logitech
+logitech  Logitech USB Receiver (046d:c52b)  /dev/hidraw1  [expected]
+  battery: no reading (134.9 ms); nodes: 1, quiet: 5, too old: none
+logitech  Logitech K800 (046d:2010)  /dev/hidraw7  [expected]
+  battery: Logitech K800  Good  discharging  other (9713.1 ms)
+logitech  Logitech Performance MX (046d:101a)  /dev/hidraw8  [expected]
+  battery: no reading (9023.3 ms); nodes: 1, quiet: 1, too old: none
+```
