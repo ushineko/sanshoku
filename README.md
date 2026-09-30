@@ -155,6 +155,11 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
+### Unreleased
+
+- AirPods Pro over the accessory protocol are Tested: left and right read on
+  the desk, which closes spec 004.
+
 ### 0.1.2 (2026-09-30)
 
 - `hidraw` undoubles a vendor that carries a corporate suffix: "NZXT, Inc.
