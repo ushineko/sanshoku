@@ -14,8 +14,8 @@ Three colours, for the range of things under one roof.
 
 > **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
 > usbfs and hwmon transports, the capability types, the support table and the
-> testbench. The drivers (specs 002 to 005) are not; their packages hold only
-> a package comment.
+> testbench. The Logitech HID++ driver is built (spec 002). The other drivers
+> (specs 003 to 005) are not; their packages hold only a package comment.
 
 ## Contents
 
@@ -127,6 +127,22 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- Spec 002, Logitech HID++ batteries: the `logitech` driver, ported from
+  hayami. One `Device` per HID++ hidraw node, held open; HID++ 2.0 features
+  0x1004 and 0x1000 with the name and kind from 0x0005, HID++ 1.0 registers
+  0x0D and 0x07 on a paired device's own node, both error forms, a software
+  ID that is never solaar's, five attempts on silence. Exports `Driver`,
+  `Support`, `DecodeUnifiedBattery`, `DecodeBatteryStatus`, `Presence` and
+  `Presencer`. `all.Drivers()` includes it; the G502 X PLUS via Lightspeed is
+  Tested, the K800 via Unifying and the two protocol families are Expected.
+- `hidraw`, from the first driver to use it: **breaking**, `Exchange` takes a
+  `ReportDevice` (`Write`, `Read` with a context), which `*Handle` satisfies,
+  instead of `*Handle`. An exchange that runs out of time, on its own
+  two-second bound or the caller's deadline, returns an error wrapping the
+  new `ErrSilent` and `context.DeadlineExceeded` both; a cancelled context is
+  the caller's error. `BusUSB` and `BusBluetooth` name `Node.Bus`'s values.
+  `sanshoku-bench read` prints a HID++ node's Presence beside a withheld
+  reading.
 - Spec 001, the library foundation: the root vocabulary (`Identity`,
   `Candidate`, `Device`, `Driver`, `Scan`, `ErrAbsent`, `ErrGone`,
   `ErrUnsupported`, `IsPermission`, `Capabilities`); `hidraw` (sysfs

@@ -14,6 +14,7 @@ import (
 	"github.com/ushineko/sanshoku/battery"
 	"github.com/ushineko/sanshoku/cooling"
 	"github.com/ushineko/sanshoku/hwmon"
+	"github.com/ushineko/sanshoku/logitech"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -35,6 +36,9 @@ type deviceReport struct {
 	Errors       []string     `json:"errors,omitempty"`
 	expected     bool
 	candidate    sanshoku.Candidate
+	// presence is a HID++ node's Presence after its read, so a reading that
+	// was withheld says why instead of printing a blank.
+	presence *logitech.Presence
 }
 
 type batteryRead struct {
@@ -115,6 +119,10 @@ func readAll(ctx context.Context, ds []sanshoku.Driver) ([]deviceReport, error) 
 		r.Capabilities = append([]string{}, sanshoku.Capabilities(dev)...)
 		if src, ok := dev.(battery.Source); ok {
 			r.Batteries = readBatteries(ctx, src)
+		}
+		if p, ok := dev.(logitech.Presencer); ok {
+			presence := p.Presence()
+			r.presence = &presence
 		}
 		if src, ok := dev.(cooling.Source); ok {
 			r.Cooling = readCooling(ctx, src)
@@ -275,7 +283,7 @@ func printText(out io.Writer, reports []deviceReport, sensors []sensorReport) {
 				writef(out, "  battery: error after %.1f ms: %s\n", b.ElapsedMS, b.Error)
 			}
 			if len(b.Readings) == 0 && b.Error == "" {
-				writef(out, "  battery: no reading (%.1f ms)\n", b.ElapsedMS)
+				writef(out, "  battery: no reading (%.1f ms)%s\n", b.ElapsedMS, presenceWords(r.presence))
 			}
 			for _, j := range b.Readings {
 				writef(out, "  battery: %s  %s  %s  %s (%.1f ms)\n", j.Name, level(j), j.State, j.Kind, b.ElapsedMS)
@@ -317,6 +325,19 @@ func printText(out io.Writer, reports []deviceReport, sensors []sensorReport) {
 		}
 		writef(out, "sensor %s: %s  %.1f °C (%.1f ms)\n", s.Sensor, hwmon.Sensor{Chip: s.Chip, Label: s.Label}, *s.Celsius, s.ElapsedMS)
 	}
+}
+
+// presenceWords is a HID++ node's Presence as the bench prints it beside a
+// withheld reading: "; nodes: 1, quiet: 1, too old: none".
+func presenceWords(p *logitech.Presence) string {
+	if p == nil {
+		return ""
+	}
+	old := "none"
+	if len(p.TooOld) > 0 {
+		old = strings.Join(p.TooOld, ", ")
+	}
+	return fmt.Sprintf("; nodes: %d, quiet: %d, too old: %s", p.Nodes, p.Quiet, old)
 }
 
 func level(j batteryJSON) string {

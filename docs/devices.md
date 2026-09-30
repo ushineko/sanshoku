@@ -16,6 +16,7 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | Driver | Device | Match | Capabilities | Hardware | Firmware | Tested | Spec |
 |---|---|---|---|---|---|---|---|
 | hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | 001 |
+| logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | 002 |
 
 ## Expected
 
@@ -23,6 +24,9 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 |---|---|---|---|---|---|
 | hwmon | AMD CPU | `k10temp` / `Tdie`, `Tctl`; `zenpower` / `Tdie` | temperature | Tctl only where Tdie is absent: it carries a fan-curve offset | 001 |
 | hwmon | AMD GPU, nouveau | `amdgpu` / `edge`, `amdgpu`, `nouveau` | temperature | NVIDIA's own driver registers no hwmon | 001 |
+| logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | HID++ 1.0, register 0x07 band; measured by hayami, not on spec 002's bench | 002 |
+| logitech | Any HID++ 2.0 device with feature 0x1004 or 0x1000 | vendor 046d, report ID 0x10 on a vendor page | battery | wired on index 0xFF or paired on 1..6 | 002 |
+| logitech | Any HID++ 1.0 device with register 0x0D or 0x07 | vendor 046d, report ID 0x10 on a vendor page, on a paired device's own node | battery | 0x0D is a percentage; 0x07 is a band of four | 002 |
 
 ## Listed
 
