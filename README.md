@@ -20,6 +20,7 @@ Three colours, for the range of things under one roof.
 
 ## Contents
 
+- [Why](#why)
 - [What is in it](#what-is-in-it)
 - [What it does not do](#what-it-does-not-do)
 - [Using it](#using-it)
@@ -29,6 +30,34 @@ Three colours, for the range of things under one roof.
 - [Development](#development)
 - [Licence](#licence)
 - [Changelog](#changelog)
+
+## Why
+
+A desktop panel that shows a mouse's battery, a cooler's coolant and a
+headset's charge used to need three tools from three languages behind it:
+liquidctl (Python) for the cooler, headsetcontrol (C) for the headset, a
+Python interpreter started per poll for each, and the panel's own hidraw
+code for the rest. Two programs by the same author carried that code as
+copies. This module is the one copy: native Go, no cgo, no daemon, no
+subprocess, one static binary a consumer links, and one bench that proves
+every driver against the hardware.
+
+An off-the-cuff footprint comparison, measured on the desk it was written
+at (Arch, `pacman -Qi`; shared packages counted once; Python is 75 MiB
+whether or not anything else needs it):
+
+| What reads the devices | On disk | Runs as | Per poll |
+|---|---|---|---|
+| liquidctl + Python + PyUSB, hidapi, Pillow, docopt, colorlog | ≈ 84 MiB | a Python interpreter per call | ≈ 105 ms to start it |
+| solaar + Python + GTK stack | ≈ 82 MiB before GTK | a daemon and a GTK app | one `solaar show` per poll, ≈ 3.5 s |
+| headsetcontrol + hidapi | ≈ 0.9 MiB | a process per call | a fork per poll |
+| sanshoku, as `sanshoku-bench`, static | 6.6 MB | in the consumer's process | one hidraw exchange, 1–80 ms |
+
+The point is not the bytes, though 84 MiB for a temperature is a lot; it is
+that a panel polling four devices every fifteen seconds was forking Python
+to do it, and that two programs had to agree by hand on what the devices
+say. OpenRGB stays: it knows every lit device on the machine, and that
+breadth is the one thing not worth rewriting.
 
 ## What is in it
 
@@ -159,6 +188,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 ## Changelog
 
 ### Unreleased
+
+- README: a "Why" with the footprint of the tools this module replaces,
+  measured on the desk.
 
 - `docs/credits.md`: the projects each protocol was learned from (liquidctl,
   HeadsetControl, Solaar, OpenRazer, rivalcfg, LibrePods, the kernel) with
