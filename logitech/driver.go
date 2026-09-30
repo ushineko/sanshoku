@@ -293,11 +293,16 @@ Every index answers -- a paired one with a feature index, an empty one with a
 HID++ 1.0 error -- so this costs milliseconds rather than the timeout, and only
 because reply knows both error forms. A reader that knew only the 2.0 form
 would sit out the timeout on each empty index instead.
+
+That is a receiver's node. A paired child's node answers for its one device
+and no other, so it is asked at its own index only (spec 007): on the Unifying
+receiver the other six probes of a child node could only be silent, and a
+silent index costs five attempts of the timeout each.
 */
 func (d *device) discover(ctx context.Context) ([]located, error) {
 	var found []located
 	quiet := 0
-	for _, index := range append([]byte{wiredIndex}, deviceIndices...) {
+	for _, index := range d.indices() {
 		_, err := featureIndex(ctx, d.rd, d.timeout, index, featureUnifiedBattery)
 		switch {
 		case err == nil, errors.Is(err, errUnknownFeature):
@@ -336,6 +341,15 @@ func (d *device) discover(ctx context.Context) ([]located, error) {
 	}
 	d.presence = Presence{Nodes: 1, Quiet: quiet}
 	return found, nil
+}
+
+// indices are the indices discover asks: a paired child's own, or on any
+// other node 0xFF and every index a receiver can hold.
+func (d *device) indices() []byte {
+	if index, ok := hidraw.PairedIndex(d.node.Phys); ok {
+		return []byte{index}
+	}
+	return append([]byte{wiredIndex}, deviceIndices...)
 }
 
 // names is a set of device names, in a stable order so a consumer's lines do

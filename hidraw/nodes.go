@@ -39,7 +39,7 @@ type Node struct {
 	Name string
 
 	// Phys is the kernel's HID_PHYS: which USB interface a node is, and for a
-	// Logitech receiver's children the device index too (see PairedChild).
+	// Logitech receiver's children the device index too (see PairedIndex).
 	// On Bluetooth it carries the adapter's address, so it is never printed.
 	Phys string
 
@@ -188,20 +188,41 @@ and not the device's, which put "Logitech USB Receiver" beside the keyboard
 that had actually answered.
 */
 func PairedChild(phys string) bool {
+	_, ok := PairedIndex(phys)
+	return ok
+}
+
+// maxPairedIndex is the highest device index a receiver numbers: a receiver
+// pairs at most six devices, on indices 1 to 6.
+const maxPairedIndex = 6
+
+/*
+PairedIndex returns the device index a paired child's HID_PHYS ends in, the N
+of `:N`, and whether there is one.
+
+A child node answers for that one device and no other, so a driver speaking to
+it need ask no other index. N of 0 or above 6 is not an index a receiver
+numbers a device with, and is not one.
+*/
+func PairedIndex(phys string) (index byte, ok bool) {
 	_, suffix, ok := strings.Cut(phys, "input")
 	if !ok {
-		return false
+		return 0, false
 	}
-	_, index, ok := strings.Cut(suffix, ":")
-	if !ok || index == "" {
-		return false
+	_, n, ok := strings.Cut(suffix, ":")
+	if !ok || n == "" {
+		return 0, false
 	}
-	for _, c := range index {
+	for _, c := range n {
 		if c < '0' || c > '9' {
-			return false
+			return 0, false
 		}
 	}
-	return true
+	v, err := strconv.Atoi(n)
+	if err != nil || v < 1 || v > maxPairedIndex {
+		return 0, false
+	}
+	return byte(v), true
 }
 
 // usbLevels bounds the walk up from a hidraw node: an interface, a device,

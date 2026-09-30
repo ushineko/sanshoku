@@ -86,6 +86,11 @@ Ported from `logitech.go` `discover`.
   remembered index has failed), probe index 0xFF (wired) and 1..6 with a `featureIndex(0x1004)` lookup: OK or unknown
   feature → a 2.0 device; old protocol on a paired child → a 1.0 device; not
   reachable → counted as quiet.
+  *Amended by spec 007*: a node whose `HID_PHYS` carries a paired index
+  (`hidraw.PairedIndex`, the `:N` a paired child's node ends in) is probed at
+  that index alone, with the same lookup, classification and attempts; a
+  child node answers for its one device and no other. Any other node probes
+  0xFF and 1..6 as above. On a child node `Quiet` is 0 or 1.
 - R5.2 Located devices are remembered per `Device`. An index whose read fails
   is dropped; the node is rediscovered when nothing is left, which is
   hayami's rule. A second device that fails while another still reads is not
