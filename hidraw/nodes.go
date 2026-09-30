@@ -158,17 +158,36 @@ func field(uevent []byte, key string) string {
 	return ""
 }
 
-// undouble drops a repeated first word: "Razer Razer Mouse Dock Pro".
+// undouble drops a repeated first word: "Razer Razer Mouse Dock Pro", or
+// "NZXT, Inc. NZXT Kraken Elite V2", where the manufacturer string carries a
+// corporate suffix the product string does not.
 //
 // That is what the descriptor's manufacturer and product strings concatenate
 // to when a vendor puts its own name in both. The doubling is dropped because
 // the name is read by a person.
 func undouble(name string) string {
 	words := strings.Fields(name)
-	if len(words) > 1 && strings.EqualFold(words[0], words[1]) {
-		return strings.Join(words[1:], " ")
+	if len(words) < 2 {
+		return strings.Join(words, " ")
+	}
+	first := strings.Trim(words[0], ",.")
+	i := 1
+	for i < len(words) && corporate(strings.Trim(words[i], ",.")) {
+		i++
+	}
+	if i < len(words) && strings.EqualFold(first, strings.Trim(words[i], ",.")) {
+		return strings.Join(words[i:], " ")
 	}
 	return strings.Join(words, " ")
+}
+
+// corporate is a word that follows a company's name and not a product's.
+func corporate(word string) bool {
+	switch strings.ToLower(word) {
+	case "inc", "ltd", "co", "corp", "corporation", "gmbh", "llc", "limited":
+		return true
+	}
+	return false
 }
 
 /*
