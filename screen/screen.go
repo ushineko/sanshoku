@@ -2,9 +2,22 @@ package screen
 
 import (
 	"context"
+	"errors"
 	"image/gif"
 	"time"
 )
+
+/*
+ErrNoPanel is a device that is here and whose panel cannot be drawn on.
+
+A driver wraps it around whatever the kernel said, and around
+sanshoku.ErrAbsent, because the cause is somebody's machine (a usbfs node
+this user may not open, another program holding the interface) and the
+caller's question is the same in every case: there is no screen to draw on,
+and the device's other capabilities still work. A consumer treats it the way
+it treats absence. From hotaru's ErrNoScreen.
+*/
+var ErrNoPanel = errors.New("no panel on this device")
 
 /*
 Panel is a device with a display a program can draw on.

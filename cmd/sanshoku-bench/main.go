@@ -51,7 +51,7 @@ func run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	case "support":
 		return supportTable(rest, out, errOut)
 	case "screen":
-		return screenPush(rest, out, errOut)
+		return screenPush(ctx, rest, out, errOut)
 	case "help", "-h", "--help":
 		write(out, usage)
 		return 0

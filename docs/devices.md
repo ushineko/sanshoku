@@ -17,6 +17,7 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 |---|---|---|---|---|---|---|---|
 | hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | 001 |
 | logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | 002 |
+| nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | 005 |
 
 ## Expected
 

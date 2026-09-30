@@ -158,8 +158,9 @@ Two consumers of this module will open the same node once hayami adopts the
 Kraken driver while hotaru's service holds it. hidraw delivers every input
 report to every open descriptor, so the risk is interleaved commands and
 queue overflow, not a lost reply; the drain and the retry are the defence,
-and spec 005's bench runs with hotaru's service up to measure it. A driver
-does not lock a device against other processes.
+and spec 005's bench runs with hotaru's service up to measure it
+([contention.md](contention.md) has the result). A driver does not lock a
+device against other processes.
 
 ## Errors
 

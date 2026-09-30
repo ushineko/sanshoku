@@ -15,8 +15,9 @@ Three colours, for the range of things under one roof.
 > **Status**: the foundation is built (spec 001): the vocabulary, the hidraw,
 > usbfs and hwmon transports, the capability types, the support table and the
 > testbench. The Logitech HID++ driver is built (spec 002), and the Razer and
-> SteelSeries drivers (spec 003). The other drivers (specs 004 and 005) are
-> not; their packages hold only a package comment.
+> SteelSeries drivers (spec 003), and the NZXT Kraken driver (spec 005). The
+> Bluetooth drivers (spec 004) are not; their packages hold only a package
+> comment.
 
 ## Contents
 
@@ -102,6 +103,8 @@ cross-checks against `liquidctl` and `solaar` when they are on PATH.
 - [docs/devices.md](docs/devices.md): what is supported and how it was
   verified.
 - [docs/udev.md](docs/udev.md): the rules a consumer ships.
+- [docs/contention.md](docs/contention.md): what sharing the Kraken's nodes
+  with OpenRGB and a second program measured.
 - `specs/`: one spec per cycle of work.
 
 ## Development
@@ -128,6 +131,20 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- Spec 005, NZXT Kraken: the `nzxt` driver, ported from hotaru's
+  `internal/cooler`. Coolant, pump and fan over hidraw (`74 01` → `75 01`,
+  drained before every question, twelve reports per search, three attempts),
+  with an allow-list of one product, the Kraken Elite (1e71:3012), and a
+  status probe at `Open` that reports a node which does not answer as
+  `ErrAbsent`. Reads coalesce within `Driver.Freshness` (250 ms); errors are
+  never cached. The 640×640 LCD over the usbfs bulk endpoint, claimed on the
+  first panel call: GIF only, fitted to the panel, placed with liquidctl's
+  bucket algorithm, double-buffered, and returned to the firmware readout on
+  `Close`. Exports `Driver`, `Support`, `Known`, `Model`, `Size` and
+  `DecodeStatus`. `screen` gains `ErrNoPanel`. `sanshoku-bench screen --yes`
+  pushes a test card, waits the panel's floor, and restores the readout.
+  `all.Drivers()` includes it; the Kraken Elite is Tested.
+  `docs/contention.md` records the three bench runs.
 - `sanshoku-bench` treats a device a driver recognised and refused
   (`ErrUnsupported`) as a state, "unsupported", not a failure: `read` exits
   0 on it and `scan` shows it in the capabilities column. The Arctis Nova Pro
