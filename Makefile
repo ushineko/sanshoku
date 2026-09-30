@@ -90,16 +90,23 @@ bench: build ## Run the hardware testbench, read-only
 	./sanshoku-bench read
 	./sanshoku-bench verify
 
-# docs/devices.md is generated from all.Support() so the page and the code
-# cannot disagree. check-support is the CI gate.
+# docs/devices.md is generated from all.Support() and docs/api.md from the doc
+# comments, so neither page can disagree with the code. check-support and
+# check-api are the CI gates; api_test.go is the same check under make test.
 .PHONY: generate
-generate: ## Regenerate docs/devices.md from the support table
+generate: ## Regenerate docs/devices.md and docs/api.md
 	@go run ./cmd/sanshoku-bench support --markdown > docs/devices.md
+	@go run ./cmd/sanshoku-apidoc > docs/api.md
 
 .PHONY: check-support
 check-support: ## Fail if docs/devices.md is stale
 	@go run ./cmd/sanshoku-bench support --markdown | diff -u docs/devices.md - \
 	  || { echo "docs/devices.md is stale: run make generate"; exit 1; }
+
+.PHONY: check-api
+check-api: ## Fail if docs/api.md is stale
+	@go run ./cmd/sanshoku-apidoc | diff -u docs/api.md - \
+	  || { echo "docs/api.md is stale: run make generate"; exit 1; }
 
 # An ignore file governs only what is untracked and can be negated by accident.
 # This cannot: it fails if any committed file is an ELF binary.

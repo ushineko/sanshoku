@@ -51,6 +51,8 @@ Three colours, for the range of things under one roof.
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
 | [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
 | [`cmd/sanshoku-bench`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-bench) | The hardware testbench. |
+| [`cmd/sanshoku-apidoc`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-apidoc) | Writes [docs/api.md](docs/api.md), the signature index of the public packages. |
+| [`internal/apidoc`](https://pkg.go.dev/github.com/ushineko/sanshoku/internal/apidoc) | The generator behind `sanshoku-apidoc` and `api_test.go`; not importable outside the module. |
 
 ## What it does not do
 
@@ -65,15 +67,25 @@ because NVML is a vendor library, not a kernel node.
 ## Using it
 
 ```go
+ctx := context.Background()
 found, err := sanshoku.Scan(ctx, all.Drivers()...)
+if err != nil {
+	fmt.Println(err) // a driver failed; what the others found is still here
+}
 for _, c := range found {
-    dev, err := c.Open(ctx)
-    if err != nil { continue }
-    if src, ok := dev.(battery.Source); ok {
-        batteries, _ := src.Batteries(ctx)
-        // ...
-    }
-    dev.Close()
+	dev, err := c.Open(ctx)
+	if err != nil {
+		continue // sanshoku.IsPermission(err): the udev rule is missing
+	}
+	if src, ok := dev.(battery.Source); ok {
+		batteries, _ := src.Batteries(ctx)
+		for _, b := range batteries {
+			if b.HasLevel {
+				fmt.Printf("%s: %d%%\n", b.Name, b.Level)
+			}
+		}
+	}
+	_ = dev.Close()
 }
 ```
 
@@ -93,10 +105,18 @@ the bench prints the tier beside every device it finds.
 ## Testbench
 
 `make bench` builds `sanshoku-bench` and runs `scan`, `read` and `verify`
-against whatever is on the desk. All three are read-only. `verify`
-cross-checks against `liquidctl`, `solaar` and `headsetcontrol` when they
-are on PATH.
-`sanshoku-bench screen --yes` is the one write, and asks.
+against whatever is on the desk. All three are read-only. `verify` compares
+each reading with the same device's through `liquidctl`, `solaar` and
+`headsetcontrol`, whichever are on PATH.
+
+`sanshoku-bench support` prints the support table, and `support --markdown`
+prints [docs/devices.md](docs/devices.md), which is how `make generate`
+writes it.
+
+`sanshoku-bench screen --yes` is the one write: it pushes a test card to a
+device's display, waits the panel's floor, and returns the display to its
+readout. `screen --yes --hold D` keeps the card up for D instead (at least
+the floor), so a person can look at it.
 
 ## Documentation
 
@@ -106,19 +126,24 @@ are on PATH.
 - [docs/udev.md](docs/udev.md): the rules a consumer ships.
 - [docs/contention.md](docs/contention.md): what sharing the Kraken's nodes
   with OpenRGB and a second program measured.
+- [docs/api.md](docs/api.md): every exported identifier with its signature
+  and first sentence, generated from the doc comments.
 - `specs/`: one spec per cycle of work.
 
 ## Development
 
 ```
-make setup      # install the pinned linter
-make test       # unit tests; opens no device
+make setup              # install the pinned linter
+make test               # unit tests and the README and API canaries; opens no device
+make coverage           # the tests, with a coverage report in the browser
 make lint
-make build      # the testbench, CGO_ENABLED=0
-make bench      # the testbench against the hardware, read-only
-make generate   # docs/devices.md from the support table
-make check-support
-make vuln       # govulncheck
+make build              # the testbench, CGO_ENABLED=0
+make bench              # the testbench against the hardware, read-only
+make generate           # docs/devices.md and docs/api.md
+make check-support      # fail if docs/devices.md is stale
+make check-api          # fail if docs/api.md is stale
+make check-no-binaries  # fail if a binary is committed
+make vuln               # govulncheck
 ```
 
 Linux only. No cgo. Runtime dependencies are `golang.org/x/sys` and
@@ -129,6 +154,21 @@ Linux only. No cgo. Runtime dependencies are `golang.org/x/sys` and
 MIT. See [LICENSE](LICENSE).
 
 ## Changelog
+
+### Unreleased
+
+- Spec 008, a README and API reference that cannot drift (issue #16):
+  `readme_test.go` fails when a package or command has no row in the
+  "What is in it" table, a documented `make` target is missing from the
+  Development block, a page in `docs/` is not linked, or the **Version**
+  line is not the newest changelog heading. The "Using it" block is now
+  the body of `Example` in `example_test.go`, so it compiles.
+  `cmd/sanshoku-apidoc` writes [docs/api.md](docs/api.md), a signature
+  index of the public packages from their doc comments; `make generate`
+  writes it, `make check-api` and CI fail on a stale page, and `api_test.go`
+  fails on the same diff and on any exported identifier without a doc
+  comment. The Testbench section now covers `support --markdown` and
+  `screen --yes --hold D`.
 
 ### 0.1.0 (2026-09-29)
 

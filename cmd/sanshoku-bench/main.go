@@ -21,7 +21,7 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   scan                 list every device the drivers find, with capabilities and tier
   read                 open every device and take every read-only reading
                        --json  --driver NAME  --repeat N  --interval D
-  verify               cross-check readings against liquidctl and solaar when on PATH
+  verify               cross-check readings against liquidctl, solaar and headsetcontrol when on PATH
   support              print the support table; --markdown prints docs/devices.md
   screen --yes         push a test image to a screen and return it to its readout
 `
