@@ -16,9 +16,14 @@ var SysRoot = "/sys/class/hidraw"
 // for the same reason.
 var DevRoot = "/dev"
 
-// busUSB is the bus field of HID_ID for a USB device (BUS_USB in
-// linux/input.h). Only a USB node has a usbfs node above it.
-const busUSB = 0x03
+// The bus field of HID_ID, as Node.Bus carries it (BUS_USB and BUS_BLUETOOTH
+// in linux/input.h). Only a USB node has a usbfs node above it.
+const (
+	// BusUSB is a device on USB, including one behind a USB receiver.
+	BusUSB = 0x03
+	// BusBluetooth is a device on Bluetooth.
+	BusBluetooth = 0x05
+)
 
 // Node is one hidraw node: where it is and what the kernel says about it.
 //
@@ -109,7 +114,7 @@ func Nodes(vendor uint16, want func(Node) bool) ([]Node, error) {
 		if want != nil && !want(n) {
 			continue
 		}
-		if bus == busUSB {
+		if bus == BusUSB {
 			n.USBPath = usbNode(filepath.Join(SysRoot, e.Name()))
 		}
 		found = append(found, n)

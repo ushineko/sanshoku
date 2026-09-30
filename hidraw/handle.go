@@ -141,6 +141,28 @@ func (h *Handle) Drain(depth int) {
 }
 
 /*
+ErrSilent is an exchange that ran out of time with no matching reply.
+
+Whose deadline it was does not matter to the device: it said nothing in the
+time it was given. The error wraps context.DeadlineExceeded as well, so
+errors.Is finds either. A driver that wants to know whether it was its own
+caller who stopped waiting checks that caller's context, which is the one fact
+this package cannot know.
+*/
+var ErrSilent = errors.New("no reply")
+
+/*
+ReportDevice is what Exchange speaks through: a *Handle, or a test's stand-in
+for one. Write sends one output report; Read reads one input report, bounded
+by the context, and reports a report that did not arrive in time as
+context.DeadlineExceeded, as Handle.Read does.
+*/
+type ReportDevice interface {
+	Write(report []byte) error
+	Read(ctx context.Context, buf []byte) (int, error)
+}
+
+/*
 Exchange writes req and returns the first report, read into a buffer of size
 bytes, for which matches is true, skipping every other report until the
 context's deadline.
@@ -154,20 +176,25 @@ writes and then simply reads the next report.
 
 A context with no deadline is given two seconds for the whole exchange, so a
 device that keeps talking about something else cannot hold it open forever.
+Running out of time, on that bound or the caller's, is ErrSilent; a cancelled
+context is the caller's error.
 */
-func Exchange(ctx context.Context, h *Handle, req []byte, matches func(reply []byte) bool, size int) ([]byte, error) {
+func Exchange(ctx context.Context, dev ReportDevice, req []byte, matches func(reply []byte) bool, size int) ([]byte, error) {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, defaultWait)
 		defer cancel()
 	}
-	if err := h.Write(req); err != nil {
+	if err := dev.Write(req); err != nil {
 		return nil, err
 	}
 	buf := make([]byte, size)
 	for {
-		n, err := h.Read(ctx, buf)
+		n, err := dev.Read(ctx, buf)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return nil, fmt.Errorf("%w: %w", ErrSilent, err)
+			}
 			return nil, err
 		}
 		if matches(buf[:n]) {
