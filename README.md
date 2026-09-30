@@ -135,6 +135,12 @@ MIT. See [LICENSE](LICENSE).
 
 ### Unreleased
 
+- Spec 007, a paired child node knows its own index: new
+  `hidraw.PairedIndex` returns the `:N` of a paired child's `HID_PHYS`, and
+  `PairedChild` is its `ok` (it no longer accepts an index of 0 or above 6).
+  The `logitech` driver probes a child node at its own index only, so a
+  silent index behind a Unifying receiver is asked once rather than on all
+  seven probes (issue #11).
 - `sanshoku-bench read` prints "off" rather than a state beside a battery
   reading that has neither a level nor a band.
 

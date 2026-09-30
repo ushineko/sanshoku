@@ -58,7 +58,7 @@ func Support() []support.Entry {
 			Hardware:     "Logitech K800, Unifying receiver",
 			Tested:       benched,
 			Spec:         2,
-			Notes:        "HID++ 1.0, register 0x07 band; read Good, discharging; the read costs 9.7 s (issue #11)",
+			Notes:        "HID++ 1.0, register 0x07 band; read Good, discharging; its node is asked at its own index only (spec 007): asleep, it finishes in 4 ms, where discovery cost 9.7 s",
 		},
 		{
 			Driver:       driverName,

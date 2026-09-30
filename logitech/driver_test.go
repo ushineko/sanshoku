@@ -55,11 +55,15 @@ type fake struct {
 
 	pending  [][]byte
 	batteryN int
+
+	// requests is every request the node was sent, in order.
+	requests [][]byte
 }
 
 // Write is a request arriving at the node: what the device would say to it is
 // queued behind anything already waiting.
 func (f *fake) Write(req []byte) error {
+	f.requests = append(f.requests, append([]byte(nil), req...))
 	f.pending = append(f.pending, f.respond(append([]byte(nil), req...))...)
 	return nil
 }
@@ -252,4 +256,38 @@ func TestAnOldDeviceIsReadOnItsOwnNodeOnly(t *testing.T) {
 	found, err = receiver.Batteries(context.Background())
 	require.NoError(t, err)
 	assert.Empty(t, found)
+}
+
+// lookups are the indices the fake was asked a root-feature lookup at, in
+// order.
+func (f *fake) lookups() []byte {
+	var out []byte
+	for _, req := range f.requests {
+		if req[2] == rootFeature {
+			out = append(out, req[1])
+		}
+	}
+	return out
+}
+
+/*
+A paired child's node is asked at its own index only; a receiver's node at
+0xFF and every index it can hold (spec 007).
+
+A child node answers for its one device, so on the Unifying receiver six of the
+seven probes could only be silent, at five attempts of the timeout each.
+*/
+func TestAChildNodeIsAskedAtItsOwnIndexOnly(t *testing.T) {
+	f := &fake{level: 0x56, name: "G502 X PLUS"}
+	child := onFake(f, "usb-0000:00:14.0-3/input2:3", "Logitech K800")
+	_, err := child.Batteries(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, []byte{3}, f.lookups())
+
+	f = &fake{level: 0x56, name: "G502 X PLUS"}
+	receiver := onFake(f, receiverPhys, "Logitech USB Receiver")
+	_, err = receiver.Batteries(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, []byte{wiredIndex, 1, 2, 3, 4, 5, 6}, f.lookups()[:7])
+	assert.Len(t, f.lookups(), 7+2, "seven discovery lookups, then the battery and the name for index 1")
 }
