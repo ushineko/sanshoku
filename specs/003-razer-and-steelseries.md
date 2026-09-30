@@ -31,8 +31,10 @@ only, an allow-list) and each is under 300 lines.
 - R1.3 Report: 91 bytes with a leading report number 0; body `[status,
   transaction, remaining(2), protocol, size, class, command, args(80), crc,
   reserved]`; CRC is XOR over `body[2:88]` and is verified on the reply.
-  Exported `Decode(reply []byte) (level, charging, error)` over the two
-  commands.
+  Exported `Decode(reply []byte) (level int, charging bool, err error)` over
+  the two commands: the reply's echoed class and command say which it
+  answers; the level command fills `level`, the charging command fills
+  `charging`, and the other result is zero.
 - R1.4 Commands, getters only: class 0x07 command 0x80 battery level
   (`arg[1]` 0..255 scaled to percent), class 0x07 command 0x84 charging.
   Status 0x02 OK; 0x01 busy, 0x04 timeout, 0x05 not supported are silence;
@@ -42,7 +44,8 @@ only, an allow-list) and each is under 300 lines.
   per spec 001 R3.7.
 - R1.6 Transaction IDs tried in order {0x1F, 0x3F, 0xFF, 0x9F, 0x00}; 0x1F is
   the dock's RF relay to the mouse. The one that answers is remembered per
-  device; busy or timeout does not unlearn it.
+  device (per open `Device`; hayami remembered it per node path in a
+  long-lived reader); busy or timeout does not unlearn it.
 - R1.7 Kind from product: 0x007E Mouse Dock, 0x0088 Basilisk Ultimate
   dongle, 0x00A4 Mouse Dock Pro → `KindMouse`; else `KindOther`. The
   battery is named after the node (the dock), as hayami does.
@@ -64,9 +67,12 @@ only, an allow-list) and each is under 300 lines.
   name. It is never written to. This replaces hayami's `Unsupported()` side
   channel.
 - R2.5 Protocol: write `[0x00, cmd, 0...]` (65 bytes), read until `buf[0]
-  == cmd` or the deadline, through `hidraw.Exchange`. Exported
-  `DecodeModern(reply []byte) battery.Battery`: `v = reply[1]`, bit 7
-  charging, level `((v & 0x7F) - 1) * 5`; charging at 100 is Full.
+  == cmd` (and more than one byte) or the deadline, through
+  `hidraw.Exchange`. Exported `DecodeModern(reply []byte) (battery.Battery,
+  error)`: `v = reply[1]`, bit 7 charging, level `((v & 0x7F) - 1) * 5`;
+  charging at 100 is Full. A reply shorter than two bytes, or a value whose
+  level falls outside 0..100 (0x00, 0x80, 0x7F), is an error and not a
+  reading, as hayami's `decodeModernBattery` has it.
 - R2.6 Kind is `KindOther`; hayami had no product-to-kind table here.
 
 ### R3. Tests
@@ -86,20 +92,26 @@ only, an allow-list) and each is under 300 lines.
 - R4.2 README, changelog, `all.Drivers()`, and `docs/udev.md` rows
   confirmed.
 - R4.3 `razer.Support()` and `steelseries.Support()`: `Tested` for the
-  Mouse Dock Pro and the Apex Pro TKL Wireless Gen 3; `Expected` for the
-  Mouse Dock, the Basilisk dongle and the allow-listed Aerox and Prime
-  mice; `Listed` for the Rival 3 Wireless, Rival 3 Gen 2 and Rival 650.
+  Mouse Dock Pro and the Apex Pro TKL Wireless Gen 3 once this module's
+  bench has read them; `Expected` for the Mouse Dock, the Basilisk dongle
+  and the allow-listed Aerox and Prime mice; `Listed` for the Rival 3
+  Wireless, Rival 3 Gen 2 and Rival 650. Neither the dock nor the Apex was
+  on the desk at the bench run below, so both are `Expected` (hayami
+  measured them) until a bench run promotes them.
 
 ## Acceptance Criteria
 
-- [ ] `make test` and `make lint` pass.
-- [ ] The Razer CRC check rejects a corrupted reply and the transaction
+- [x] `make test` and `make lint` pass.
+- [x] The Razer CRC check rejects a corrupted reply and the transaction
   search remembers the answering ID.
-- [ ] The SteelSeries fake proves an unlisted product receives no write.
+- [x] The SteelSeries fake proves an unlisted product receives no write.
 - [ ] `sanshoku-bench read --driver razer` and `--driver steelseries` on the
   machine with the dock and the Apex report levels that match the devices'
-  own indicators. Output pasted below.
-- [ ] Both `Support()` tables exist and `make check-support` passes;
+  own indicators. Output pasted below. **Open**: neither the Mouse Dock Pro
+  nor the Apex Pro TKL Wireless Gen 3 was plugged in at the bench run; the
+  only SteelSeries device present was the Arctis Nova Pro, refused as
+  unlisted. The two entries stay `Expected` until this runs.
+- [x] Both `Support()` tables exist and `make check-support` passes;
   README and `all` updated in the same commit.
 
 ## Risks & Assumptions
@@ -111,4 +123,40 @@ only, an allow-list) and each is under 300 lines.
 
 ## Verification
 
-Bench output goes here when the spec is done.
+Bench run 2026-09-29, `CGO_ENABLED=0 make build`, udev rules installed. On
+the desk: a Logitech Lightspeed receiver and a SteelSeries Arctis Nova Pro
+Wireless (1038:12e5). **No Razer device and no Apex Pro TKL Wireless Gen 3**
+were plugged in.
+
+`make test`: every package `ok`; `razer` and `steelseries` live tests skip
+("no Razer control node on this machine"; "every SteelSeries node here is a
+product this driver does not speak to"). `make lint`: `0 issues.` (with a
+fresh `GOLANGCI_LINT_CACHE`; the shared cache held results for a removed
+worktree's paths). `make check-support`: no diff.
+
+`sanshoku-bench scan` (the steelseries and logitech lines; the rest is
+hwmon):
+
+```
+logitech     Logitech USB Receiver (046d:c547)                 /dev/hidraw12             battery       tested
+steelseries  SteelSeries Arctis Nova Pro Wireless (1038:12e5)  /dev/hidraw14             unsupported   listed
+15 found
+```
+
+The Arctis has a Listed entry in `steelseries.Support()`, so the bench names
+it rather than saying "not in the support table", and a refused `Open` is a
+state, not a failure.
+
+`sanshoku-bench read --driver razer`: no output, exit 0 (no Razer node, so
+`ErrAbsent`).
+
+`sanshoku-bench read --driver steelseries`, exit 0:
+
+```
+steelseries  SteelSeries Arctis Nova Pro Wireless (1038:12e5)  /dev/hidraw14  [listed]
+  unsupported: recognised by the driver and never written to
+```
+
+The Arctis is never opened, let alone written to: under
+`strace -f -e trace=openat,write,ioctl`, the only accesses to hidraw14 are
+its sysfs `uevent` and `report_descriptor`; `/dev/hidraw14` is not opened.

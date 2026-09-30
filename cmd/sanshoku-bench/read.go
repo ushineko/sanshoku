@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -34,8 +35,11 @@ type deviceReport struct {
 	Batteries    *batteryRead `json:"batteries,omitempty"`
 	Cooling      *coolingRead `json:"cooling,omitempty"`
 	Errors       []string     `json:"errors,omitempty"`
-	expected     bool
-	candidate    sanshoku.Candidate
+	// Unsupported is a device the driver recognised and refused to speak
+	// to: a state the support table lists, not a failure.
+	Unsupported bool `json:"unsupported,omitempty"`
+	expected    bool
+	candidate   sanshoku.Candidate
 	// presence is a HID++ node's Presence after its read, so a reading that
 	// was withheld says why instead of printing a blank.
 	presence *logitech.Presence
@@ -107,6 +111,11 @@ func readAll(ctx context.Context, ds []sanshoku.Driver) ([]deviceReport, error) 
 			candidate:    c,
 		}
 		dev, err := open(ctx, c)
+		if errors.Is(err, sanshoku.ErrUnsupported) {
+			r.Unsupported = true
+			reports = append(reports, r)
+			continue
+		}
 		if err != nil {
 			msg := err.Error()
 			if sanshoku.IsPermission(err) {
@@ -270,11 +279,14 @@ func printJSON(out io.Writer, reports []deviceReport, sensors []sensorReport) {
 func printText(out io.Writer, reports []deviceReport, sensors []sensorReport) {
 	idle := 0
 	for _, r := range reports {
-		if r.Batteries == nil && r.Cooling == nil && len(r.Errors) == 0 {
+		if r.Batteries == nil && r.Cooling == nil && len(r.Errors) == 0 && !r.Unsupported {
 			idle++
 			continue
 		}
 		writef(out, "%s  %s  %s  [%s]\n", r.Driver, r.candidate.Identity, r.Path, r.Tier)
+		if r.Unsupported {
+			writef(out, "  unsupported: recognised by the driver and never written to\n")
+		}
 		for _, e := range r.Errors {
 			writef(out, "  error: %s\n", e)
 		}
