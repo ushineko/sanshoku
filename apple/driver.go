@@ -61,7 +61,7 @@ func (Driver) Name() string { return driverName }
 Find returns one candidate per connected BlueZ device that is Apple (Modalias
 vendor 004C) and audio (an audio- icon or an audio sink profile). Nothing else
 is ever dialled: opening an L2CAP channel to a keyboard is a thing to not do.
-bluez.ErrNoBlueZ, which wraps sanshoku.ErrAbsent, when BlueZ is not answering;
+bluez.ErrNoBlueZ, which wraps sanshoku.ErrUnavailable, when BlueZ is not answering;
 sanshoku.ErrAbsent when no such device is connected. Find opens nothing.
 */
 func (d Driver) Find(ctx context.Context) ([]sanshoku.Candidate, error) {

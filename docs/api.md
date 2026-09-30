@@ -19,6 +19,7 @@ Package sanshoku is the vocabulary every driver in this module shares: an Identi
 ### Variables
 
 - `var ErrAbsent = errors.New("absent")`: ErrAbsent is nothing to find.
+- `var ErrUnavailable = errors.New("unavailable")`: ErrUnavailable is a driver that could not look: the transport it needs is not there (no BlueZ on the bus).
 - `var ErrGone = errors.New("device gone")`: ErrGone is a device that was there and is not now.
 - `var ErrUnsupported = errors.New("unsupported device")`: ErrUnsupported is a device the driver recognises and will not speak to.
 
@@ -255,7 +256,7 @@ Package bluez lists connected Bluetooth devices through the BlueZ ObjectManager 
 
 ### Variables
 
-- `var ErrNoBlueZ = fmt.Errorf("bluez is not answering: %w", sanshoku.ErrAbsent)`: ErrNoBlueZ is BlueZ not being there to ask: no daemon, no system bus, a machine with no Bluetooth at all.
+- `var ErrNoBlueZ = fmt.Errorf("bluez is not answering: %w", sanshoku.ErrUnavailable)`: ErrNoBlueZ is BlueZ not being there to ask: no daemon, no system bus, a machine with no Bluetooth at all.
 
 ### Types
 

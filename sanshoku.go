@@ -97,6 +97,10 @@ type Driver interface {
 var (
 	// ErrAbsent is nothing to find. Not an error a program shows in red.
 	ErrAbsent = errors.New("absent")
+	// ErrUnavailable is a driver that could not look: the transport it needs
+	// is not there (no BlueZ on the bus). It is not absence, because nothing
+	// was searched, and Scan returns it so a program can say which it was.
+	ErrUnavailable = errors.New("unavailable")
 	// ErrGone is a device that was there and is not now. Rescan.
 	ErrGone = errors.New("device gone")
 	// ErrUnsupported is a device the driver recognises and will not speak to.
