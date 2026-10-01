@@ -29,6 +29,9 @@ behaviours spec 003 R3.2 and spec 006 R4.2 list:
   - A feature report is the Apex's lighting frame (spec 010): it is kept in
     features, and answered with ack when ack is set, as the keyboard answers
     every frame with an input report that starts 0x61.
+  - drop[cmd] is how many of the coming questions of that command go
+    unanswered, as the Apex's wireless replies did while lighting frames
+    streamed through its receiver (issue #31).
   - With t set, any write or feature report fails the test. "Wrote and got nothing back" is the
     outcome that hid hayami's Arctis being sent 0x92 on every poll.
 
@@ -45,6 +48,8 @@ type fake struct {
 
 	ack      []byte
 	features [][]byte
+
+	drop map[byte]int
 }
 
 func (f *fake) SetFeature(_ context.Context, report []byte) error {
@@ -64,6 +69,10 @@ func (f *fake) Write(req []byte) error {
 	}
 	cmd := req[1]
 	f.asked = append(f.asked, cmd)
+	if f.drop[cmd] > 0 {
+		f.drop[cmd]--
+		return nil
+	}
 	if answer, ok := f.reply[cmd]; ok {
 		f.queued = append(f.queued, answer)
 	}
@@ -232,4 +241,51 @@ func TestAHeldBaseStationIsDrainedBeforeItIsAsked(t *testing.T) {
 	assert.True(t, got[0].HasLevel, "the stale off report was read as the answer")
 	assert.Equal(t, 75, got[0].Level)
 	assert.Equal(t, 1, f.drained, "the driver did not drain before asking")
+}
+
+/*
+A wireless reply that is lost is asked for again, and the form the device
+answered is asked first next time.
+
+Issue #31: through the receiver, with another program streaming lighting
+frames, the Apex dropped one wireless battery reply in five to one in two,
+and a reply that came took 6 ms. Asking once more finds it; asking the wired
+form first every time costs a whole timeout on a question the receiver never
+answers.
+*/
+func TestALostWirelessReplyIsAskedAgainAndTheFormIsRemembered(t *testing.T) {
+	wireless := byte(batteryCommand | wirelessFlag)
+	f := &fake{
+		reply: map[byte][]byte{wireless: {wireless, 0x14}},
+		drop:  map[byte]int{wireless: 2},
+	}
+	c := candidate(apexNode, 20*time.Millisecond, func(string) (node, error) { return f, nil })
+	dev, err := c.Open(context.Background())
+	require.NoError(t, err)
+	src := dev.(battery.Source)
+
+	found, err := src.Batteries(context.Background())
+	require.NoError(t, err)
+	require.Len(t, found, 1, "two lost replies cost the reading")
+	assert.Equal(t, []byte{batteryCommand, wireless, wireless, wireless}, f.asked)
+
+	f.asked = nil
+	found, err = src.Batteries(context.Background())
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	assert.Equal(t, []byte{wireless}, f.asked, "the form the device answered is asked first")
+}
+
+// A device that answers neither form is asked a bounded number of times and
+// is no reading, as before.
+func TestADeviceThatAnswersNeitherFormIsAskedABoundedNumberOfTimes(t *testing.T) {
+	f := &fake{}
+	c := candidate(apexNode, 20*time.Millisecond, func(string) (node, error) { return f, nil })
+	dev, err := c.Open(context.Background())
+	require.NoError(t, err)
+
+	found, err := dev.(battery.Source).Batteries(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, found)
+	assert.Len(t, f.asked, askTries+1)
 }

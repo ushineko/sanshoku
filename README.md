@@ -237,6 +237,16 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **Fix**: the `steelseries` driver asks a keyboard or mouse the battery
+  form it last answered first, up to three times, before trying the other.
+  Through the Apex's receiver, with lighting frames streaming from another
+  program, one wireless battery reply in five to one in two was lost, so a
+  poll came back empty; twenty reads now give twenty readings. A read
+  through the receiver also no longer spends 300 ms on the wired form it
+  never answers (#31).
+
 ### 0.1.5 (2026-10-01)
 
 - **New API**: package `lighting` with the `Canvas` capability (`Keys`,
