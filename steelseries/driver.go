@@ -280,7 +280,22 @@ type device struct {
 	mu sync.Mutex
 	// rd is the open node. Nil once closed.
 	rd node
+	// answered is the battery command the device last answered, the wired
+	// or the wireless form, or zero before it has answered either.
+	answered byte
 }
+
+/*
+askTries is how many times the form a device answers is asked before the
+other is tried.
+
+Measured on 2026-10-01 (issue #31): with the Apex on its receiver and another
+program streaming lighting frames to it at 18 a second, one wireless battery
+question in five to one in two got no reply at all, even given two seconds,
+while a reply that did come took about 6 ms. A lost reply is not a late one,
+so asking again is the remedy and waiting longer is not.
+*/
+const askTries = 3
 
 // Identity is the node's.
 func (d *device) Identity() sanshoku.Identity { return d.id }
@@ -301,13 +316,14 @@ func (d *device) Close() error {
 Batteries reads the device's battery. A headset base station is asked the one
 question its family answers (see headset); a keyboard or mouse as follows.
 
-Both command forms are tried, wired first, because the device does not say
-which it wants: the product ID moves with the connection -- 0x1644 on 2.4 GHz
-and 0x1646 on the cable -- and asking twice is cheaper than tracking that and
-being wrong.
+Both command forms are tried, because the device does not say which it
+wants: the product ID moves with the connection -- 0x1644 on 2.4 GHz and
+0x1646 on the cable. The form it answers is remembered and asked first, more
+than once, because through a receiver a busy device drops replies rather
+than delaying them (see questions).
 
 A device that answers neither is no reading and no error, rather than a level
-of zero. A node that has been unplugged is sanshoku.ErrGone.
+of zero. That takes askTries+1 timeouts, 1.2 s at the default. A node that has been unplugged is sanshoku.ErrGone.
 */
 func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 	d.mu.Lock()
@@ -319,7 +335,7 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 		return d.headset(ctx)
 	}
 
-	for _, cmd := range []byte{batteryCommand, batteryCommand | wirelessFlag} {
+	for _, cmd := range d.questions() {
 		reply, err := d.ask(ctx, cmd)
 		if err != nil {
 			if errors.Is(err, sanshoku.ErrGone) || ctx.Err() != nil {
@@ -331,6 +347,7 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 		if err != nil {
 			continue
 		}
+		d.answered = cmd
 		b.Name = battery.Product(vendorWord, d.id.Name)
 		// KindOther, and deliberately not a guess. The control endpoint says
 		// nothing about what the device is, and the interfaces beside it are
@@ -343,6 +360,36 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 		return []battery.Battery{b}, nil
 	}
 	return nil, nil
+}
+
+/*
+questions is the order the battery is asked in: the form the device answered
+last, askTries times, then the other once. Before it has answered, the wired
+form once and the wireless one askTries times, because the wired form is
+answered reliably on the cable and the wireless one is the form that loses
+replies (issue #31).
+
+Remembering the form also saves the wired question's whole timeout on every
+read through a receiver, which never answers it.
+*/
+func (d *device) questions() []byte {
+	wired, wireless := byte(batteryCommand), byte(batteryCommand|wirelessFlag)
+	first, other := wired, wireless
+	if d.answered == wireless {
+		first, other = wireless, wired
+	}
+	if d.answered == 0 {
+		out := []byte{wired}
+		for range askTries {
+			out = append(out, wireless)
+		}
+		return out
+	}
+	out := make([]byte, 0, askTries+1)
+	for range askTries {
+		out = append(out, first)
+	}
+	return append(out, other)
 }
 
 /*
