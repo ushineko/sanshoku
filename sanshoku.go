@@ -8,6 +8,7 @@ import (
 
 	"github.com/ushineko/sanshoku/battery"
 	"github.com/ushineko/sanshoku/cooling"
+	"github.com/ushineko/sanshoku/lighting"
 	"github.com/ushineko/sanshoku/screen"
 )
 
@@ -77,7 +78,7 @@ type Candidate struct {
 Device is an open handle on one device.
 
 What else it can do is asked with a type assertion against a capability:
-battery.Source, cooling.Source, screen.Panel. There is no capability enum.
+battery.Source, cooling.Source, screen.Panel, lighting.Canvas. There is no capability enum.
 A Device is safe for concurrent use from one process; two Opens of the same
 candidate are two handles and the caller keeps them apart.
 */
@@ -147,7 +148,7 @@ func IsPermission(err error) bool {
 }
 
 // Capabilities names the capability interfaces a device satisfies, in a fixed
-// order: "battery", "cooling", "screen". For the testbench and a consumer's
+// order: "battery", "cooling", "screen", "lighting". For the testbench and a consumer's
 // diagnostics; a program that wants to use a capability asserts it.
 func Capabilities(d Device) []string {
 	var names []string
@@ -159,6 +160,9 @@ func Capabilities(d Device) []string {
 	}
 	if _, ok := d.(screen.Panel); ok {
 		names = append(names, "screen")
+	}
+	if _, ok := d.(lighting.Canvas); ok {
+		names = append(names, "lighting")
 	}
 	return names
 }

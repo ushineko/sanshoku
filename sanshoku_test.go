@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/battery"
+	"github.com/ushineko/sanshoku/lighting"
 )
 
 // fakeDriver is the one fake the root API is tested with: a driver that finds
@@ -32,6 +34,15 @@ func (fakeBattery) Close() error                { return nil }
 func (fakeBattery) Batteries(context.Context) ([]battery.Battery, error) {
 	return nil, nil
 }
+
+// fakeKeyboard is a device that satisfies battery.Source and
+// lighting.Canvas, as the Apex does.
+type fakeKeyboard struct{ fakeBattery }
+
+func (fakeKeyboard) Keys() []lighting.Key                          { return nil }
+func (fakeKeyboard) Frame(context.Context, []lighting.Pixel) error { return nil }
+func (fakeKeyboard) Release(context.Context) error                 { return nil }
+func (fakeKeyboard) Floor() time.Duration                          { return 0 }
 
 func candidates(names ...string) []sanshoku.Candidate {
 	out := make([]sanshoku.Candidate, 0, len(names))
@@ -73,4 +84,5 @@ func TestAFailingDriverKeepsTheOtherCandidatesAndReturnsItsError(t *testing.T) {
 // A device is asked what it can do by type assertion, and says so by name.
 func TestCapabilitiesNamesWhatADeviceSatisfies(t *testing.T) {
 	assert.Equal(t, []string{"battery"}, sanshoku.Capabilities(fakeBattery{}))
+	assert.Equal(t, []string{"battery", "lighting"}, sanshoku.Capabilities(fakeKeyboard{}))
 }

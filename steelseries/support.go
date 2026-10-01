@@ -14,7 +14,8 @@ Support is the steelseries driver's support table, one entry per product in
 the allow-list.
 
 The Apex Pro TKL Wireless Gen 3 is Tested: the bench on the machine that has
-it read 100% full on its cable on 2026-09-29. The Aerox and Prime mice are rivalcfg's 0x92 family and Expected.
+it read 100% full on its cable on 2026-09-29, and is the one product with a
+lighting canvas (spec 010). The Aerox and Prime mice are rivalcfg's 0x92 family and Expected.
 The Rival family speaks rivalcfg's 0xAA protocol, which is not implemented, and
 is Listed. The Arctis Nova Pro Wireless is Tested on its X base station
 (1038:12e5), which the bench read at 75% on 2026-09-29 in agreement with
@@ -54,7 +55,9 @@ func Support() []support.Entry {
 	apex.Tier = support.Tested
 	apex.Hardware = "SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646)"
 	apex.Tested = benched
-	apex.Notes = "0x92 wired, 0xD2 through the dongle; read 100% full on the cable"
+	apex.Capabilities = []string{"battery", "lighting"}
+	apex.Notes = "0x92 wired, 0xD2 through the dongle; read 100% full on the cable. " +
+		"Lighting: 0x61 direct frames of 85 keys, as SteelSeries GG streams them; floor 56 ms, not yet benched"
 
 	arctis := support.Entry{
 		Driver:       driverName,

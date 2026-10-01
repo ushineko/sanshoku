@@ -72,9 +72,10 @@ breadth is the one thing not worth rewriting.
 | [`battery`](https://pkg.go.dev/github.com/ushineko/sanshoku/battery) | The battery reading and the `Source` capability. |
 | [`cooling`](https://pkg.go.dev/github.com/ushineko/sanshoku/cooling) | The cooler reading and the `Source` capability. |
 | [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display. |
+| [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to. |
 | [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw. |
 | [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
-| [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list. |
+| [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
@@ -85,8 +86,12 @@ breadth is the one thing not worth rewriting.
 
 ## What it does not do
 
-Lighting. Every lit device is [OpenRGB](https://openrgb.org/)'s and stays
-in hotaru; that breadth is the one thing not worth reimplementing. Everything
+Lighting effects, and lighting for most devices. Every lit device is
+[OpenRGB](https://openrgb.org/)'s and stays in hotaru; that breadth is the
+one thing not worth reimplementing. The one exception is the SteelSeries
+Apex Pro TKL Wireless Gen 3, whose only lighting path is a stream of frames
+its vendor's software renders on the host (spec 010): this module carries
+the stream as `lighting.Canvas`, and the effects stay the consumer's. Everything
 else follows the rule in [docs/design.md](docs/design.md): if direct access
 can reasonably be done without an external tool, it is. The Arctis Nova Pro
 Wireless is read directly (spec 006); other headsets are a candidate for a
@@ -129,7 +134,8 @@ has three tiers: **tested** on named hardware with the bench output in the
 spec, **expected** to work because the protocol is generic and the code
 path exists (run the bench on yours and report), and **listed** by ID but
 not implemented. A program can ask `support` the same question at runtime;
-the bench prints the tier beside every device it finds.
+the bench prints the tier beside every device it finds. The Apex Pro TKL
+Wireless Gen 3 is the one device with a `lighting` capability.
 
 ## Testbench
 
@@ -146,6 +152,13 @@ writes it.
 device's display, waits the panel's floor, and returns the display to its
 readout. `screen --yes --hold D` keeps the card up for D instead (at least
 the floor), so a person can look at it.
+
+`sanshoku-bench light --yes` streams three patterns (steady, breathe, wave)
+to every lighting canvas for `--hold` each, releases it, and prints frames
+sent, acknowledged and timed out with the acknowledgement latency.
+`--rate D` sets the frame interval, `--pattern`, `--color RRGGBB` and
+`--only IDS` narrow the run, and `light --keys` lists the keys a frame may
+address.
 
 ## Documentation
 
@@ -188,6 +201,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 ## Changelog
 
 ### Unreleased
+
+- **New API**: package `lighting` with the `Canvas` capability (`Keys`,
+  `Frame`, `Release`, `Floor`) and `ErrNoCanvas`; `Capabilities` reports
+  `"lighting"`. The `steelseries` driver's Apex Pro TKL Wireless Gen 3
+  (1038:1644 and 1038:1646) satisfies it by streaming the 0x61 direct frames
+  SteelSeries GG was captured sending. `sanshoku-bench light --yes` and
+  `light --keys`. Spec 010.
 
 - README: a "Why" with the footprint of the tools this module replaces,
   measured on the desk.

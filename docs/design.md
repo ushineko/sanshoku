@@ -39,7 +39,7 @@ reason in a comment at that point.
 - **Device**: an open handle. It has an identity, a `Close`, and whatever
   capabilities it implements.
 - **Capability**: a small interface a device may satisfy: `battery.Source`,
-  `cooling.Source`, `screen.Panel`. A consumer asks for a capability with a
+  `cooling.Source`, `screen.Panel`, `lighting.Canvas`. A consumer asks for a capability with a
   type assertion. There is no capability enum.
 - **Identity**: vendor, product, bus, kernel name, physical path and the
   node path. It is what a program shows the user and what the testbench keys
@@ -60,7 +60,8 @@ tool is the exception and its reason is written down.
   and usbfs, hwmon by chip and label.
 - **The one standing exception is lighting.** OpenRGB is a maintained daemon
   that speaks to every lit device on the machine, and reimplementing that
-  breadth is not reasonable. It stays in hotaru's `internal/openrgb`.
+  breadth is not reasonable. It stays in hotaru's `internal/openrgb`. The
+  exception to the exception is below, in "Lighting".
 - **Inherited subprocesses are debts, not decisions.** hayami reads the
   Kraken through `liquidctl --json status` because the Python monitor it
   replaced did; spec 005 is the direct driver and hayami adopts it in phase
@@ -75,6 +76,27 @@ tool is the exception and its reason is written down.
 - The testbench's `verify` shells out to liquidctl, solaar and
   headsetcontrol to cross-check a reading. That is the only place a tool is
   called from this repository.
+
+## Lighting
+
+`lighting.Canvas` is a stream, not an effect engine. On the SteelSeries Apex
+Pro TKL Wireless Gen 3 that is the only shape lighting has: no command was
+found that changes the firmware's effect (spec 010's sweep of every bare
+command, with someone watching), and a usbmon capture of SteelSeries GG
+cycling its effects and presets showed GG sending nothing but 0x61 direct
+frames, about eighteen a second, each acknowledged. GG renders on the host;
+its brightness slider is a multiply.
+
+So this module carries the frame, the key list, the acknowledgement and the
+floor, and stops there. Effects are a product decision (a consumer's scenes,
+its design system's motion) and live in the consumer, which owns the
+renderer and the ticker as it owns every other poll. The bench's three
+patterns exist to prove that frames show and are not exported.
+
+OpenRGB remains the lighting tool for every other device, and for this one
+it is a second writer on the same node: two streams alternate frames.
+Choosing between them is the consumer's decision, as it already is for the
+Kraken.
 
 ## The shape of a driver
 

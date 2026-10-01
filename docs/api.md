@@ -95,7 +95,7 @@ Identity is what a program shows the user about a device and what the testbench 
 
 ### Functions
 
-- `func Capabilities(d Device) []string`: Capabilities names the capability interfaces a device satisfies, in a fixed order: "battery", "cooling", "screen".
+- `func Capabilities(d Device) []string`: Capabilities names the capability interfaces a device satisfies, in a fixed order: "battery", "cooling", "screen", "lighting".
 - `func IsPermission(err error) bool`: IsPermission reports an EACCES or EPERM anywhere in err's chain.
 
 ## all
@@ -514,6 +514,57 @@ Conn is an open L2CAP sequenced-packet channel.
 ### Functions
 
 - `func ParseAddress(s string) ([6]byte, error)`: ParseAddress reads a printed Bluetooth address, "A1:B2:C3:D4:E5:F6", into the order Dial wants, which is the order it is written.
+
+## lighting
+
+`import "github.com/ushineko/sanshoku/lighting"`
+
+Package lighting holds the Canvas capability for a device whose lights a program draws frame by frame: the addressable keys, one frame, the hand-back to the firmware and the frame floor.
+
+### Variables
+
+- `var ErrNoCanvas = errors.New("no canvas on this device")`: ErrNoCanvas is a device that is here and whose lights cannot be drawn on.
+
+### Types
+
+#### type Canvas
+
+```go
+type Canvas interface {
+	Keys() []Key
+
+	Frame(ctx context.Context, px []Pixel) error
+
+	Release(ctx context.Context) error
+
+	Floor() time.Duration
+}
+```
+
+Canvas is a device whose lights a program draws by streaming frames.
+
+#### type Key
+
+```go
+type Key struct {
+	ID byte
+
+	Name string
+}
+```
+
+Key is one addressable light, numbered as the device numbers it.
+
+#### type Pixel
+
+```go
+type Pixel struct {
+	ID      byte
+	R, G, B uint8
+}
+```
+
+Pixel is one light's colour for one frame.
 
 ## logitech
 

@@ -20,7 +20,7 @@ the entry is promoted. **Listed**: recognised by ID, not implemented;
 | logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | Logitech K800, Unifying receiver | – | 2026-09-29 | 002 |
 | razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | Razer Mouse Dock Pro with its mouse docked | – | 2026-09-29 | 003 |
 | razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | Razer Basilisk Ultimate, its dongle | – | 2026-09-29 | 003 |
-| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) | – | 2026-09-29 | 003 |
+| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery, lighting | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) | – | 2026-09-29 | 003 |
 | steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 (X base station), or 1038:12e0 (base station, expected) | battery | SteelSeries Arctis Nova Pro Wireless, base station 1038:12e5 | – | 2026-09-29 | 006 |
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | 005 |
 | bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | 004 |
