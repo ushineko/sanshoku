@@ -1,6 +1,6 @@
-# Sharing the Kraken's nodes
+# Sharing device nodes
 
-What spec 005's bench runs showed about the `nzxt` driver sharing the Kraken
+The Kraken: what spec 005's bench runs showed about the `nzxt` driver sharing the Kraken
 Elite's hidraw node with OpenRGB and with a second program that holds the
 same node: hotaru's service today, and a second consumer of this module once
 hayami adopts the driver. hayami's phase 2 spec cites this page.
@@ -80,6 +80,24 @@ spec 005's Verification section.
   than retrying.
 - `Close` hands the panel back to the firmware readout before releasing the
   claim, so the claim moves between programs only through a clean readout.
+
+## The Apex and OpenRGB (spec 010)
+
+The Apex Pro TKL Wireless Gen 3's 0xFFC0 node is held by OpenRGB's server
+and by this module's `steelseries` driver at the same time. Measured on
+2026-10-01 on the cable:
+
+- With OpenRGB's server running and the Apex on its onboard effect, a 16 ms
+  frame stream through this module was acknowledged frame for frame (1253 in
+  20 s) and showed cleanly. OpenRGB sends nothing while it is not in Direct
+  mode, so there is nothing to contend with.
+- Stopping OpenRGB reboots the keyboard: its exit sends 0x41. The stream's
+  next frame failed with `sanshoku.ErrGone`, one frame timed out at the
+  moment of the reboot, and the board came back on its onboard effect on a
+  new hidraw node. A consumer streaming to the Apex rescans when OpenRGB
+  stops, as the battery reader already does.
+- Two streamers (OpenRGB in Direct mode and this module) were not run: they
+  would alternate frames, and choosing one is the consumer's decision.
 
 ## Not measured
 

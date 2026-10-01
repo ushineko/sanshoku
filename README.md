@@ -166,8 +166,8 @@ address.
 - [docs/devices.md](docs/devices.md): what is supported and how it was
   verified.
 - [docs/udev.md](docs/udev.md): the rules a consumer ships.
-- [docs/contention.md](docs/contention.md): what sharing the Kraken's nodes
-  with OpenRGB and a second program measured.
+- [docs/contention.md](docs/contention.md): what sharing the Kraken's and
+  the Apex's nodes with OpenRGB and a second program measured.
 - [docs/credits.md](docs/credits.md): the projects each protocol was learned
   from, and their licences.
 - [docs/api.md](docs/api.md): every exported identifier with its signature
@@ -206,8 +206,11 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
   `Frame`, `Release`, `Floor`) and `ErrNoCanvas`; `Capabilities` reports
   `"lighting"`. The `steelseries` driver's Apex Pro TKL Wireless Gen 3
   (1038:1644 and 1038:1646) satisfies it by streaming the 0x61 direct frames
-  SteelSeries GG was captured sending. `sanshoku-bench light --yes` and
-  `light --keys`. Spec 010.
+  SteelSeries GG was captured sending: 85 keys, a floor of 16 ms, each
+  frame acknowledged. Its `Release` reboots the keyboard (0x41), the one
+  way found to give the lighting back to the firmware, so the device is
+  `ErrGone` afterwards. `sanshoku-bench light --yes` and `light --keys`.
+  Spec 010.
 
 - README: a "Why" with the footprint of the tools this module replaces,
   measured on the desk.

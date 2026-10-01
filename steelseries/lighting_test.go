@@ -106,3 +106,16 @@ func TestAProductWithNoCanvasIsNotOne(t *testing.T) {
 		assert.Empty(t, f.features)
 	}
 }
+
+// Release sends 0x41 and nothing else: never 0x01, never a frame. The
+// keyboard holds its last frame until it is rebooted (spec 010 E4).
+func TestReleaseRebootsTheKeyboardWithOnlyTheOnboardCommand(t *testing.T) {
+	f := &fake{}
+	c := candidate(apexNode, 20*time.Millisecond, func(string) (node, error) { return f, nil })
+	dev, err := c.Open(context.Background())
+	require.NoError(t, err)
+
+	require.NoError(t, dev.(lighting.Canvas).Release(context.Background()))
+	assert.Equal(t, []byte{releaseCommand}, f.asked)
+	assert.Empty(t, f.features)
+}

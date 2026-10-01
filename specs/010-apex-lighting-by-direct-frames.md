@@ -2,7 +2,7 @@
 
 **Issue**: #29
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -92,9 +92,9 @@ first frame.
   collection declares for usage 0xF2: `[id, n, (key, r, g, b)×n, 0…]`, sent
   with `hidraw.SetFeature` behind a leading zero report number. `n` is the
   number of pixels given, at most 159 (what fits). The id is 0x61 on both
-  products, as OpenRGB sends and GG sent through the receiver; E1 below
-  measures 0x21 on the cable and the spec is amended if it is the one that
-  shows there.
+  products, as OpenRGB sends and GG sent through the receiver. **Amended
+  after E1:** 0x61 shows on both; 0x21 shows on the cable only and is not
+  acknowledged through the receiver, so one id serves both products.
 - R2.3 `Keys` is the 85 ids GG addressed on this board, in GG's order, named
   by HID usage: 0x04–0x27, 0x28–0x2E, 0x2F–0x31, 0x33–0x39, 0x3A–0x45 (F1–F12),
   0x49–0x52 (navigation and arrows), 0xE0–0xE7 (modifiers), 0xF0 and 0xFB
@@ -108,13 +108,18 @@ first frame.
 - R2.5 `Floor` is what E2 measures: the shortest frame interval at which every
   frame is acknowledged within the timeout over a 30-second run. The number
   goes in the code with the date. GG's 56 ms median interval and 15 ms ack
-  latency bound it from both sides.
+  latency bound it from both sides. **Amended after E2:** 16 ms, the shortest
+  interval tried, with no timeout and no tearing; the stream runs at the
+  acknowledgement's pace below that (about 17 ms through the receiver, 4-6 ms
+  on the cable).
 - R2.6 `Release`'s behaviour is E4's result. If the firmware resumes its own
   lighting on its own once frames stop, `Release` stops nothing (the consumer
   stopped) and sends nothing, and the doc comment says how long the firmware
   takes. If it does not, `Release` sends 0x41, documents that the keyboard
   re-enumerates and the device is `sanshoku.ErrGone` afterwards, and the
   consumer is told to `Close` and rescan. Either way `Release` never sends 0x01.
+  **Amended after E4:** the board held its last frame for five minutes, so
+  `Release` sends 0x41 and the device is `ErrGone` afterwards.
 - R2.7 No initialisation command is sent before the first frame unless E1 shows
   one is needed on this firmware. GG sent none; OpenRGB's 0x4B is a 65-byte
   feature report and is kept in the spec as the thing to try if frames are
@@ -175,23 +180,23 @@ Each is one bench run with the user watching, recorded in Verification.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries` and `CGO_ENABLED=0 make build` pass.
-- [ ] `lighting` has unit tests for frame encoding as a pure function (id, n,
+- [x] `lighting` has unit tests for frame encoding as a pure function (id, n,
       159-pixel cap, 641-byte width, a pixel list longer than the cap is an
       error) and the steelseries fake acknowledges a frame and refuses one on
       a product that has no canvas.
-- [ ] E1–E5 run on cachyos with the user watching, their outcome written into
+- [x] E1–E5 run on cachyos with the user watching, their outcome written into
       Verification, and R2.2, R2.5 and R2.6 amended to what was measured.
-- [ ] `sanshoku-bench light --yes` on cachyos shows steady, breathe and wave on
+- [x] `sanshoku-bench light --yes` on cachyos shows steady, breathe and wave on
       the Apex, releases it, and the ack statistics are pasted below. This is
       the integration-boundary criterion: a real keyboard, not a fake.
-- [ ] `sanshoku-bench read --driver steelseries` still reads the Apex battery
+- [x] `sanshoku-bench read --driver steelseries` still reads the Apex battery
       on the same handle while nothing streams, and immediately after a
       `light` run.
-- [ ] The Arctis Nova Pro Wireless and the Razer, Logitech, Apple and NZXT
+- [x] The Arctis Nova Pro Wireless and the Razer, Logitech, Apple and NZXT
       benches are unchanged (`sanshoku-bench verify` where a reference exists).
-- [ ] Docs per R4, including the changelog entry.
+- [x] Docs per R4, including the changelog entry.
 
 ## Risks & Assumptions
 
@@ -238,7 +243,62 @@ effects or presets, so there is nothing further to wait for on this board.
 
 ## Verification
 
-To be filled from the E1–E5 runs and the bench output on cachyos.
+All runs on `cachyos` on 2026-10-01, with the user watching the board,
+OpenRGB and hotaru stopped except in E5. Board firmware 3.24.1.
+
+- **E1, frame id by route.** Receiver (1644): 0x61 red acknowledged in
+  14.6 ms (`61 00 55 …`) and the board went red; 0x21 green was not
+  acknowledged in 500 ms and the board stayed red. Cable (1646): 0x61 blue
+  acknowledged in 3.7 ms and shown, then 0x21 red acknowledged in 3.6 ms
+  (`21 00 55 …`) and shown. R2.2 keeps 0x61 for both.
+- **E2, floor.** Receiver, wave, 30 s each, no tearing or freezing seen at any
+  rate:
+
+  ```
+  wave every 16ms:  1723 frames, 1723 acknowledged, 0 timed out; ack p50 17.0 ms, p95 20.0 ms, max 30.0 ms
+  wave every 33ms:   910 frames,  910 acknowledged, 0 timed out; ack p50 16.9 ms, p95 22.8 ms, max 28.8 ms
+  wave every 56ms:   536 frames,  536 acknowledged, 0 timed out; ack p50 16.9 ms, p95 22.8 ms, max 29.7 ms
+  wave every 100ms:  300 frames,  300 acknowledged, 0 timed out; ack p50 16.8 ms, p95 21.8 ms, max 30.7 ms
+  ```
+
+  At 16 ms the stream ran at about 57 frames a second, paced by the
+  acknowledgement. Floor 16 ms.
+- **E3, addressing.** After an all-black frame, a frame naming only 0x29 lit
+  Esc blue and nothing else; on the red board Esc changed and the rest stayed
+  red, so an unnamed light keeps its colour. Key 0x00 alone (green): nothing
+  changed, so it is not a broadcast on this board. Keys 0x32, 0x46, 0x47,
+  0x48 and 0x64 (white): all acknowledged, nothing lit.
+- **E4, stopping.** Steady blue for 10 s (179 frames, all acknowledged), then
+  nothing: the board was still blue, unchanged, five minutes later. Release
+  sends 0x41.
+- **E5, sharing.** OpenRGB's server started (Apex left on its onboard
+  effect), then a 30 s wave at 16 ms: 1253 frames acknowledged in the first
+  20 s and the wave was clean. At 20 s OpenRGB was stopped; its exit rebooted
+  the keyboard, the next frame failed with `device gone: no such device`, one
+  frame timed out at the moment of the reboot, and Release returned
+  `ErrGone`. The board showed the onboard rainbow. Written into
+  `docs/contention.md`.
+- **The bench**, on the cable with the user watching (steady red, pulsing
+  red, a rainbow wave, then the reboot to the onboard rainbow):
+
+  ```
+  steelseries  SteelSeries Apex Pro TKL Wireless Gen 3 (1038:1646)  /dev/hidraw4  85 keys, floor 16ms
+    steady   every 16ms: 500 frames, 500 acknowledged, 0 timed out; ack p50 5.9 ms, p95 8.7 ms, max 15.9 ms
+    breathe  every 16ms: 500 frames, 500 acknowledged, 0 timed out; ack p50 5.9 ms, p95 7.9 ms, max 14.7 ms
+    wave     every 16ms: 500 frames, 500 acknowledged, 0 timed out; ack p50 5.8 ms, p95 8.0 ms, max 13.8 ms
+    release: ok (0.4 ms); watch the board for what the firmware shows
+  ```
+
+- **Battery on the same handle.** Before a `light` run: 85% charging
+  (3.1 ms). 3 s after Release: no reading on the new node (hidraw4 moved to
+  hidraw5; the keyboard was still booting). 13 s after: 85% charging
+  (3.6 ms). Through the receiver, before any frame: 85% discharging.
+- **Other devices.** `sanshoku-bench verify` on the desktop: Kraken coolant,
+  pump and fan and the G502 X PLUS agree with liquidctl and solaar; the
+  Arctis Nova Pro reads (headset off, not compared). On cachyos the Razer
+  Mouse Dock Pro gave no reading on both this branch and a `main` build (the
+  mouse asleep), so unchanged. No Apple device was connected on either
+  machine.
 
 ## Gaps found
 

@@ -23,7 +23,10 @@ seconds, nothing else after GG's startup burst.
 */
 const (
 	// frameReport is the frame's first byte, as GG sent it through the
-	// receiver and OpenRGB sends it on both products.
+	// receiver and OpenRGB sends it on both products. Measured on
+	// 2026-10-01 (spec 010 E1): 0x61 shows on the cable and through the
+	// receiver; SignalRGB's 0x21 shows on the cable only, and through the
+	// receiver is not acknowledged.
 	frameReport = 0x61
 
 	// frameSize is the feature report's width: what the 0xFFC0 collection
@@ -38,11 +41,26 @@ const (
 /*
 frameFloor is the shortest interval at which frames are shown.
 
-Provisional: GG's median frame interval in the capture, 56 ms, which every
-frame met with its acknowledgement in 15 ms (median, 25 ms worst). Spec 010
-E2 replaces it with the measured floor.
+Measured on 2026-10-01 (spec 010 E2), through the receiver: a moving wave at
+16, 33, 56 and 100 ms for 30 s each, every frame acknowledged (median 17 ms,
+worst 31 ms) and no tearing seen at any of them. A Frame call waits for its
+acknowledgement, so at 16 ms the stream runs at the acknowledgement's pace,
+about 57 frames a second; on the cable an acknowledgement takes about 4 ms.
+GG streams at 56 ms.
 */
-const frameFloor = 56 * time.Millisecond
+const frameFloor = 16 * time.Millisecond
+
+/*
+releaseCommand hands the lighting back to the firmware by rebooting the
+keyboard: an output report of 0x41 alone, OpenRGB's "onboard" command.
+
+The firmware does not take the lighting back on its own. On 2026-10-01
+(spec 010 E4) a 10-second steady stream was stopped and the board held its
+last frame, unchanged, for five minutes. A probe on 2026-09-30 found 0x41
+(and 0x01) re-enumerate the keyboard, after which its onboard effect shows;
+nothing gentler was found in a sweep of every bare command.
+*/
+const releaseCommand = 0x41
 
 // canvasProducts are the products that are a lighting.Canvas: the Apex on
 // both of its connections. No other product in the allow-list is.
@@ -52,8 +70,10 @@ var canvasProducts = map[uint16]bool{0x1644: true, 0x1646: true}
 apexKeys are the 85 lights GG addressed on this board, in the order its
 frames carried them, named by HID usage.
 
-0x32 (the non-US hash) and 0x46-0x48 and 0x64 were not in GG's frames; spec
-010 E3 says whether they light. A full-size board or another layout has more
+0x32 (the non-US hash), 0x46-0x48 and 0x64 were not in GG's frames, and
+on 2026-10-01 (spec 010 E3) a frame naming them was acknowledged and lit
+nothing; nor did key 0x00, which is not a broadcast on this board. A light a
+frame does not name keeps its colour. A full-size board or another layout has more
 keys; this list is one US TKL's.
 */
 var apexKeys = []lighting.Key{
@@ -111,7 +131,7 @@ func (a *apex) Keys() []lighting.Key {
 	return append([]lighting.Key(nil), apexKeys...)
 }
 
-// Floor is the shortest frame interval measured to show every frame.
+// Floor is the shortest frame interval measured to show every frame: 16 ms.
 func (a *apex) Floor() time.Duration { return frameFloor }
 
 /*
@@ -146,11 +166,15 @@ func (a *apex) Frame(ctx context.Context, px []lighting.Pixel) error {
 }
 
 /*
-Release hands the lighting back to the firmware by sending nothing.
+Release hands the lighting back to the firmware by rebooting the keyboard.
 
-Provisional: GG sends nothing when it stops, and the firmware's own effect is
-what shows when nothing streams. Spec 010 E4 measures how long it takes to
-return. Release never sends 0x01 or 0x41, which reboot the keyboard.
+The keyboard holds the last frame it was sent indefinitely, so stopping the
+stream is not enough to give the lighting back; Release sends 0x41, the
+keyboard re-enumerates and comes back showing its onboard effect, as it does
+when OpenRGB exits. **The device is gone afterwards**: its hidraw node moves,
+every call on this handle returns sanshoku.ErrGone, and the consumer closes
+it and scans again, battery reader included. A consumer that only wants the
+board dark sends a black frame instead.
 */
 func (a *apex) Release(ctx context.Context) error {
 	a.mu.Lock()
@@ -159,6 +183,11 @@ func (a *apex) Release(ctx context.Context) error {
 		return fmt.Errorf("releasing %s: %w", a.id.Path, os.ErrClosed)
 	}
 	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("releasing %s: %w", a.id.Path, err)
+	}
+	req := make([]byte, reportSize+1) // a leading report number of zero
+	req[1] = releaseCommand
+	if err := a.rd.Write(req); err != nil {
 		return fmt.Errorf("releasing %s: %w", a.id.Path, err)
 	}
 	return nil

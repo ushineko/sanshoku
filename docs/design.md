@@ -93,6 +93,12 @@ its design system's motion) and live in the consumer, which owns the
 renderer and the ticker as it owns every other poll. The bench's three
 patterns exist to prove that frames show and are not exported.
 
+Handing the lighting back is a reboot. The board holds its last frame for as
+long as it is powered (five minutes measured, unchanged), and the only
+command found that brings the firmware's effect back is 0x41, which
+re-enumerates the keyboard. So `Release` costs the consumer its handle: the
+device is `ErrGone` afterwards and is found again by a scan.
+
 OpenRGB remains the lighting tool for every other device, and for this one
 it is a second writer on the same node: two streams alternate frames.
 Choosing between them is the consumer's decision, as it already is for the
