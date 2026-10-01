@@ -26,7 +26,10 @@ behaviours spec 003 R3.2 and spec 006 R4.2 list:
     which is what the Apex does on the form its connection does not take.
   - queued holds a packet that is not an answer to anything, as a late reply
     to an earlier question is: the echo is how the answer is told from it.
-  - With t set, any write fails the test. "Wrote and got nothing back" is the
+  - A feature report is the Apex's lighting frame (spec 010): it is kept in
+    features, and answered with ack when ack is set, as the keyboard answers
+    every frame with an input report that starts 0x61.
+  - With t set, any write or feature report fails the test. "Wrote and got nothing back" is the
     outcome that hid hayami's Arctis being sent 0x92 on every poll.
 
 Silence costs nothing here: the fake reports the deadline at once rather than
@@ -39,6 +42,20 @@ type fake struct {
 	asked   []byte
 	closed  bool
 	drained int
+
+	ack      []byte
+	features [][]byte
+}
+
+func (f *fake) SetFeature(_ context.Context, report []byte) error {
+	if f.t != nil {
+		f.t.Fatalf("a device this driver may not speak to was sent a feature report: % x", report[:2])
+	}
+	f.features = append(f.features, append([]byte(nil), report...))
+	if f.ack != nil {
+		f.queued = append(f.queued, f.ack)
+	}
+	return nil
 }
 
 func (f *fake) Write(req []byte) error {

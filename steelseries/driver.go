@@ -215,6 +215,9 @@ type node interface {
 	// Drain discards reports that arrived before the question is asked. See
 	// drain.
 	Drain(depth int)
+	// SetFeature sends a feature report, report number first: the Apex's
+	// lighting frame.
+	SetFeature(ctx context.Context, report []byte) error
 }
 
 // openNode opens a real control endpoint.
@@ -246,7 +249,11 @@ func candidate(n hidraw.Node, timeout time.Duration, open func(string) (node, er
 			if err != nil {
 				return nil, err
 			}
-			return &device{id: id, family: products[n.Product], timeout: timeout, rd: nd}, nil
+			dev := &device{id: id, family: products[n.Product], timeout: timeout, rd: nd}
+			if canvasProducts[n.Product] {
+				return &apex{device: dev}, nil
+			}
+			return dev, nil
 		},
 	}
 }

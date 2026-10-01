@@ -1,7 +1,7 @@
 /*
 sanshoku-bench is the hardware testbench: the module's integration test and
-its correctness oracle. scan, read and verify are read-only; screen --yes is
-the one write; support prints the support table. Spec 001 R7.
+its correctness oracle. scan, read and verify are read-only; screen --yes and
+light --yes are the writes; support prints the support table. Spec 001 R7.
 
 Output never carries a Bluetooth address or a serial number: a device prints
 as its kernel name and vendor:product, and its node path.
@@ -24,6 +24,9 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   verify               cross-check readings against liquidctl, solaar and headsetcontrol when on PATH
   support              print the support table; --markdown prints docs/devices.md
   screen --yes         push a test image to a screen and return it to its readout
+  light --yes          stream steady, breathe and wave to every lighting canvas and release it
+                       --hold D  --rate D  --pattern P  --color RRGGBB  --only IDS
+  light --keys         list each lighting canvas's keys
 `
 
 func main() {
@@ -52,6 +55,8 @@ func run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return supportTable(rest, out, errOut)
 	case "screen":
 		return screenPush(ctx, rest, out, errOut)
+	case "light":
+		return light(ctx, rest, out, errOut)
 	case "help", "-h", "--help":
 		write(out, usage)
 		return 0

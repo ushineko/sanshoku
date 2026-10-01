@@ -21,6 +21,7 @@ Three colours, for the range of things under one roof.
 ## Contents
 
 - [Why](#why)
+  - [Another project already does this](#another-project-already-does-this)
 - [What is in it](#what-is-in-it)
 - [What it does not do](#what-it-does-not-do)
 - [Using it](#using-it)
@@ -59,6 +60,42 @@ to do it, and that two programs had to agree by hand on what the devices
 say. OpenRGB stays: it knows every lit device on the machine, and that
 breadth is the one thing not worth rewriting.
 
+### Another project already does this
+
+Usually, yes, and [docs/credits.md](docs/credits.md) names each one. Every
+protocol here was learned from a project that got there first. The module
+exists anyway, for three reasons:
+
+- **Go-native is the design goal, not an accident.** The consumers (hayami,
+  hotaru) are Go programs that ship as one binary. A device read that
+  needs a Python interpreter, a C library through cgo, or a daemon to be
+  running is a build, packaging and deployment problem for each of them;
+  a Go package that speaks to the kernel node is not. `CGO_ENABLED=0 go
+  build` is the whole toolchain.
+- **One copy, proved on hardware.** Two programs carried the same device
+  code. Here it is written once, with a bench that runs every driver
+  against the real device before a support entry says Tested.
+- **Learning the protocols is part of the point.** Reading another
+  project's source, capturing the vendor's own software with usbmon, and
+  writing the decoder from the bytes is how this module's knowledge was
+  built, and it is written down where the code is.
+
+Where an existing project covers something this module cannot reasonably
+do in Go, it is used instead. OpenRGB is that case for lighting in general.
+It is not, deliberately, for the SteelSeries Apex Pro TKL Wireless Gen 3:
+
+| For the Apex's lighting | What it takes | Effects |
+|---|---|---|
+| OpenRGB, Direct mode | the server, headless | none: per-key colour only, which is all its Apex controller offers (Direct and Onboard) |
+| OpenRGB + [Effects plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBEffectsPlugin) | OpenRGB's GUI running in the desktop session, because OpenRGB 1.0 loads plugins only from its window, never under `--server`; effects configured in its UI, started and stopped by name over the SDK | about sixty, rendered by the plugin |
+| sanshoku `lighting.Canvas` | the consumer's own process | whatever the consumer renders; each frame acknowledged |
+
+The board has no firmware effect to switch to (spec 010 measured that), so
+every option renders on the host. The difference is where: in a GUI
+application the consumer remote-controls, or in the consumer, through a
+handle it already holds for the battery. The second keeps OpenRGB headless
+and the effect a product decision of the program that shows it.
+
 ## What is in it
 
 | Package | Purpose |
@@ -72,9 +109,10 @@ breadth is the one thing not worth rewriting.
 | [`battery`](https://pkg.go.dev/github.com/ushineko/sanshoku/battery) | The battery reading and the `Source` capability. |
 | [`cooling`](https://pkg.go.dev/github.com/ushineko/sanshoku/cooling) | The cooler reading and the `Source` capability. |
 | [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display. |
+| [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to. |
 | [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw. |
 | [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
-| [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list. |
+| [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
@@ -85,8 +123,12 @@ breadth is the one thing not worth rewriting.
 
 ## What it does not do
 
-Lighting. Every lit device is [OpenRGB](https://openrgb.org/)'s and stays
-in hotaru; that breadth is the one thing not worth reimplementing. Everything
+Lighting effects, and lighting for most devices. Every lit device is
+[OpenRGB](https://openrgb.org/)'s and stays in hotaru; that breadth is the
+one thing not worth reimplementing. The one exception is the SteelSeries
+Apex Pro TKL Wireless Gen 3, whose only lighting path is a stream of frames
+its vendor's software renders on the host (spec 010): this module carries
+the stream as `lighting.Canvas`, and the effects stay the consumer's. Everything
 else follows the rule in [docs/design.md](docs/design.md): if direct access
 can reasonably be done without an external tool, it is. The Arctis Nova Pro
 Wireless is read directly (spec 006); other headsets are a candidate for a
@@ -129,7 +171,8 @@ has three tiers: **tested** on named hardware with the bench output in the
 spec, **expected** to work because the protocol is generic and the code
 path exists (run the bench on yours and report), and **listed** by ID but
 not implemented. A program can ask `support` the same question at runtime;
-the bench prints the tier beside every device it finds.
+the bench prints the tier beside every device it finds. The Apex Pro TKL
+Wireless Gen 3 is the one device with a `lighting` capability.
 
 ## Testbench
 
@@ -147,14 +190,21 @@ device's display, waits the panel's floor, and returns the display to its
 readout. `screen --yes --hold D` keeps the card up for D instead (at least
 the floor), so a person can look at it.
 
+`sanshoku-bench light --yes` streams three patterns (steady, breathe, wave)
+to every lighting canvas for `--hold` each, releases it, and prints frames
+sent, acknowledged and timed out with the acknowledgement latency.
+`--rate D` sets the frame interval, `--pattern`, `--color RRGGBB` and
+`--only IDS` narrow the run, and `light --keys` lists the keys a frame may
+address.
+
 ## Documentation
 
 - [docs/design.md](docs/design.md): the rules the packages follow.
 - [docs/devices.md](docs/devices.md): what is supported and how it was
   verified.
 - [docs/udev.md](docs/udev.md): the rules a consumer ships.
-- [docs/contention.md](docs/contention.md): what sharing the Kraken's nodes
-  with OpenRGB and a second program measured.
+- [docs/contention.md](docs/contention.md): what sharing the Kraken's and
+  the Apex's nodes with OpenRGB and a second program measured.
 - [docs/credits.md](docs/credits.md): the projects each protocol was learned
   from, and their licences.
 - [docs/api.md](docs/api.md): every exported identifier with its signature
@@ -188,6 +238,16 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 ## Changelog
 
 ### Unreleased
+
+- **New API**: package `lighting` with the `Canvas` capability (`Keys`,
+  `Frame`, `Release`, `Floor`) and `ErrNoCanvas`; `Capabilities` reports
+  `"lighting"`. The `steelseries` driver's Apex Pro TKL Wireless Gen 3
+  (1038:1644 and 1038:1646) satisfies it by streaming the 0x61 direct frames
+  SteelSeries GG was captured sending: 85 keys, a floor of 16 ms, each
+  frame acknowledged. Its `Release` reboots the keyboard (0x41), the one
+  way found to give the lighting back to the firmware, so the device is
+  `ErrGone` afterwards. `sanshoku-bench light --yes` and `light --keys`.
+  Spec 010.
 
 - README: a "Why" with the footprint of the tools this module replaces,
   measured on the desk.
