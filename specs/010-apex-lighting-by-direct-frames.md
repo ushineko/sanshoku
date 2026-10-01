@@ -232,6 +232,17 @@ Direct frames carry no acknowledgement back to the caller, and the battery
 driver here already holds the handle, so one process would otherwise hold the
 node twice through two libraries.
 
+Considered OpenRGB's Effects plugin (OpenRGBEffectsPlugin, AUR
+`openrgb-plugin-effects` 1.0.0), evaluated from source on 2026-10-01: about
+sixty host-rendered effects on any Direct-mode device, startable and
+stoppable by name over OpenRGB's SDK. Rejected because OpenRGB 1.0 loads
+plugins only from its GUI window (`startup/startup.cpp`,
+`qt/OpenRGBDialog/OpenRGBDialog.cpp`), so it would replace the headless
+`openrgb --server` unit with a GUI in the desktop session; effect settings
+would live in OpenRGB's UI rather than the consumer's scenes; and it moves
+away from the module's Go-native goal. OpenRGB's exit still reboots the
+Apex either way.
+
 Considered shipping effects in this module; rejected because effects are a
 product decision (hotaru's scenes, the design system's motion rules) and this
 module is device access. The bench patterns exist to prove the stream and are

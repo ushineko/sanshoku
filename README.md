@@ -21,6 +21,7 @@ Three colours, for the range of things under one roof.
 ## Contents
 
 - [Why](#why)
+  - [Another project already does this](#another-project-already-does-this)
 - [What is in it](#what-is-in-it)
 - [What it does not do](#what-it-does-not-do)
 - [Using it](#using-it)
@@ -58,6 +59,42 @@ that a panel polling four devices every fifteen seconds was forking Python
 to do it, and that two programs had to agree by hand on what the devices
 say. OpenRGB stays: it knows every lit device on the machine, and that
 breadth is the one thing not worth rewriting.
+
+### Another project already does this
+
+Usually, yes, and [docs/credits.md](docs/credits.md) names each one. Every
+protocol here was learned from a project that got there first. The module
+exists anyway, for three reasons:
+
+- **Go-native is the design goal, not an accident.** The consumers (hayami,
+  hotaru) are Go programs that ship as one binary. A device read that
+  needs a Python interpreter, a C library through cgo, or a daemon to be
+  running is a build, packaging and deployment problem for each of them;
+  a Go package that speaks to the kernel node is not. `CGO_ENABLED=0 go
+  build` is the whole toolchain.
+- **One copy, proved on hardware.** Two programs carried the same device
+  code. Here it is written once, with a bench that runs every driver
+  against the real device before a support entry says Tested.
+- **Learning the protocols is part of the point.** Reading another
+  project's source, capturing the vendor's own software with usbmon, and
+  writing the decoder from the bytes is how this module's knowledge was
+  built, and it is written down where the code is.
+
+Where an existing project covers something this module cannot reasonably
+do in Go, it is used instead. OpenRGB is that case for lighting in general.
+It is not, deliberately, for the SteelSeries Apex Pro TKL Wireless Gen 3:
+
+| For the Apex's lighting | What it takes | Effects |
+|---|---|---|
+| OpenRGB, Direct mode | the server, headless | none: per-key colour only, which is all its Apex controller offers (Direct and Onboard) |
+| OpenRGB + [Effects plugin](https://gitlab.com/OpenRGBDevelopers/OpenRGBEffectsPlugin) | OpenRGB's GUI running in the desktop session, because OpenRGB 1.0 loads plugins only from its window, never under `--server`; effects configured in its UI, started and stopped by name over the SDK | about sixty, rendered by the plugin |
+| sanshoku `lighting.Canvas` | the consumer's own process | whatever the consumer renders; each frame acknowledged |
+
+The board has no firmware effect to switch to (spec 010 measured that), so
+every option renders on the host. The difference is where: in a GUI
+application the consumer remote-controls, or in the consumer, through a
+handle it already holds for the battery. The second keeps OpenRGB headless
+and the effect a product decision of the program that shows it.
 
 ## What is in it
 
