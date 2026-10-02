@@ -2,7 +2,7 @@
 
 **Issue**: #33
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -48,7 +48,7 @@ which is Git for Windows' default.
 
 - [x] `GOOS=linux`, `GOOS=windows` and `GOOS=darwin go vet ./...` pass.
 - [x] `go test ./...` passes on Windows (an LF checkout).
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support` pass
+- [x] `make test`, `make lint`, `make check-api`, `make check-support` pass
   on Linux (CI).
 - [x] `docs/api.md` is unchanged.
 - [x] hayami builds for Windows against this branch.
@@ -79,4 +79,5 @@ which is Git for Windows' default.
 - `govulncheck`: two standard-library findings from the local Go 1.26.0
   (fixed in 1.26.1 and 1.26.3), none in this module's code.
 
-Linux (`make test`, `make lint`, `-race`) is left to CI: no Linux host here.
+Linux: PR #34 CI passed `go test -race`, `make lint`, `make build`,
+`make check-support` and `make check-api`, and the new Windows and macOS job.
