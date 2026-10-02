@@ -3,6 +3,7 @@ package hidraw
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -103,7 +104,7 @@ func Nodes(vendor uint16, want func(Node) bool) ([]Node, error) {
 			continue
 		}
 		n := Node{
-			Path:       filepath.Join(DevRoot, e.Name()),
+			Path:       path.Join(DevRoot, e.Name()),
 			Name:       undouble(field(uevent, "HID_NAME=")),
 			Phys:       field(uevent, "HID_PHYS="),
 			Vendor:     v,
@@ -267,7 +268,7 @@ func usbNode(hidraw string) string {
 		bus, err1 := os.ReadFile(filepath.Join(dir, "busnum"))
 		dev, err2 := os.ReadFile(filepath.Join(dir, "devnum"))
 		if err1 == nil && err2 == nil {
-			return filepath.Join(DevRoot, "bus", "usb",
+			return path.Join(DevRoot, "bus", "usb",
 				fmt.Sprintf("%03d", atoi(bus)), fmt.Sprintf("%03d", atoi(dev)))
 		}
 		parent := filepath.Dir(dir)

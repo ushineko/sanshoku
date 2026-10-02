@@ -1,7 +1,9 @@
 name: Build
 
-# Spec 001 R1.4. Everything here is Linux-only: hidraw, usbfs and L2CAP are
-# Linux kernel interfaces and the module does not pretend otherwise. No cgo.
+# Spec 001 R1.4. The drivers are Linux-only: hidraw, usbfs and L2CAP are Linux
+# kernel interfaces and the module does not pretend otherwise. No cgo. It does
+# build and pass its tests elsewhere (spec 011), which the other-platforms job
+# holds it to.
 
 on:
   push:
@@ -41,6 +43,24 @@ jobs:
     # to the public surface that did not regenerate it fails here.
     - name: The API reference matches the code
       run: make check-api
+
+  other-platforms:
+    # Spec 011. hayami runs on Windows and imports this module, so the module
+    # has to build there and its tests have to pass, finding nothing. macOS is
+    # held to building only.
+    name: Test on Windows, build for macOS
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+        check-latest: true
+    - name: Test
+      run: go test ./...
+    - name: Build for macOS
+      shell: bash
+      run: GOOS=darwin go vet ./...
 
   vuln:
     name: Vulnerability scan
