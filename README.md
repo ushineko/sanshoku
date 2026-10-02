@@ -227,8 +227,11 @@ make check-no-binaries  # fail if a binary is committed
 make vuln               # govulncheck
 ```
 
-Linux only. No cgo. Runtime dependencies are `golang.org/x/sys` and
-`github.com/godbus/dbus/v5`.
+Linux only, no cgo. Runtime dependencies are `golang.org/x/sys` and
+`github.com/godbus/dbus/v5`. The module builds and its tests pass on other
+platforms, so a program that imports it can too, but there a transport that
+needs a Linux interface returns an error wrapping `errors.ErrUnsupported` and
+finds nothing.
 
 ## Licence
 
@@ -237,6 +240,17 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- The module builds off Linux (spec 011). `hidraw` feature reports, `l2cap`
+  and `usbfs` have a stand-in for other platforms that returns an error
+  wrapping `errors.ErrUnsupported`; `l2cap.ParseAddress` is portable. hayami
+  could not be built for Windows at all before this, although every package it
+  reads through sanshoku only needs to report "nothing found" there.
+
+- hidraw nodes and usbfs paths are joined with `path`, not `path/filepath`: a
+  device path is a Linux path whatever the host, and on Windows it read
+  `\dev\hidraw12`.
 ### 0.1.6 (2026-10-01)
 
 - **Fix**: the `steelseries` driver asks a keyboard or mouse the battery

@@ -5,9 +5,11 @@ packages, and lists the exported identifiers that have no doc comment. Spec
 
 It is repository plumbing shared by cmd/sanshoku-apidoc, which writes the page,
 and api_test.go, which regenerates it in memory and compares. It reads the
-source with go/parser and go/doc: no build, no cgo, no network. A public
-package is every package in the module that is not package main and not under
-internal/.
+source with go/parser and go/doc: no build, no cgo, no network. Files are
+selected as a linux/amd64 build selects them, so a package with a Linux file
+and a stand-in for other platforms is documented once, as it is on Linux. A
+public package is every package in the module that is not package main and not
+under internal/.
 
 The page is an index, not a transcript. pkg.go.dev renders the prose; the index
 is small enough that a pull request which widens the public surface shows it in
@@ -20,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/doc"
 	"go/parser"
 	"go/printer"
@@ -184,6 +187,14 @@ func load(root string) ([]pkg, error) {
 	return pkgs, nil
 }
 
+// linux is the build the reference describes: the module's platform, whatever
+// the generator happens to run on.
+var linux = func() build.Context {
+	c := build.Default
+	c.GOOS, c.GOARCH, c.CgoEnabled = "linux", "amd64", false
+	return c
+}()
+
 // parsePackage reads the non-test Go files in dir. ok is false for a
 // directory with none, or for package main.
 func parsePackage(dir, rel, module string) (pkg, bool, error) {
@@ -196,6 +207,11 @@ func parsePackage(dir, rel, module string) (pkg, bool, error) {
 	for _, e := range entries {
 		n := e.Name()
 		if e.IsDir() || !strings.HasSuffix(n, ".go") || strings.HasSuffix(n, "_test.go") {
+			continue
+		}
+		if match, err := linux.MatchFile(dir, n); err != nil {
+			return pkg{}, false, fmt.Errorf("match %s: %w", n, err)
+		} else if !match {
 			continue
 		}
 		f, err := parser.ParseFile(fset, filepath.Join(dir, n), nil, parser.ParseComments)

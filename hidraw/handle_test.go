@@ -1,3 +1,8 @@
+//go:build linux
+
+// Linux only: a pipe stands in for the node, and only a Linux pipe, like a
+// hidraw node, takes a read deadline. On Windows os.Pipe refuses one.
+
 package hidraw
 
 import (

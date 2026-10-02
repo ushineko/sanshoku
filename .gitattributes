@@ -1,0 +1,5 @@
+# Go source, the generated docs and the README are compared byte for byte by
+# the tests (api_test.go, readme_test.go). A checkout that rewrote them with
+# CRLF, which Git for Windows does by default, failed those tests and made
+# gofmt report every file. Spec 011.
+* text=auto eol=lf

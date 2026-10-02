@@ -244,7 +244,9 @@ func TestAFailedReadingIsNotRemembered(t *testing.T) {
 func TestReadsAreSerialised(t *testing.T) {
 	f := newFake()
 	d := withFake(f)
-	d.fresh = time.Nanosecond
+	// Zero: every read is stale. A nanosecond reads as fresh on a clock whose
+	// tick is coarser than that, which is Windows's.
+	d.fresh = 0
 
 	var wg sync.WaitGroup
 	for range 50 {
