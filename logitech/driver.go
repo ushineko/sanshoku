@@ -115,37 +115,14 @@ func identity(n hidraw.Node) sanshoku.Identity {
 	}
 }
 
-/*
-Presence is what is on a HID++ node beyond what could be read.
+// Presence is what is on a HID++ node beyond what could be read: the root
+// package's, since spec 014, so a consumer reads it with no import of this
+// driver. Kept here as an alias so code that named it still builds.
+type Presence = sanshoku.Presence
 
-An empty result used to mean "no Logitech receiver" in hayami, and on a machine
-with a receiver, a ten-year-old keyboard and a leftover pairing slot it meant
-three other things instead (hayami issue #66). Each of them is a different
-sentence and a different thing for a reader to do.
-*/
-type Presence struct {
-	// Nodes is how many hidraw nodes speak HID++. A Device is one node, so it
-	// reports 1; a consumer sums its devices' Presence to count them.
-	Nodes int
-
-	// Quiet is how many paired indices did not answer at the last discovery.
-	// **Not named**, on purpose: a pairing table outlives the hardware in it,
-	// and a receiver that has been round a few machines carries slots for
-	// devices that were never on this desk. A count says something true; a
-	// name would not.
-	Quiet int
-
-	// TooOld are devices that answered and do not speak HID++ 2.0, and whose
-	// HID++ 1.0 register would not read either, by the name the kernel gives
-	// their node. These are named because they answered -- something is there.
-	TooOld []string
-}
-
-// Presencer is a device that reports its Presence. A logitech Device
-// satisfies it; a consumer asserts it rather than naming the concrete type.
-type Presencer interface {
-	Presence() Presence
-}
+// Presencer is a device that reports its Presence: sanshoku.Presencer, which a
+// logitech Device satisfies. Kept here as an alias.
+type Presencer = sanshoku.Presencer
 
 /*
 device is one open HID++ node.
@@ -222,6 +199,11 @@ func (d *device) Close() error {
 }
 
 // Presence is what the last poll found besides batteries.
+//
+// A paired child's node -- one device behind a receiver, with a node of its
+// own -- reports no quiet slots: the receiver's node asked every index, that
+// device's among them. A consumer summing nodes used to have to know this and
+// ask hidraw.PairedChild itself (spec 014).
 func (d *device) Presence() Presence {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -229,9 +211,19 @@ func (d *device) Presence() Presence {
 	p.TooOld = append([]string(nil), d.presence.TooOld...)
 	if len(p.TooOld) == 0 {
 		p.TooOld = nil
+	} else {
+		p.OldProtocol = oldProtocol
+	}
+	if hidraw.PairedChild(d.node.Phys) {
+		p.Quiet = 0
 	}
 	return p
 }
+
+// oldProtocol is the protocol a device in Presence.TooOld speaks: it answered
+// that it has no HID++ 2.0 features, and its HID++ 1.0 register would not
+// read.
+const oldProtocol = "HID++ 1.0"
 
 /*
 Batteries reads every device on the node that answers.

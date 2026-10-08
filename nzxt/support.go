@@ -3,6 +3,7 @@ package nzxt
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -33,4 +34,16 @@ func Support() []support.Entry {
 			Notes: "coolant, pump and fan over HID; the screen needs usbfs, which Windows does not have",
 		},
 	}}
+}
+
+// Describe is what the driver reads: the Kraken's status on Linux and Windows,
+// its screen on Linux only, which the support table says (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "NZXT",
+		Finds:        "cooler",
+		Capabilities: []string{"cooling", "screen"},
+		Platforms:    []string{"linux", "windows"},
+		Quiet:        false,
+	}
 }

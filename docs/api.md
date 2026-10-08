@@ -54,6 +54,38 @@ Candidate is a device a driver found and has not opened.
 
 - `func Scan(ctx context.Context, drivers ...Driver) ([]Candidate, error)`: Scan runs each driver's Find in order and returns every candidate found.
 
+#### type Describer
+
+```go
+type Describer interface {
+	Describe() Description
+}
+```
+
+Describer is a driver that says what it is.
+
+#### type Description
+
+```go
+type Description struct {
+	Name string
+
+	Finds string
+
+	Capabilities []string
+
+	Platforms []string
+
+	Quiet bool
+}
+```
+
+Description is what a driver says about itself: what a person knows its devices by, what it looks for, what those devices offer and where it reads them.
+
+- `func Describe(d Driver) (Description, bool)`: Describe is d's description, and false for a driver that gives none -- one written outside this module.
+- `func (d Description) Offers(capability string) bool`: Offers reports whether the driver's devices offer capability.
+- `func (d Description) On(goos string) bool`: On reports whether the driver reads on goos, as runtime.GOOS spells it.
+
 #### type Device
 
 ```go
@@ -93,6 +125,34 @@ Identity is what a program shows the user about a device and what the testbench 
 
 - `func (i Identity) String() string`: String is `Name (vvvv:pppp)`, the form a person reads.
 
+#### type Presence
+
+```go
+type Presence struct {
+	Nodes int
+
+	Quiet int
+
+	TooOld []string
+
+	OldProtocol string
+}
+```
+
+Presence is what a receiver holds beyond what could be read: how many of its nodes were opened, how many paired slots were asked and stayed silent, and which devices answered in a protocol too old to read.
+
+- `func (p Presence) Add(q Presence) Presence`: Add is p and q summed: the Presence of two receivers on one desk.
+
+#### type Presencer
+
+```go
+type Presencer interface {
+	Presence() Presence
+}
+```
+
+Presencer is a device that reports its Presence.
+
 ### Functions
 
 - `func Capabilities(d Device) []string`: Capabilities names the capability interfaces a device satisfies, in a fixed order: "battery", "cooling", "screen", "lighting".
@@ -131,6 +191,7 @@ type Driver struct {
 
 Driver reads Apple audio accessories (AirPods) over the accessory protocol on an L2CAP channel, with per-ear and case levels, and falls back to the device's BlueZ Battery1 level when the channel will not open or the device does not report.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: Apple accessories among the Bluetooth devices, over L2CAP, on Linux only.
 - `func (d Driver) Find(ctx context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per connected BlueZ device that is Apple (Modalias vendor 004C) and audio (an audio- icon or an audio sink profile).
 - `func (Driver) Name() string`: Name is "apple".
 
@@ -157,6 +218,7 @@ type Driver struct {
 
 Driver reads an AULA keyboard's battery through its 2.4 GHz receiver.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the AULA F75 through its 2.4 GHz receiver, on Linux and Windows.
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per AULA receiver interface that declares report 0x13 on vendor page 0xFF02.
 - `func (Driver) Name() string`: Name is "aula".
 
@@ -325,6 +387,7 @@ type Driver struct{}
 
 Driver reads the battery BlueZ already has for a connected device, from org.bluez.Battery1.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: connected Bluetooth devices with a battery, through BlueZ, on Linux only.
 - `func (Driver) Find(ctx context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per connected device that reports a Battery1 level and is not Apple audio.
 - `func (Driver) Name() string`: Name is "bluez".
 
@@ -521,6 +584,7 @@ type Driver struct{}
 
 Driver lists the hwmon chips present, so a scan shows the whole machine.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the kernel's sensor chips, on Linux, which alone has hwmon (spec 014).
 - `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per chip under Root, ErrAbsent when there are none.
 - `func (Driver) Name() string`: Name is "hwmon".
 
@@ -640,32 +704,25 @@ type Driver struct {
 
 Driver reads Logitech batteries over HID++ 1.0 and 2.0 on hidraw.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: Logitech receivers and their devices, on Linux and Windows (spec 012).
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per Logitech hidraw node that speaks HID++: a node whose descriptor declares report 0x10 on a vendor usage page.
 - `func (Driver) Name() string`: Name is "logitech".
 
 #### type Presence
 
 ```go
-type Presence struct {
-	Nodes int
-
-	Quiet int
-
-	TooOld []string
-}
+type Presence = sanshoku.Presence
 ```
 
-Presence is what is on a HID++ node beyond what could be read.
+Presence is what is on a HID++ node beyond what could be read: the root package's, since spec 014, so a consumer reads it with no import of this driver.
 
 #### type Presencer
 
 ```go
-type Presencer interface {
-	Presence() Presence
-}
+type Presencer = sanshoku.Presencer
 ```
 
-Presencer is a device that reports its Presence.
+Presencer is a device that reports its Presence: sanshoku.Presencer, which a logitech Device satisfies.
 
 ### Functions
 
@@ -696,6 +753,7 @@ type Driver struct {
 
 Driver finds and opens NZXT Kraken coolers.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the Kraken's status on Linux and Windows, its screen on Linux only, which the support table says (spec 014).
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per NZXT hidraw node, vendor-defined interfaces first.
 - `func (Driver) Name() string`: Name is "nzxt".
 
@@ -744,6 +802,7 @@ type Driver struct {
 
 Driver reads Razer batteries through feature reports.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: Razer docks, dongles and mice, on Linux and Windows.
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per Razer hidraw node whose descriptor declares usage page 0xFF00 or 0xFF01.
 - `func (Driver) Name() string`: Name is "razer".
 
@@ -800,6 +859,7 @@ type Driver struct {
 
 Driver reads SteelSeries batteries over hidraw.
 
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: SteelSeries keyboards, mice and headsets, on Linux and Windows.
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per SteelSeries hidraw node whose descriptor declares usage page 0xFFC0.
 - `func (Driver) Name() string`: Name is "steelseries".
 

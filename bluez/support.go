@@ -3,6 +3,7 @@ package bluez
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -30,5 +31,18 @@ func Support() []support.Entry {
 			Spec:         4,
 			Notes:        "BlueZ's own level, read over the system bus; nothing is sent to the device",
 		},
+	}
+}
+
+// Describe is what the driver reads: connected Bluetooth devices with a battery,
+// through BlueZ, on Linux only. Not Quiet: BlueZ lists only connected devices
+// (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "Bluetooth",
+		Finds:        "device with a battery",
+		Capabilities: []string{"battery"},
+		Platforms:    []string{"linux"},
+		Quiet:        false,
 	}
 }

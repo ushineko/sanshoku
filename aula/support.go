@@ -3,6 +3,7 @@ package aula
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -36,3 +37,16 @@ func Support() []support.Entry {
 
 // windowsBenched is the date of spec 013's bench run on Windows.
 var windowsBenched = time.Date(2026, time.October, 7, 0, 0, 0, 0, time.UTC)
+
+// Describe is what the driver reads: the AULA F75 through its 2.4 GHz receiver,
+// on Linux and Windows. Quiet: the receiver lists itself while the keyboard
+// sleeps (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "AULA",
+		Finds:        "receiver",
+		Capabilities: []string{"battery"},
+		Platforms:    []string{"linux", "windows"},
+		Quiet:        true,
+	}
+}

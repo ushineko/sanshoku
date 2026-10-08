@@ -97,3 +97,15 @@ func Support() []support.Entry {
 
 // benched is the date of spec 001's bench run on the Intel machine.
 var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
+
+// Describe is what the driver reads: the kernel's sensor chips, on Linux, which
+// alone has hwmon (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "hwmon",
+		Finds:        "sensor chip",
+		Capabilities: []string{"temperature"},
+		Platforms:    []string{"linux"},
+		Quiet:        false,
+	}
+}

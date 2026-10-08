@@ -334,3 +334,24 @@ func TestAChildNodeIsAskedAtItsOwnIndexOnly(t *testing.T) {
 	assert.Equal(t, []byte{wiredIndex, 1, 2, 3, 4, 5, 6}, f.lookups()[:7])
 	assert.Len(t, f.lookups(), 7+2, "seven discovery lookups, then the battery and the name for index 1")
 }
+
+/*
+Spec 014. A paired child's node reports no quiet slots -- the receiver's node
+asked every index, that device's among them -- so a consumer sums Presence
+without asking hidraw which node is which. A device too old to read comes
+with the protocol it speaks.
+*/
+func TestAChildNodeReportsNoQuietSlotsAndTooOldNamesItsProtocol(t *testing.T) {
+	receiver := onFake(&fake{}, receiverPhys, "Logitech USB Receiver")
+	receiver.presence = Presence{Nodes: 1, Quiet: 2, TooOld: []string{"Logitech K400"}}
+	child := onFake(&fake{}, childPhys, "Logitech K800")
+	child.presence = Presence{Nodes: 1, Quiet: 2}
+
+	r, c := receiver.Presence(), child.Presence()
+
+	assert.Equal(t, 2, r.Quiet, "the receiver's node lost its quiet slots")
+	assert.Equal(t, "HID++ 1.0", r.OldProtocol)
+	assert.Equal(t, 0, c.Quiet, "a child node counted its receiver's slots again")
+	assert.Empty(t, c.OldProtocol, "a protocol named with nothing too old")
+	assert.Equal(t, 2, r.Add(c).Nodes)
+}

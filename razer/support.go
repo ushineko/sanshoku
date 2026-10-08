@@ -3,6 +3,7 @@ package razer
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -82,3 +83,16 @@ var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
 
 // windowsBenched is the date of spec 012's bench run on Windows.
 var windowsBenched = time.Date(2026, time.October, 7, 0, 0, 0, 0, time.UTC)
+
+// Describe is what the driver reads: Razer docks, dongles and mice, on Linux
+// and Windows. Quiet: a dock lists itself whether or not its mouse is awake
+// (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "Razer",
+		Finds:        "device",
+		Capabilities: []string{"battery"},
+		Platforms:    []string{"linux", "windows"},
+		Quiet:        true,
+	}
+}

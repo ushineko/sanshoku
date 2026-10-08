@@ -248,6 +248,20 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New API**: drivers describe themselves (spec 014, #41).
+  `sanshoku.Description` (`Name`, `Finds`, `Capabilities`, `Platforms`,
+  `Quiet`), `Describer`, `Describe(Driver)`, `Description.On` and `Offers`;
+  every driver in the module implements it, and a test holds each description
+  to its support entries. A consumer can list `all.Drivers()` and word what it
+  finds and what it does not with no table of its own.
+
+- **New API**: `sanshoku.Presence`, `Presence.Add` and `sanshoku.Presencer`, a
+  receiver's nodes, quiet slots and unreadable devices, moved from the
+  logitech driver; `logitech.Presence` and `logitech.Presencer` are aliases of
+  them. **Change**: a Logitech child node now reports no quiet slots (the
+  receiver's node counts them), and `OldProtocol` names what a `TooOld`
+  device speaks ("HID++ 1.0").
+
 - **Fix**: `IsPermission` recognises Windows' `ERROR_ACCESS_DENIED` (it matches
   `fs.ErrPermission`, not `EACCES` or `EPERM`), so a device another program
   holds unshared reads as not permitted instead of silent (#39).
