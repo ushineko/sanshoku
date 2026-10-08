@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"syscall"
 
 	"github.com/ushineko/sanshoku/battery"
@@ -137,14 +138,17 @@ func Scan(ctx context.Context, drivers ...Driver) ([]Candidate, error) {
 }
 
 /*
-IsPermission reports an EACCES or EPERM anywhere in err's chain.
+IsPermission reports a refusal to open anywhere in err's chain: EACCES or EPERM
+on Linux, ERROR_ACCESS_DENIED on Windows (which matches fs.ErrPermission and
+neither errno, #39).
 
 A node the user may not open is found and cannot be opened, which looks like
 absence unless someone says otherwise; this is how a consumer says "install
-the udev rule" (docs/udev.md) instead.
+the udev rule" (docs/udev.md) instead, or on Windows that another program
+holds the device without sharing it.
 */
 func IsPermission(err error) bool {
-	return errors.Is(err, syscall.EACCES) || errors.Is(err, syscall.EPERM)
+	return errors.Is(err, fs.ErrPermission) || errors.Is(err, syscall.EACCES) || errors.Is(err, syscall.EPERM)
 }
 
 // Capabilities names the capability interfaces a device satisfies, in a fixed
