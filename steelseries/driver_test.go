@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -186,6 +187,9 @@ the table does not name. The fake fails the test on any write, and the open
 function on being called at all.
 */
 func TestAnUnlistedProductIsFoundAndNeverWrittenTo(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a sysfs tree is how Linux lists hidraw nodes; Windows lists them through the HID class driver (spec 012)")
+	}
 	root := t.TempDir()
 	sys := hidraw.SysRoot
 	hidraw.SysRoot = root

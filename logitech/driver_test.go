@@ -52,6 +52,8 @@ type fake struct {
 	solaar   bool
 	silent   int
 	truncate bool
+	// pairing is the name the receiver holds for index 1, empty for none.
+	pairing string
 
 	pending  [][]byte
 	batteryN int
@@ -86,6 +88,15 @@ func (f *fake) respond(req []byte) [][]byte {
 	device, feature, function := req[1], req[2], req[3]
 	refuse := func(code byte) [][]byte {
 		return [][]byte{{reportShort, device, errorSub10, feature, function, code, 0x00}}
+	}
+	if device == receiverIndex && feature == subGetLongRegister && function == registerPairing {
+		if f.pairing == "" || req[4] != pairingNameFirst {
+			return refuse(err10InvalidAddress)
+		}
+		r := make([]byte, 20)
+		r[0], r[1], r[2], r[3], r[4], r[5] = reportLong, device, feature, function, req[4], byte(len(f.pairing))
+		copy(r[6:], f.pairing)
+		return [][]byte{r}
 	}
 	if device != 1 {
 		return refuse(err10UnknownDevice)
@@ -161,6 +172,9 @@ func onFake(f *fake, phys, name string) *device {
 		timeout:  20 * time.Millisecond,
 		rd:       f,
 		presence: Presence{Nodes: 1},
+		// The tests below were written on Linux, which gives a paired
+		// device a node of its own; spec 012's test says otherwise.
+		childNodes: true,
 	}
 }
 
@@ -256,6 +270,35 @@ func TestAnOldDeviceIsReadOnItsOwnNodeOnly(t *testing.T) {
 	found, err = receiver.Batteries(context.Background())
 	require.NoError(t, err)
 	assert.Empty(t, found)
+}
+
+/*
+Where the system gives a paired device no node of its own (Windows, spec 012),
+a HID++ 1.0 device on the receiver's node is read there, and named from the
+receiver's pairing register rather than after the receiver.
+
+Measured through the plain HID class driver: the K800 at index 1 answered
+register 0x07 on the receiver's short collection. Without a name in the
+pairing register it is "Logitech", never "USB Receiver".
+*/
+func TestAnOldDeviceIsReadOnTheReceiverWhereItHasNoNodeOfItsOwn(t *testing.T) {
+	receiver := onFake(&fake{old: true, pairing: "K800"}, `USB\VID_046D&PID_C52B&MI_02\7&X&0&0002`, "Logitech USB Receiver")
+	receiver.childNodes = false
+
+	found, err := receiver.Batteries(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	assert.Equal(t, "K800", found[0].Name)
+	assert.True(t, found[0].HasBand)
+	assert.Equal(t, battery.BandGood, found[0].Band)
+
+	unnamed := onFake(&fake{old: true}, `USB\VID_046D&PID_C52B&MI_02\7&X&0&0002`, "Logitech USB Receiver")
+	unnamed.childNodes = false
+	found, err = unnamed.Batteries(context.Background())
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	assert.Equal(t, defaultName, found[0].Name, "a device the receiver would not name was named after the receiver")
 }
 
 // lookups are the indices the fake was asked a root-feature lookup at, in

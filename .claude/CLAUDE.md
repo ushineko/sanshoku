@@ -7,7 +7,7 @@ below.
 
 ## Project Overview
 
-- **Type**: Go library (direct device access for Linux) plus a hardware
+- **Type**: Go library (direct device access for Linux, and HID on Windows) plus a hardware
   testbench binary.
 - **Purpose**: one maintained copy of the direct USB, HID, Bluetooth and hwmon
   device support that `~/git/hayami` (peripheral batteries, cooler thermals)
@@ -80,10 +80,12 @@ automation: nothing syncs specs to issues, so the link is made by hand.
 - **No application concepts.** The library knows devices, candidates,
   capabilities and readings. It does not know sections, panels, scenes,
   services or any consumer's `core` package.
-- **Linux only, no cgo.** hidraw, usbfs, L2CAP and BlueZ are Linux kernel and
-  system interfaces. `golang.org/x/sys/unix` and `github.com/godbus/dbus/v5`
-  are the only runtime dependencies; anything heavier is justified in the
-  spec that adds it. No libusb, no hidapi.
+- **Linux first, HID on Windows, no cgo.** hidraw, usbfs, L2CAP and BlueZ are
+  Linux kernel and system interfaces. On Windows `hidraw` reads HID devices
+  through the HID class driver (hid.dll, cfgmgr32) and the rest find nothing
+  (spec 012). `golang.org/x/sys` and `github.com/godbus/dbus/v5` are the only
+  runtime dependencies; anything heavier is justified in the spec that adds
+  it. No libusb, no hidapi.
 - **A driver matches by vendor and usage page, or an allow-list, never by
   node number**, and never writes to a device it has not identified. See
   `docs/design.md`.

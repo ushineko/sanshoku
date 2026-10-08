@@ -11,43 +11,50 @@ code path exists, but no device has confirmed it; run `sanshoku-bench read
 the entry is promoted. **Listed**: recognised by ID, not implemented;
 `Open` returns `ErrUnsupported`.
 
+The tiers are Linux's, where every driver began. The **Windows** column is
+where the entry stands there (spec 012): the HID drivers run on Windows
+through the HID class driver, with no vendor software and no driver of their
+own, and each entry is promoted there by a bench run there. A dash is a driver
+that does not run on Windows: BlueZ and L2CAP are Linux interfaces, and hwmon
+is a Linux tree.
+
 ## Tested
 
-| Driver | Device | Match | Capabilities | Hardware | Firmware | Tested | Spec |
-|---|---|---|---|---|---|---|---|
-| hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | 001 |
-| logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | 002 |
-| logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | Logitech K800, Unifying receiver | – | 2026-09-29 | 002 |
-| razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | Razer Mouse Dock Pro with its mouse docked | – | 2026-09-29 | 003 |
-| razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | Razer Basilisk Ultimate, its dongle | – | 2026-09-29 | 003 |
-| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery, lighting | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) and its receiver (1038:1644) | – | 2026-10-01 | 003 |
-| steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 (X base station), or 1038:12e0 (base station, expected) | battery | SteelSeries Arctis Nova Pro Wireless, base station 1038:12e5 | – | 2026-09-29 | 006 |
-| nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | 005 |
-| bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | 004 |
-| apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | 004 |
+| Driver | Device | Match | Capabilities | Hardware | Firmware | Tested | Windows | Spec |
+|---|---|---|---|---|---|---|---|---|
+| hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | – | 001 |
+| logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | expected | 002 |
+| logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | Logitech K800, Unifying receiver | – | 2026-09-29 | expected; no node of its own: read on the receiver at index 1 and named from its pairing register; register 0x07 answered there through the HID class driver (spec 012), not yet through the driver | 002 |
+| razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | Razer Mouse Dock Pro with its mouse docked | – | 2026-09-29 | expected | 003 |
+| razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | Razer Basilisk Ultimate, its dongle | – | 2026-09-29 | tested 2026-10-07; read 77% discharging, feature reports on interface 0 opened with no access | 003 |
+| steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery, lighting | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) and its receiver (1038:1644) | – | 2026-10-01 | expected | 003 |
+| steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 (X base station), or 1038:12e0 (base station, expected) | battery | SteelSeries Arctis Nova Pro Wireless, base station 1038:12e5 | – | 2026-09-29 | expected | 006 |
+| nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | expected; coolant, pump and fan over HID; the screen needs usbfs, which Windows does not have | 005 |
+| bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | – | 004 |
+| apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | – | 004 |
 
 ## Expected
 
-| Driver | Device | Match | Capabilities | Notes | Spec |
-|---|---|---|---|---|---|
-| hwmon | AMD CPU | `k10temp` / `Tdie`, `Tctl`; `zenpower` / `Tdie` | temperature | Tctl only where Tdie is absent: it carries a fan-curve offset | 001 |
-| hwmon | AMD GPU, nouveau | `amdgpu` / `edge`, `amdgpu`, `nouveau` | temperature | NVIDIA's own driver registers no hwmon | 001 |
-| logitech | Any HID++ 2.0 device with feature 0x1004 or 0x1000 | vendor 046d, report ID 0x10 on a vendor page | battery | wired on index 0xFF or paired on 1..6 | 002 |
-| logitech | Any HID++ 1.0 device with register 0x0D or 0x07 | vendor 046d, report ID 0x10 on a vendor page, on a paired device's own node | battery | 0x0D is a percentage; 0x07 is a band of four | 002 |
-| razer | Mouse Dock | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:007e | battery | OpenRazer addresses it on transaction 0x3F; found on a bench and answered nothing with the mouse off it, as a charger does | 003 |
-| steelseries | Aerox 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1838 or 1038:183a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
-| steelseries | Aerox 5 Wireless | vendor 1038, usage page 0xFFC0; 1038:1852 or 1038:1854 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
-| steelseries | Aerox 9 Wireless | vendor 1038, usage page 0xFFC0; 1038:1858 or 1038:185a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
-| steelseries | Prime Wireless | vendor 1038, usage page 0xFFC0; 1038:1840 or 1038:1842 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | 003 |
-| apple | Other AirPods and Apple audio accessories | connected BlueZ device, Modalias vendor 004c, audio icon or audio sink profile; L2CAP PSM 0x1001 | battery | per-ear and case levels over the accessory protocol, falling back to Battery1; one generation measured | 004 |
+| Driver | Device | Match | Capabilities | Notes | Windows | Spec |
+|---|---|---|---|---|---|---|
+| hwmon | AMD CPU | `k10temp` / `Tdie`, `Tctl`; `zenpower` / `Tdie` | temperature | Tctl only where Tdie is absent: it carries a fan-curve offset | – | 001 |
+| hwmon | AMD GPU, nouveau | `amdgpu` / `edge`, `amdgpu`, `nouveau` | temperature | NVIDIA's own driver registers no hwmon | – | 001 |
+| logitech | Any HID++ 2.0 device with feature 0x1004 or 0x1000 | vendor 046d, report ID 0x10 on a vendor page | battery | wired on index 0xFF or paired on 1..6 | expected | 002 |
+| logitech | Any HID++ 1.0 device with register 0x0D or 0x07 | vendor 046d, report ID 0x10 on a vendor page, on a paired device's own node | battery | 0x0D is a percentage; 0x07 is a band of four | expected; on the receiver's node, where Windows gives a paired device none of its own | 002 |
+| razer | Mouse Dock | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:007e | battery | OpenRazer addresses it on transaction 0x3F; found on a bench and answered nothing with the mouse off it, as a charger does | expected; answered status 0x05, not supported, with no mouse on it, as on Linux | 003 |
+| steelseries | Aerox 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1838 or 1038:183a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | expected | 003 |
+| steelseries | Aerox 5 Wireless | vendor 1038, usage page 0xFFC0; 1038:1852 or 1038:1854 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | expected | 003 |
+| steelseries | Aerox 9 Wireless | vendor 1038, usage page 0xFFC0; 1038:1858 or 1038:185a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | expected | 003 |
+| steelseries | Prime Wireless | vendor 1038, usage page 0xFFC0; 1038:1840 or 1038:1842 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | expected | 003 |
+| apple | Other AirPods and Apple audio accessories | connected BlueZ device, Modalias vendor 004c, audio icon or audio sink profile; L2CAP PSM 0x1001 | battery | per-ear and case levels over the accessory protocol, falling back to Battery1; one generation measured | – | 004 |
 
 ## Listed
 
-| Driver | Device | Match | Why | Spec |
-|---|---|---|---|---|
-| steelseries | Rival 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1830 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
-| steelseries | Rival 3 Wireless Gen 2 | vendor 1038, usage page 0xFFC0; 1038:1872 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
-| steelseries | Rival 650 Wireless | vendor 1038, usage page 0xFFC0; 1038:172b | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | 003 |
+| Driver | Device | Match | Why | Windows | Spec |
+|---|---|---|---|---|---|
+| steelseries | Rival 3 Wireless | vendor 1038, usage page 0xFFC0; 1038:1830 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | listed | 003 |
+| steelseries | Rival 3 Wireless Gen 2 | vendor 1038, usage page 0xFFC0; 1038:1872 | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | listed | 003 |
+| steelseries | Rival 650 Wireless | vendor 1038, usage page 0xFFC0; 1038:172b | rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; not implemented without a device to measure | listed | 003 |
 
 ## Out of scope
 
@@ -58,3 +65,11 @@ Kraken (the firmware discards them).
 Candidates for a later spec, by the rule that direct access is preferred
 wherever reasonable: the SteelSeries legacy 0xAA protocol once a Rival is on
 the desk.
+
+A Bluetooth audio transmitter that runs its own Bluetooth, such as the UGREEN
+BT701 (0a12:4007), hides the headphones behind it: measured on Windows (spec
+012), it declares no battery usage, refuses a GET_REPORT for every report ID
+from 1 to 40, and sends no report when its headphones connect or disconnect.
+Its vendor collections speak Qualcomm's closed protocol and look like its
+firmware-update channel, so nothing is sent to it. Headphones paired to the
+computer's own Bluetooth are read through BlueZ instead.

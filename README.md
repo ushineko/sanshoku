@@ -4,10 +4,11 @@
 
 **Version**: 0.1.7
 
-Direct device access for Linux, in Go, without cgo: peripheral batteries over
-HID++ and vendor report protocols, AirPods over Bluetooth, an NZXT Kraken's
-telemetry and LCD, and hwmon temperatures. It is the maintained home of the
-device code that [hayami](https://github.com/ushineko/hayami) and
+Direct device access for Linux, and for HID devices on Windows, in Go, without
+cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
+Bluetooth, an NZXT Kraken's telemetry and LCD, and hwmon temperatures. It is
+the maintained home of the device code that
+[hayami](https://github.com/ushineko/hayami) and
 [hotaru](https://github.com/ushineko/hotaru) each wrote for themselves.
 
 Three colours, for the range of things under one roof.
@@ -101,7 +102,7 @@ and the effect a product decision of the program that shows it.
 | Package | Purpose |
 |---|---|
 | [`sanshoku`](https://pkg.go.dev/github.com/ushineko/sanshoku) | The vocabulary: `Identity`, `Candidate`, `Device`, `Driver`, `Scan`, the sentinel errors, `Capabilities`. |
-| [`hidraw`](https://pkg.go.dev/github.com/ushineko/sanshoku/hidraw) | sysfs enumeration, report-descriptor walking, report exchange with deadlines, feature-report ioctls. |
+| [`hidraw`](https://pkg.go.dev/github.com/ushineko/sanshoku/hidraw) | HID interfaces: sysfs enumeration on Linux, the HID class driver on Windows; report-descriptor walking, report exchange with deadlines, feature reports. |
 | [`usbfs`](https://pkg.go.dev/github.com/ushineko/sanshoku/usbfs) | Claim an interface and write a bulk endpoint through raw usbdevfs ioctls. |
 | [`hwmon`](https://pkg.go.dev/github.com/ushineko/sanshoku/hwmon) | Temperatures by chip and label; the CPU and GPU sensor tables. |
 | [`l2cap`](https://pkg.go.dev/github.com/ushineko/sanshoku/l2cap) | Bluetooth L2CAP sequenced-packet sockets with deadlines. |
@@ -227,11 +228,15 @@ make check-no-binaries  # fail if a binary is committed
 make vuln               # govulncheck
 ```
 
-Linux only, no cgo. Runtime dependencies are `golang.org/x/sys` and
-`github.com/godbus/dbus/v5`. The module builds and its tests pass on other
-platforms, so a program that imports it can too, but there a transport that
-needs a Linux interface returns an error wrapping `errors.ErrUnsupported` and
-finds nothing.
+No cgo. Runtime dependencies are `golang.org/x/sys` and
+`github.com/godbus/dbus/v5`. Linux is where every driver runs. On Windows the
+HID drivers -- Logitech, Razer, SteelSeries and the Kraken's telemetry -- run
+through the HID class driver, with no vendor software and no driver of their
+own (spec 012); the Windows column of [docs/devices.md](docs/devices.md) says
+where each device stands there. BlueZ, AirPods, hwmon and the Kraken's screen
+need Linux interfaces: there they report `sanshoku.ErrUnavailable` or an error
+wrapping `errors.ErrUnsupported`, and find nothing. The module builds and its
+tests pass on Windows, Linux and macOS.
 
 ## Licence
 
@@ -239,6 +244,31 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- HID devices are read on Windows (spec 012). `hidraw` gains a Windows
+  backend: one `Node` per USB interface, its top-level collections put back
+  together; a write goes to the collection that declares its report ID, a read
+  takes the first report from any of them, and feature reports go overlapped,
+  with a deadline, to the collection that has them, even one opened with no
+  access. `Node.Reports` lists what a node declares on both platforms, and
+  `UsagePage` and `HasReportID` read it where there is no descriptor. Read on
+  a desk with no vendor software: a Basilisk Ultimate through its dongle.
+
+- Logitech: where the system gives a device paired to a receiver no node of
+  its own (`hidraw.SplitsReceivers`, false off Linux), a HID++ 1.0 device is
+  read on the receiver's node and named from its pairing register. Linux is
+  unchanged.
+
+- `bluez.Devices`, and with it the `bluez` and `apple` drivers, reports
+  `ErrNoBlueZ` off Linux without dialling: on Windows godbus tried a TCP
+  session bus on every scan.
+
+- `support.Entry.Windows` says where an entry stands on Windows, and
+  docs/devices.md has a Windows column. A Bluetooth audio transmitter that
+  runs its own Bluetooth (UGREEN BT701) is recorded as out of scope, with what
+  was measured.
 
 ### 0.1.7 (2026-10-01)
 

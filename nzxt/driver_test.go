@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"syscall"
 	"testing"
@@ -37,6 +38,9 @@ var (
 // every node.
 func sysfs(t *testing.T) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("a sysfs tree is how Linux lists hidraw nodes; Windows lists them through the HID class driver (spec 012)")
+	}
 	root := t.TempDir()
 	sys := hidraw.SysRoot
 	hidraw.SysRoot = root

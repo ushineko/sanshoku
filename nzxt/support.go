@@ -28,5 +28,9 @@ func Support() []support.Entry {
 		Tested:       time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC),
 		Spec:         5,
 		Notes:        "coolant, pump and fan over hidraw; the 640x640 LCD over usbfs, GIF only",
+		Windows: &support.Port{
+			Tier:  support.Expected,
+			Notes: "coolant, pump and fan over HID; the screen needs usbfs, which Windows does not have",
+		},
 	}}
 }

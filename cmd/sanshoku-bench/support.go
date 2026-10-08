@@ -25,10 +25,10 @@ func supportTable(args []string, out, errOut io.Writer) int {
 		return 0
 	}
 	tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	writeln(tw, "TIER\tDRIVER\tDEVICE\tMATCH\tCAPABILITIES\tHARDWARE\tTESTED\tSPEC")
+	writeln(tw, "TIER\tDRIVER\tDEVICE\tMATCH\tCAPABILITIES\tHARDWARE\tTESTED\tWINDOWS\tSPEC")
 	for _, e := range entries {
-		writef(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%03d\n", e.Tier, e.Driver, e.Device, e.Match,
-			strings.Join(e.Capabilities, ", "), orDash(e.Hardware), testedDate(e), e.Spec)
+		writef(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%03d\n", e.Tier, e.Driver, e.Device, e.Match,
+			strings.Join(e.Capabilities, ", "), orDash(e.Hardware), testedDate(e), onWindows(e), e.Spec)
 	}
 	_ = tw.Flush()
 	return 0
@@ -45,6 +45,13 @@ the spec records the output. **Expected**: the protocol is generic and the
 code path exists, but no device has confirmed it; run ` + "`sanshoku-bench read\n--driver <name>`" + ` on yours and open an issue with the ` + "`--json`" + ` output, and
 the entry is promoted. **Listed**: recognised by ID, not implemented;
 ` + "`Open`" + ` returns ` + "`ErrUnsupported`" + `.
+
+The tiers are Linux's, where every driver began. The **Windows** column is
+where the entry stands there (spec 012): the HID drivers run on Windows
+through the HID class driver, with no vendor software and no driver of their
+own, and each entry is promoted there by a bench run there. A dash is a driver
+that does not run on Windows: BlueZ and L2CAP are Linux interfaces, and hwmon
+is a Linux tree.
 `
 
 // outOfScope is the page's closing section. It is prose about what the
@@ -58,6 +65,14 @@ Kraken (the firmware discards them).
 Candidates for a later spec, by the rule that direct access is preferred
 wherever reasonable: the SteelSeries legacy 0xAA protocol once a Rival is on
 the desk.
+
+A Bluetooth audio transmitter that runs its own Bluetooth, such as the UGREEN
+BT701 (0a12:4007), hides the headphones behind it: measured on Windows (spec
+012), it declares no battery usage, refuses a GET_REPORT for every report ID
+from 1 to 40, and sends no report when its headphones connect or disconnect.
+Its vendor collections speak Qualcomm's closed protocol and look like its
+firmware-update channel, so nothing is sent to it. Headphones paired to the
+computer's own Bluetooth are read through BlueZ instead.
 `
 
 // devicesPage renders docs/devices.md: three tier tables and the out-of-scope
@@ -67,19 +82,19 @@ func devicesPage(entries []support.Entry) string {
 	b.WriteString(pageHead)
 
 	section(&b, "Tested", entries, support.Tested,
-		[]string{"Driver", "Device", "Match", "Capabilities", "Hardware", "Firmware", "Tested", "Spec"},
+		[]string{"Driver", "Device", "Match", "Capabilities", "Hardware", "Firmware", "Tested", "Windows", "Spec"},
 		func(e support.Entry) []string {
-			return []string{e.Driver, e.Device, e.Match, caps(e), orDash(e.Hardware), orDash(e.Firmware), testedDate(e), spec(e)}
+			return []string{e.Driver, e.Device, e.Match, caps(e), orDash(e.Hardware), orDash(e.Firmware), testedDate(e), onWindows(e), spec(e)}
 		})
 	section(&b, "Expected", entries, support.Expected,
-		[]string{"Driver", "Device", "Match", "Capabilities", "Notes", "Spec"},
+		[]string{"Driver", "Device", "Match", "Capabilities", "Notes", "Windows", "Spec"},
 		func(e support.Entry) []string {
-			return []string{e.Driver, e.Device, e.Match, caps(e), orDash(e.Notes), spec(e)}
+			return []string{e.Driver, e.Device, e.Match, caps(e), orDash(e.Notes), onWindows(e), spec(e)}
 		})
 	section(&b, "Listed", entries, support.Listed,
-		[]string{"Driver", "Device", "Match", "Why", "Spec"},
+		[]string{"Driver", "Device", "Match", "Why", "Windows", "Spec"},
 		func(e support.Entry) []string {
-			return []string{e.Driver, e.Device, e.Match, orDash(e.Notes), spec(e)}
+			return []string{e.Driver, e.Device, e.Match, orDash(e.Notes), onWindows(e), spec(e)}
 		})
 
 	b.WriteString("\n")
@@ -131,4 +146,21 @@ func orDash(s string) string {
 		return "–"
 	}
 	return s
+}
+
+// onWindows is where an entry stands on Windows: its tier, the date for a
+// tested one, and what differs there; a dash where its driver does not run.
+func onWindows(e support.Entry) string {
+	w := e.Windows
+	if w == nil {
+		return "–"
+	}
+	out := w.Tier.String()
+	if !w.Tested.IsZero() {
+		out += " " + w.Tested.Format("2006-01-02")
+	}
+	if w.Notes != "" {
+		out += "; " + w.Notes
+	}
+	return out
 }

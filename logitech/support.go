@@ -46,6 +46,7 @@ func Support() []support.Entry {
 			Tested:       benched,
 			Spec:         2,
 			Notes:        "HID++ 2.0, feature 0x1004",
+			Windows:      windowsExpected,
 		},
 		{
 			Driver:       driverName,
@@ -59,6 +60,11 @@ func Support() []support.Entry {
 			Tested:       benched,
 			Spec:         2,
 			Notes:        "HID++ 1.0, register 0x07 band; read Good, discharging; its node is asked at its own index only (spec 007): asleep, it finishes in 4 ms, where discovery cost 9.7 s",
+			Windows: &support.Port{
+				Tier: support.Expected,
+				Notes: "no node of its own: read on the receiver at index 1 and named from its pairing register; " +
+					"register 0x07 answered there through the HID class driver (spec 012), not yet through the driver",
+			},
 		},
 		{
 			Driver:       driverName,
@@ -69,6 +75,7 @@ func Support() []support.Entry {
 			Tier:         support.Expected,
 			Spec:         2,
 			Notes:        "wired on index 0xFF or paired on 1..6",
+			Windows:      windowsExpected,
 		},
 		{
 			Driver:       driverName,
@@ -79,9 +86,18 @@ func Support() []support.Entry {
 			Tier:         support.Expected,
 			Spec:         2,
 			Notes:        "0x0D is a percentage; 0x07 is a band of four",
+			Windows: &support.Port{
+				Tier:  support.Expected,
+				Notes: "on the receiver's node, where Windows gives a paired device none of its own",
+			},
 		},
 	}
 }
 
 // benched is the date of spec 002's bench run.
 var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
+
+// windowsExpected is an entry whose code path runs on Windows and which no
+// bench there has confirmed: the HID++ exchange is the same, through the
+// receiver's collections put back together (spec 012).
+var windowsExpected = &support.Port{Tier: support.Expected}
