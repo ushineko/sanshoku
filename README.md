@@ -246,6 +246,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **New**: the Basilisk Ultimate on its cable (1532:0086) is a known mouse:
+  `KindMouse` and a support-table entry, Tested on Windows (spec 015, #44).
+  It was read as `other`.
+
 ### 0.1.9 (2026-10-07)
 
 - **New API**: drivers describe themselves (spec 014, #41).
