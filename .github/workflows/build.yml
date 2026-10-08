@@ -1,9 +1,8 @@
 name: Build
 
-# Spec 001 R1.4. The drivers are Linux-only: hidraw, usbfs and L2CAP are Linux
-# kernel interfaces and the module does not pretend otherwise. No cgo. It does
-# build and pass its tests elsewhere (spec 011), which the other-platforms job
-# holds it to.
+# Spec 001 R1.4. No cgo. The drivers read Linux kernel interfaces (hidraw,
+# usbfs, L2CAP) and, for HID, the Windows HID class driver (spec 012); the
+# other-platforms job runs the tests on Windows and vets for macOS (spec 011).
 
 on:
   push:
