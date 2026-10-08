@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.9
+**Version**: 0.1.10
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -13,7 +13,7 @@ the maintained home of the device code that
 
 Three colours, for the range of things under one roof.
 
-> **Status**: v0.1.9. Every Linux driver but aula is bench-tested on real hardware:
+> **Status**: v0.1.10. Every Linux driver but aula is bench-tested on real hardware:
 > Logitech HID++ 1.0 and 2.0, Razer, SteelSeries keyboards and the Arctis Nova
 > Pro Wireless, NZXT Kraken Elite telemetry and LCD, BlueZ `Battery1`, AirPods
 > and hwmon. On Windows the HID drivers read through the HID class driver: the
@@ -246,7 +246,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.10 (2026-10-08)
 
 - **New**: the Basilisk Ultimate on its cable (1532:0086) is a known mouse:
   `KindMouse` and a support-table entry, Tested on Windows (spec 015, #44).
