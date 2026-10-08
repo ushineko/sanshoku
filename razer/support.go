@@ -11,6 +11,7 @@ import (
 const (
 	productMouseDock    = 0x007E
 	productBasiliskUlt  = 0x0088
+	productBasiliskWire = 0x0086
 	productMouseDockPro = 0x00A4
 )
 
@@ -75,8 +76,27 @@ func Support() []support.Entry {
 				Notes:  "read 77% discharging, feature reports on interface 0 opened with no access",
 			},
 		},
+		{
+			Driver:       driverName,
+			Device:       "Basilisk Ultimate on its cable",
+			Match:        razerMatch + "; 1532:0086",
+			Vendor:       razerVendor,
+			Products:     []uint16{productBasiliskWire},
+			Capabilities: []string{"battery"},
+			Tier:         support.Expected,
+			Spec:         15,
+			Notes:        "the mouse itself on USB, charging; OpenRazer lists it as the Basilisk Ultimate (wired)",
+			Windows: &support.Port{
+				Tier:   support.Tested,
+				Tested: wiredBenched,
+				Notes:  "read 82% charging on its cable, as a mouse",
+			},
+		},
 	}
 }
+
+// wiredBenched is the date of spec 015's bench run of the mouse on its cable.
+var wiredBenched = time.Date(2026, time.October, 8, 0, 0, 0, 0, time.UTC)
 
 // benched is the date of the bench runs on the two machines with Razer devices.
 var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)

@@ -92,6 +92,7 @@ mouse.
 var kinds = map[uint16]battery.Kind{
 	productMouseDock:    battery.KindMouse, // a charger, which answers "unsupported"
 	productBasiliskUlt:  battery.KindMouse, // Basilisk Ultimate's own dongle
+	productBasiliskWire: battery.KindMouse, // Basilisk Ultimate on its cable
 	productMouseDockPro: battery.KindMouse, // relays the mouse on it
 }
 

@@ -104,3 +104,23 @@ func TestTheTransactionIDIsFoundRememberedAndKeptThroughBusy(t *testing.T) {
 	assert.Empty(t, found)
 	assert.Equal(t, []byte{answers}, f.tried, "a busy device made the driver search the list again")
 }
+
+/*
+The Basilisk Ultimate on its cable is a mouse (spec 015), as it is through its
+dongle. It was KindOther, so a consumer laying cells out by kind gave it a
+generic cell beside an empty mouse slot.
+*/
+func TestTheBasiliskUltimateIsAMouseOnEitherLink(t *testing.T) {
+	for _, product := range []uint16{productBasiliskUlt, productBasiliskWire} {
+		f := &fake{answers: transactions[0], level: 0x80}
+		d := &device{
+			id:      sanshoku.Identity{Vendor: razerVendor, Product: product, Name: "Razer Basilisk Ultimate"},
+			timeout: defaultTimeout,
+			fd:      f,
+		}
+		found, err := d.Batteries(context.Background())
+		require.NoError(t, err)
+		require.Len(t, found, 1)
+		assert.Equal(t, battery.KindMouse, found[0].Kind, "product %#04x", product)
+	}
+}
