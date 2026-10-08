@@ -96,7 +96,7 @@ Identity is what a program shows the user about a device and what the testbench 
 ### Functions
 
 - `func Capabilities(d Device) []string`: Capabilities names the capability interfaces a device satisfies, in a fixed order: "battery", "cooling", "screen", "lighting".
-- `func IsPermission(err error) bool`: IsPermission reports an EACCES or EPERM anywhere in err's chain.
+- `func IsPermission(err error) bool`: IsPermission reports a refusal to open anywhere in err's chain: EACCES or EPERM on Linux, ERROR_ACCESS_DENIED on Windows (which matches fs.ErrPermission and neither errno, #39).
 
 ## all
 

@@ -246,6 +246,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **Fix**: `IsPermission` recognises Windows' `ERROR_ACCESS_DENIED` (it matches
+  `fs.ErrPermission`, not `EACCES` or `EPERM`), so a device another program
+  holds unshared reads as not permitted instead of silent (#39).
+
 ### 0.1.8 (2026-10-07)
 
 - `aula`: the AULA F75's battery through its 2.4 GHz receiver (spec 013):
