@@ -27,8 +27,6 @@ type fake struct {
 	requests [][]byte
 	drained  int
 	closed   bool
-	// budgets is how long each question was given, read off its first read.
-	budgets []time.Duration
 }
 
 func (f *fake) Write(req []byte) error {
@@ -43,9 +41,6 @@ func (f *fake) Write(req []byte) error {
 func (f *fake) Read(ctx context.Context, buf []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
-	}
-	if deadline, ok := ctx.Deadline(); ok && len(f.budgets) < len(f.requests) {
-		f.budgets = append(f.budgets, time.Until(deadline))
 	}
 	if len(f.pending) == 0 {
 		return 0, fmt.Errorf("no report from the fake: %w", context.DeadlineExceeded)
@@ -140,21 +135,4 @@ func TestAClosedDeviceSaysSo(t *testing.T) {
 
 	require.Error(t, err)
 	assert.False(t, errors.Is(err, sanshoku.ErrGone))
-}
-
-/*
-The second question waits long enough for an idle keyboard's link to wake
-(#38): the first keeps the driver's short timeout, so an awake keyboard is
-read as fast as before.
-*/
-func TestTheSecondQuestionWaitsForTheLinkToWake(t *testing.T) {
-	f := &fake{answers: [][][]byte{nil, {onBattery}}}
-	dev := open(t, f)
-
-	_, err := dev.(battery.Source).Batteries(context.Background())
-
-	require.NoError(t, err)
-	require.Len(t, f.budgets, 2)
-	assert.LessOrEqual(t, f.budgets[0], 20*time.Millisecond, "the first question is the driver's timeout")
-	assert.Greater(t, f.budgets[1], time.Second, "the second question gives the link time to wake")
 }

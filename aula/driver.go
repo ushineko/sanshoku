@@ -46,20 +46,9 @@ defaultTimeout is how long one battery question may take.
 
 The receiver answered in a few milliseconds with the link up (spec 013). A
 keyboard that is asleep, or just switched from its cable, does not answer the
-first question in time, and the second question waits longer (wakeTimeout).
+first question at all, and that is what retryWait is for, not a longer wait.
 */
 const defaultTimeout = 300 * time.Millisecond
-
-/*
-wakeTimeout is how long the second question may take.
-
-An F75 that has sat idle takes about a second to answer at all. Measured by
-hayami spec 035: with two 300 ms questions an idle keyboard read nothing three
-times out of four, and once its link was awake it answered in 74-616 ms (#38).
-A short question and then a long one keeps a keyboard that is awake as fast
-as before.
-*/
-const wakeTimeout = 1500 * time.Millisecond
 
 // retryWait is the pause before the question is asked a second time. Measured
 // on the desk this was written on: the first question after the keyboard was
@@ -141,7 +130,7 @@ func candidate(n hidraw.Node, timeout time.Duration, open func(string) (node, er
 			if err != nil {
 				return nil, err
 			}
-			return &device{id: id, timeout: timeout, wake: max(timeout, wakeTimeout), rd: nd, wait: retryWait}, nil
+			return &device{id: id, timeout: timeout, rd: nd, wait: retryWait}, nil
 		},
 	}
 }
@@ -150,9 +139,6 @@ func candidate(n hidraw.Node, timeout time.Duration, open func(string) (node, er
 type device struct {
 	id      sanshoku.Identity
 	timeout time.Duration
-	// wake bounds the second question: wakeTimeout, or the driver's timeout
-	// when that is longer.
-	wake time.Duration
 	// wait is the pause before the second question: retryWait, or a test's.
 	wait time.Duration
 
@@ -195,14 +181,14 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 		return nil, fmt.Errorf("reading %s: %w", d.id.Path, os.ErrClosed)
 	}
 
-	reply, err := d.ask(ctx, d.timeout)
+	reply, err := d.ask(ctx)
 	if errors.Is(err, hidraw.ErrSilent) && ctx.Err() == nil {
 		select {
 		case <-time.After(d.wait):
 		case <-ctx.Done():
 			return nil, fmt.Errorf("reading %s: %w", d.id, ctx.Err())
 		}
-		reply, err = d.ask(ctx, d.wake)
+		reply, err = d.ask(ctx)
 	}
 	if errors.Is(err, hidraw.ErrSilent) && ctx.Err() == nil {
 		return nil, nil
@@ -218,10 +204,10 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 	return []battery.Battery{b}, nil
 }
 
-// ask sends the question once and waits up to timeout for its answer, skipping
-// the receiver's other frames.
-func (d *device) ask(ctx context.Context, timeout time.Duration) ([]byte, error) {
-	actx, cancel := context.WithTimeout(ctx, timeout)
+// ask sends the question once and waits for its answer, skipping the
+// receiver's other frames.
+func (d *device) ask(ctx context.Context) ([]byte, error) {
+	actx, cancel := context.WithTimeout(ctx, d.timeout)
 	defer cancel()
 	d.rd.Drain(hidraw.QueueDepth)
 	return hidraw.Exchange(actx, d.rd, request(), answers, reportLen)
