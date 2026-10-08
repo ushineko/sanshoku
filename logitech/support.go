@@ -3,6 +3,7 @@ package logitech
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -101,3 +102,16 @@ var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
 // bench there has confirmed: the HID++ exchange is the same, through the
 // receiver's collections put back together (spec 012).
 var windowsExpected = &support.Port{Tier: support.Expected}
+
+// Describe is what the driver reads: Logitech receivers and their devices, on
+// Linux and Windows (spec 012). Not Quiet: a receiver reports what is silent on
+// it through Presence (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "Logitech",
+		Finds:        "receiver",
+		Capabilities: []string{"battery"},
+		Platforms:    []string{"linux", "windows"},
+		Quiet:        false,
+	}
+}

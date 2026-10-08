@@ -3,6 +3,7 @@ package apple
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -44,3 +45,16 @@ func Support() []support.Entry {
 
 // benched is the date of the bench run with AirPods Pro connected.
 var benched = time.Date(2026, time.September, 30, 0, 0, 0, 0, time.UTC)
+
+// Describe is what the driver reads: Apple accessories among the Bluetooth
+// devices, over L2CAP, on Linux only. Named Bluetooth, as BlueZ's driver is:
+// to a person they are the Bluetooth devices on the desk (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "Bluetooth",
+		Finds:        "device with a battery",
+		Capabilities: []string{"battery"},
+		Platforms:    []string{"linux"},
+		Quiet:        false,
+	}
+}

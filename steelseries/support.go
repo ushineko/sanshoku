@@ -3,6 +3,7 @@ package steelseries
 import (
 	"time"
 
+	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
@@ -98,3 +99,16 @@ var lightingBenched = time.Date(2026, time.October, 1, 0, 0, 0, 0, time.UTC)
 // novaProBenched is the date of the bench run against the Nova Pro Wireless X
 // base station (spec 006).
 var novaProBenched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
+
+// Describe is what the driver reads: SteelSeries keyboards, mice and headsets,
+// on Linux and Windows. Quiet: a receiver or base station lists itself whatever
+// is behind it (spec 014).
+func (Driver) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "SteelSeries",
+		Finds:        "device",
+		Capabilities: []string{"battery", "lighting"},
+		Platforms:    []string{"linux", "windows"},
+		Quiet:        true,
+	}
+}
