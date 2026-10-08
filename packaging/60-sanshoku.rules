@@ -15,3 +15,6 @@ KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1038", TAG+="uaccess"
 # NZXT: the status channel as hidraw, the LCD's bulk endpoint as the USB node
 KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"
+# AULA keyboards' 2.4 GHz receiver (Compx chip). The keyboard on its cable is
+# another vendor and is not read.
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="3554", TAG+="uaccess"

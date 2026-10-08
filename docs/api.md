@@ -139,6 +139,32 @@ Driver reads Apple audio accessories (AirPods) over the accessory protocol on an
 - `func DecodeBattery(packet []byte) ([]battery.Cell, error)`: DecodeBattery reads an accessory-protocol battery packet into its cells, in the order the device sent them.
 - `func Support() []support.Entry`: Support is the apple driver's support table.
 
+## aula
+
+`import "github.com/ushineko/sanshoku/aula"`
+
+Package aula is the driver for the battery of an AULA keyboard on its 2.4 GHz receiver: the F75, whose receiver answers a battery question for the keyboard on a vendor report.
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct {
+	Timeout time.Duration
+}
+```
+
+Driver reads an AULA keyboard's battery through its 2.4 GHz receiver.
+
+- `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per AULA receiver interface that declares report 0x13 on vendor page 0xFF02.
+- `func (Driver) Name() string`: Name is "aula".
+
+### Functions
+
+- `func Decode(r []byte) (battery.Battery, error)`: Decode reads a battery reply into a reading.
+- `func Support() []support.Entry`: Support is the aula driver's support table: the one receiver on the allow-list.
+
 ## battery
 
 `import "github.com/ushineko/sanshoku/battery"`

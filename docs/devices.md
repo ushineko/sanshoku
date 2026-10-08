@@ -47,6 +47,7 @@ is a Linux tree.
 | steelseries | Aerox 9 Wireless | vendor 1038, usage page 0xFFC0; 1038:1858 or 1038:185a | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | expected | 003 |
 | steelseries | Prime Wireless | vendor 1038, usage page 0xFFC0; 1038:1840 or 1038:1842 | battery | rivalcfg's 0x92 battery command; not read by hayami or this module | expected | 003 |
 | apple | Other AirPods and Apple audio accessories | connected BlueZ device, Modalias vendor 004c, audio icon or audio sink profile; L2CAP PSM 0x1001 | battery | per-ear and case levels over the accessory protocol, falling back to Battery1; one generation measured | – | 004 |
+| aula | F75 via its 2.4 GHz receiver | vendor 3554, report 0x13 on usage page 0xFF02; receiver 3554:fa09 | battery | command 0x4A, level and power state in one 20-byte report; on its cable the level is pinned at 100 and read as charging with no level; the keyboard on its cable (258a:010c) is not read | tested 2026-10-07; through the receiver's vendor collection, read-write, with the plain HID class driver | 013 |
 
 ## Listed
 

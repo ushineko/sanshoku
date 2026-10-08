@@ -116,6 +116,7 @@ and the effect a product decision of the program that shows it.
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
+| [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | An AULA keyboard's battery through its 2.4 GHz receiver. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
 | [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
 | [`cmd/sanshoku-bench`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-bench) | The hardware testbench. |
@@ -246,6 +247,14 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 ## Changelog
 
 ### Unreleased
+
+- `aula`: the AULA F75's battery through its 2.4 GHz receiver (spec 013):
+  report 0x13, command 0x4A, the level and the power state in one reply. On
+  its cable the receiver pins the level at 100, which is read as charging
+  with no level. An unanswered question is asked once more, because a
+  keyboard just switched to the receiver misses the first. Tested on Windows;
+  Expected on Linux until a bench there reads it. The udev rules gain vendor
+  3554.
 
 - HID devices are read on Windows (spec 012). `hidraw` gains a Windows
   backend: one `Node` per USB interface, its top-level collections put back

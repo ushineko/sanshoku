@@ -3,6 +3,7 @@ package all
 import (
 	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/apple"
+	"github.com/ushineko/sanshoku/aula"
 	"github.com/ushineko/sanshoku/bluez"
 	"github.com/ushineko/sanshoku/hwmon"
 	"github.com/ushineko/sanshoku/logitech"
@@ -22,6 +23,7 @@ func Drivers() []sanshoku.Driver {
 		nzxt.Driver{},
 		bluez.Driver{},
 		apple.Driver{},
+		aula.Driver{},
 	}
 }
 
@@ -35,5 +37,6 @@ func Support() []support.Entry {
 	out = append(out, nzxt.Support()...)
 	out = append(out, bluez.Support()...)
 	out = append(out, apple.Support()...)
+	out = append(out, aula.Support()...)
 	return out
 }
