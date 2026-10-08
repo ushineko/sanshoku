@@ -74,8 +74,9 @@ a report layout, or a transport must come with a reading from the real device.
 
 Paste, at minimum:
 
-- the device, its USB `VID:PID` (`lsusb`) or Bluetooth address, and the
-  transport (`/dev/hidraw`, L2CAP, hwmon);
+- the platform (Linux or Windows), the device, its USB `VID:PID` (`lsusb`
+  on Linux) or Bluetooth address, and the transport (`/dev/hidraw`, the
+  Windows HID API, L2CAP, hwmon);
 - the firmware or product revision if the device reports one;
 - the command or short program you ran and its real output — the parsed value
   *and*, for a protocol change, the raw report bytes;
@@ -97,15 +98,17 @@ contributor's future PRs declined on sight.
 
 ## Scope
 
-Direct device access for Linux, in Go, without cgo: peripheral batteries over
-HID++ and vendor report protocols, AirPods over Bluetooth, NZXT Kraken
-telemetry and LCD, and hwmon temperatures. It is the maintained home of the
-device code that [hayami](https://github.com/ushineko/hayami) and
+Direct device access for Linux, and for HID devices on Windows, in Go, without
+cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
+Bluetooth, NZXT Kraken telemetry and LCD, and hwmon temperatures. It is the
+maintained home of the device code that
+[hayami](https://github.com/ushineko/hayami) and
 [hotaru](https://github.com/ushineko/hotaru) each once carried themselves.
 
 In scope: new devices, protocol corrections, transports, and the public API
 that the consuming projects depend on. Out of scope: application-level UI,
 daemons, and anything that belongs in a consumer rather than in the library.
+Introducing cgo is a direction change.
 
 This is a library with downstream consumers. Public API changes are a direction
 change: start a Discussion. `docs/api.md` and `docs/devices.md` are generated —
@@ -128,8 +131,10 @@ make generate     # regenerates docs/api.md and docs/devices.md
 ```
 
 Go 1.26 or newer, no cgo. `make test` runs without hardware. Exercising a real
-device needs read/write access to its `/dev/hidraw` node or, for Bluetooth, an
-L2CAP-capable adapter.
+device needs read/write access to its `/dev/hidraw` node on Linux, the HID
+device on Windows, or, for Bluetooth, an L2CAP-capable adapter. The library
+must keep building on both Linux and Windows — a change that breaks either
+platform's build is not mergeable.
 
 ## What gets checked on your PR
 
