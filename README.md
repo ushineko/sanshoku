@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.7
+**Version**: 0.1.8
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -13,11 +13,11 @@ the maintained home of the device code that
 
 Three colours, for the range of things under one roof.
 
-> **Status**: v0.1.4. Every driver is built and bench-tested on real
-> hardware: Logitech HID++ 1.0 and 2.0, Razer, SteelSeries keyboards and the
-> Arctis Nova Pro Wireless, NZXT Kraken Elite telemetry and LCD, BlueZ
-> `Battery1`, and hwmon. AirPods over the Accessory Protocol are written and
-> not yet benched. No program imports the module yet; hayami is first.
+> **Status**: v0.1.8. Every Linux driver but aula is bench-tested on real hardware:
+> Logitech HID++ 1.0 and 2.0, Razer, SteelSeries keyboards and the Arctis Nova
+> Pro Wireless, NZXT Kraken Elite telemetry and LCD, BlueZ `Battery1`, AirPods
+> and hwmon. On Windows the HID drivers read through the HID class driver: the
+> Razer and AULA drivers are bench-tested there. hayami imports the module.
 
 ## Contents
 
@@ -246,7 +246,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.8 (2026-10-07)
 
 - `aula`: the AULA F75's battery through its 2.4 GHz receiver (spec 013):
   report 0x13, command 0x4A, the level and the power state in one reply. On
