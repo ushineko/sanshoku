@@ -246,6 +246,17 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **Fix**: `aula` gives its second question 1.5 s instead of 300 ms. An idle
+  F75 took about a second to answer and read nothing on both short questions;
+  measured afterwards, a keyboard woken by one poll was read on the next in
+  1008 ms, and an awake one in 15-27 ms (#38).
+
+- **Fix**: `IsPermission` recognises Windows' `ERROR_ACCESS_DENIED` (it matches
+  `fs.ErrPermission`, not `EACCES` or `EPERM`), so a device another program
+  holds unshared reads as not permitted instead of silent (#39).
+
 ### 0.1.8 (2026-10-07)
 
 - `aula`: the AULA F75's battery through its 2.4 GHz receiver (spec 013):
