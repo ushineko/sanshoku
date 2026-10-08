@@ -139,6 +139,32 @@ Driver reads Apple audio accessories (AirPods) over the accessory protocol on an
 - `func DecodeBattery(packet []byte) ([]battery.Cell, error)`: DecodeBattery reads an accessory-protocol battery packet into its cells, in the order the device sent them.
 - `func Support() []support.Entry`: Support is the apple driver's support table.
 
+## aula
+
+`import "github.com/ushineko/sanshoku/aula"`
+
+Package aula is the driver for the battery of an AULA keyboard on its 2.4 GHz receiver: the F75, whose receiver answers a battery question for the keyboard on a vendor report.
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct {
+	Timeout time.Duration
+}
+```
+
+Driver reads an AULA keyboard's battery through its 2.4 GHz receiver.
+
+- `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per AULA receiver interface that declares report 0x13 on vendor page 0xFF02.
+- `func (Driver) Name() string`: Name is "aula".
+
+### Functions
+
+- `func Decode(r []byte) (battery.Battery, error)`: Decode reads a battery reply into a reading.
+- `func Support() []support.Entry`: Support is the aula driver's support table: the one receiver on the allow-list.
+
 ## battery
 
 `import "github.com/ushineko/sanshoku/battery"`
@@ -348,7 +374,7 @@ Status is what a liquid cooler reports about itself.
 
 `import "github.com/ushineko/sanshoku/hidraw"`
 
-Package hidraw enumerates /sys/class/hidraw, parses report descriptors, and opens /dev/hidrawN for report exchange and feature-report ioctls.
+Package hidraw finds HID interfaces, parses report descriptors, and exchanges reports and feature reports with them.
 
 ### Constants
 
@@ -358,6 +384,7 @@ Package hidraw enumerates /sys/class/hidraw, parses report descriptors, and open
 - `const BusUSB = 0x03`: BusUSB is a device on USB, including one behind a USB receiver.
 - `const BusBluetooth = 0x05`: BusBluetooth is a device on Bluetooth.
 - `const QueueDepth = 64`: QueueDepth is how many reports the kernel will hold for one open handle.
+- `const SplitsReceivers = true`: SplitsReceivers says whether the system gives each device paired to a receiver a node of its own.
 
 ### Variables
 
@@ -414,13 +441,29 @@ type Node struct {
 
 	Descriptor []byte
 
+	Reports []Report
+
 	USBPath string
 }
 ```
 
-Node is one hidraw node: where it is and what the kernel says about it.
+Node is one HID interface: where it is and what the system says about it.
 
 - `func Nodes(vendor uint16, want func(Node) bool) ([]Node, error)`: Nodes lists the hidraw nodes of one vendor that satisfy want.
+
+#### type Report
+
+```go
+type Report struct {
+	Kind  ReportKind
+	ID    byte
+	Page  uint16
+	Usage uint16
+	Len   int
+}
+```
+
+Report is one report a node declares: which way it goes, its number, the usage it carries and how long it is.
 
 #### type ReportDevice
 
@@ -433,13 +476,26 @@ type ReportDevice interface {
 
 ReportDevice is what Exchange speaks through: a *Handle, or a test's stand-in for one.
 
+#### type ReportKind
+
+```go
+type ReportKind byte
+```
+
+ReportKind is which way a report travels.
+
+- `const ReportInput ReportKind = iota + 1`: ReportInput is a report the device sends.
+- `const ReportOutput ReportKind`: ReportOutput is a report the host sends with a write.
+- `const ReportFeature ReportKind`: ReportFeature is a report exchanged with a feature request.
+- `func (k ReportKind) String() string`: String names a kind for a test's message and the testbench.
+
 ### Functions
 
 - `func Exchange(ctx context.Context, dev ReportDevice, req []byte, matches func(reply []byte) bool, size int) ([]byte, error)`: Exchange writes req and returns the first report, read into a buffer of size bytes, for which matches is true, skipping every other report until the context's deadline.
-- `func HasReportID(page uint16, id byte) func(Node) bool`: HasReportID is a predicate for Nodes: the descriptor declares report id while the current usage page is page or above.
+- `func HasReportID(page uint16, id byte) func(Node) bool`: HasReportID is a predicate for Nodes: the node declares report id while the current usage page is page or above.
 - `func PairedChild(phys string) bool`: PairedChild reports whether a node is one device behind a receiver rather than the receiver itself.
 - `func PairedIndex(phys string) (index byte, ok bool)`: PairedIndex returns the device index a paired child's HID_PHYS ends in, the N of `:N`, and whether there is one.
-- `func UsagePage(want uint16) func(Node) bool`: UsagePage is a predicate for Nodes: the node's descriptor declares the given usage page anywhere in it.
+- `func UsagePage(want uint16) func(Node) bool`: UsagePage is a predicate for Nodes: the node declares the given usage page anywhere in it.
 - `func Walk(desc []byte, visit func(item Item) bool)`: Walk reads a report descriptor item by item, calling visit for each until it returns false.
 
 ## hwmon
@@ -789,12 +845,28 @@ type Entry struct {
 	Spec int
 
 	Notes string
+
+	Windows *Port
 }
 ```
 
 Entry is one row of the support table: a device, or a protocol family, that a driver speaks.
 
 - `func Lookup(entries []Entry, driver string, vendor, product uint16, name string) (Entry, bool)`: Lookup finds the entry that covers a found device, for a program or the bench that wants to say what tier it is at.
+
+#### type Port
+
+```go
+type Port struct {
+	Tier Tier
+
+	Tested time.Time
+
+	Notes string
+}
+```
+
+Port is where an entry stands on an operating system other than Linux.
 
 #### type Tier
 

@@ -39,6 +39,7 @@ func Support() []support.Entry {
 			Tested:       benched,
 			Spec:         3,
 			Notes:        "the mouse is read through the dock's RF relay, transaction 0x1F; read 100% full on the dock",
+			Windows:      &support.Port{Tier: support.Expected},
 		},
 		{
 			Driver:       driverName,
@@ -50,6 +51,10 @@ func Support() []support.Entry {
 			Tier:         support.Expected,
 			Spec:         3,
 			Notes:        "OpenRazer addresses it on transaction 0x3F; found on a bench and answered nothing with the mouse off it, as a charger does",
+			Windows: &support.Port{
+				Tier:  support.Expected,
+				Notes: "answered status 0x05, not supported, with no mouse on it, as on Linux",
+			},
 		},
 		{
 			Driver:       driverName,
@@ -63,9 +68,17 @@ func Support() []support.Entry {
 			Tested:       benched,
 			Spec:         3,
 			Notes:        "read 63% discharging through the dongle",
+			Windows: &support.Port{
+				Tier:   support.Tested,
+				Tested: windowsBenched,
+				Notes:  "read 77% discharging, feature reports on interface 0 opened with no access",
+			},
 		},
 	}
 }
 
 // benched is the date of the bench runs on the two machines with Razer devices.
 var benched = time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC)
+
+// windowsBenched is the date of spec 012's bench run on Windows.
+var windowsBenched = time.Date(2026, time.October, 7, 0, 0, 0, 0, time.UTC)

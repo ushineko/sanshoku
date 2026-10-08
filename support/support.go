@@ -86,6 +86,24 @@ type Entry struct {
 	// Notes is anything a reader needs beside the match: for a Listed entry,
 	// why it is not implemented.
 	Notes string
+
+	// Windows is where the entry stands on Windows, and nil where its driver
+	// does not run there. Tier, Hardware, Firmware and Tested above are
+	// Linux's, where every driver began; a driver reached Windows by spec 012
+	// and each entry is promoted there on its own bench run, as on Linux.
+	Windows *Port
+}
+
+// Port is where an entry stands on an operating system other than Linux.
+type Port struct {
+	Tier Tier
+
+	// Tested is the date of the bench run on that system that set the tier;
+	// zero for a tier that is not Tested.
+	Tested time.Time
+
+	// Notes is what differs there, where something does.
+	Notes string
 }
 
 /*

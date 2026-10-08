@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -105,8 +106,16 @@ A device that is not connected is not listed: it is paired and elsewhere. Each
 call opens its own connection to the system bus and closes it, so the context
 bounds the whole of it and nothing is left running between calls. No bus, or
 no BlueZ on it, is ErrNoBlueZ.
+
+Off Linux it is ErrNoBlueZ without trying (spec 012). BlueZ is a Linux service,
+and godbus on Windows looks for a session bus on a TCP port, which costs a
+refused connection on every poll and reports it as though a bus were
+expected there.
 */
 func Devices(ctx context.Context) ([]Device, error) {
+	if runtime.GOOS != "linux" {
+		return nil, fmt.Errorf("%w: BlueZ is a Linux service", ErrNoBlueZ)
+	}
 	conn, err := dbus.ConnectSystemBus(dbus.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrNoBlueZ, err)

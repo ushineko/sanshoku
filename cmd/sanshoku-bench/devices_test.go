@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ushineko/sanshoku"
+	"github.com/ushineko/sanshoku/support"
 )
 
 // The bench never prints a Bluetooth address. A BlueZ object path ends in one,
@@ -36,4 +37,14 @@ func TestLightReadsKeyIDs(t *testing.T) {
 	assert.Equal(t, []byte{0x29, 0x00, 0xe6}, ids)
 	_, err = parseIDs("29,zz")
 	require.Error(t, err)
+}
+
+// The bench says where a device stands on the system it runs on: an entry's
+// Windows tier on Windows, its own tier everywhere else and wherever it has
+// no Windows standing (spec 012).
+func TestTierHereIsTheRunningSystems(t *testing.T) {
+	e := support.Entry{Tier: support.Expected, Windows: &support.Port{Tier: support.Tested}}
+	assert.Equal(t, support.Tested, tierHere(e, "windows"))
+	assert.Equal(t, support.Expected, tierHere(e, "linux"))
+	assert.Equal(t, support.Tested, tierHere(support.Entry{Tier: support.Tested}, "windows"))
 }

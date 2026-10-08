@@ -36,6 +36,7 @@ func Support() []support.Entry {
 			Tier:         support.Expected,
 			Spec:         3,
 			Notes:        "rivalcfg's 0x92 battery command; not read by hayami or this module",
+			Windows:      &support.Port{Tier: support.Expected},
 		}
 	}
 	legacyEntry := func(device, ids string, product uint16) support.Entry {
@@ -49,6 +50,7 @@ func Support() []support.Entry {
 			Spec:     3,
 			Notes: "rivalcfg's 0xAA 0x01 battery command, whose reply carries no command echo to match on; " +
 				"not implemented without a device to measure",
+			Windows: &support.Port{Tier: support.Listed},
 		}
 	}
 
@@ -73,6 +75,7 @@ func Support() []support.Entry {
 		Spec:         6,
 		Notes: "HeadsetControl's 06 b0 battery report through the base station; " +
 			"12e0 is by protocol, not measured",
+		Windows: &support.Port{Tier: support.Expected},
 	}
 
 	return []support.Entry{

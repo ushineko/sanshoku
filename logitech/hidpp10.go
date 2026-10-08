@@ -35,7 +35,62 @@ const (
 	// registerBatteryStatus carries the band, which is what a device without a
 	// gauge knows about itself.
 	registerBatteryStatus = 0x07
+
+	// subGetLongRegister reads a long register, whose answer comes back as a
+	// long report. GET_LONG_REGISTER_REQ; its writing neighbour 0x82 appears
+	// nowhere in this package either.
+	subGetLongRegister = 0x83
+
+	// registerPairing is the receiver's pairing information, read per device
+	// with a sub-register: 0x40 plus the device's index less one is the name
+	// the device gave when it paired ("K800"). solaar's RECEIVER_INFO 0x2B5,
+	// DEVICE_NAME 0x40.
+	registerPairing  = 0xB5
+	pairingNameFirst = 0x40
 )
+
+// receiverIndex addresses the receiver itself, as wiredIndex addresses a
+// device on its cable: the same number, which is the receiver when there is
+// one.
+const receiverIndex = wiredIndex
+
+/*
+pairedName asks a receiver what the device at index called itself when it
+paired, and returns it with the vendor in front, as the kernel names a paired
+device's node ("Logitech K800"). Empty where the receiver will not say.
+
+It is how a HID++ 1.0 device is named where the system gives it no node of its
+own (Windows, spec 012): such a device has no name feature, and the receiver's
+own name ("USB Receiver") is the one thing it must not be called.
+
+The reply is a long report: the sub-register echoed, then the name's length,
+then the name.
+*/
+func (d *device) pairedName(ctx context.Context, index byte) string {
+	sub := pairingNameFirst + index - 1
+	req := []byte{reportShort, receiverIndex, subGetLongRegister, registerPairing, sub, 0, 0}
+	r, err := attempt(ctx, d.rd, d.timeout, req, func(r []byte) bool {
+		if len(r) < 5 || r[1] != receiverIndex {
+			return false
+		}
+		if r[2] == errorSub10 {
+			return r[3] == subGetLongRegister && r[4] == registerPairing
+		}
+		return r[0] == reportLong && r[2] == subGetLongRegister && r[3] == registerPairing && r[4] == sub
+	})
+	if err != nil || r[2] == errorSub10 || len(r) < 6 {
+		return ""
+	}
+	length := int(r[5])
+	if length == 0 || 6+length > len(r) {
+		return ""
+	}
+	name, ok := printableName(r[6 : 6+length])
+	if !ok || name == "" {
+		return ""
+	}
+	return vendorWord + " " + name
+}
 
 /*
 bands maps the register's values.

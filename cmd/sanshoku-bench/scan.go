@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"runtime"
 	"strings"
 	"text/tabwriter"
 
@@ -57,7 +58,7 @@ func scan(ctx context.Context, args []string, out, errOut io.Writer) int {
 			_ = dev.Close()
 		}
 		writef(tw, "%s\t%s\t%s\t%s\t%s\n", c.Driver, c.Identity, shownPath(c.Identity), caps, tierWords(entry, known))
-		if known && entry.Tier == support.Expected {
+		if known && tierHere(entry, runtime.GOOS) == support.Expected {
 			notes = append(notes, fmt.Sprintf("%s: %s", c.Identity, reportHint(c)))
 		}
 	}

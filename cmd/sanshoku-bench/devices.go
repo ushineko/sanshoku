@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -46,12 +47,21 @@ func entryFor(entries []support.Entry, c sanshoku.Candidate) (support.Entry, boo
 	return support.Lookup(entries, c.Driver, c.Vendor, c.Product, c.Name)
 }
 
-// tierWords is a candidate's tier as the bench prints it.
+// tierWords is a candidate's tier as the bench prints it: on this system.
 func tierWords(e support.Entry, ok bool) string {
 	if !ok {
 		return "not in the support table"
 	}
-	return e.Tier.String()
+	return tierHere(e, runtime.GOOS).String()
+}
+
+// tierHere is where an entry stands on the system the bench runs on: its
+// Windows tier on Windows where it has one (spec 012), its own elsewhere.
+func tierHere(e support.Entry, goos string) support.Tier {
+	if goos == "windows" && e.Windows != nil {
+		return e.Windows.Tier
+	}
+	return e.Tier
 }
 
 // reportHint is the line printed beside an Expected device.

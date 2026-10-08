@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"runtime"
 	"strings"
 	"time"
 
@@ -106,7 +107,7 @@ func readAll(ctx context.Context, ds []sanshoku.Driver) ([]deviceReport, error) 
 			Bus:          c.Bus.String(),
 			Path:         shownPath(c.Identity),
 			Tier:         tierWords(entry, known),
-			expected:     known && entry.Tier == support.Expected,
+			expected:     known && tierHere(entry, runtime.GOOS) == support.Expected,
 			Capabilities: []string{},
 			candidate:    c,
 		}

@@ -172,6 +172,12 @@ type device struct {
 	// nothing there any more.
 	known []located
 
+	// childNodes says whether the system gives a device paired to a
+	// receiver a node of its own (hidraw.SplitsReceivers), which decides
+	// whether a receiver node reads one. A field so a test can say which
+	// system it is on.
+	childNodes bool
+
 	// presence is what the last discovery learned besides the batteries.
 	presence Presence
 }
@@ -193,7 +199,8 @@ type located struct {
 func newDevice(id sanshoku.Identity, n hidraw.Node, timeout time.Duration, h *hidraw.Handle) *device {
 	return &device{
 		id: id, node: n, timeout: timeout, rd: h, handle: h,
-		presence: Presence{Nodes: 1},
+		childNodes: hidraw.SplitsReceivers,
+		presence:   Presence{Nodes: 1},
 	}
 }
 
@@ -336,6 +343,14 @@ func (d *device) discover(ctx context.Context) ([]located, error) {
 			// missed by this. None was to hand to check against, and a missed
 			// reading is the better of the two mistakes.
 			found = append(found, located{index: index, old: true, name: d.node.Name})
+		case errors.Is(err, errOldProtocol) && index != wiredIndex && !d.childNodes:
+			// The same paired device, on a system that gives it no node of
+			// its own (Windows, spec 012). The receiver node is the only way
+			// to it, so it is read here -- and the reason for the exclusion
+			// above does not arise, because there is no child node to read it
+			// twice. The receiver's name is still not the device's, so the
+			// device's is asked of the receiver's pairing register.
+			found = append(found, located{index: index, old: true, name: d.pairedName(ctx, index)})
 		case errors.Is(err, errNotReachable):
 			quiet++
 		case errors.Is(err, sanshoku.ErrGone):
