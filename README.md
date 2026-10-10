@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.11
+**Version**: 0.1.12
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -247,7 +247,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.12 (2026-10-09)
 
 - DualSense batteries (spec 017, #47). A new `sony` driver reads a DualSense's
   level and charge state from its input report, over USB or Bluetooth; over
