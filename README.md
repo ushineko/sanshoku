@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.10
+**Version**: 0.1.11
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -246,7 +246,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.11 (2026-10-09)
 
 - Bluetooth batteries are read on Windows (spec 016). `bluez.Devices` lists
   connected devices there from the properties the Bluetooth stack keeps in the
