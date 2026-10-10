@@ -202,6 +202,8 @@ func TestDescribeReadsTheModaliasAndTheKind(t *testing.T) {
 			0x054c, 0x0f8a, false, true, battery.KindHeadset},
 		{map[string]any{"Modalias": "usb:v05ACp0267d0001", "Icon": "input-keyboard"},
 			0x05ac, 0x0267, false, false, battery.KindKeyboard},
+		{map[string]any{"Modalias": "usb:v054Cp0CE6d0100", "Icon": "input-gaming"},
+			0x054c, 0x0ce6, false, false, battery.KindGamepad},
 		// A pair of headphones with no icon, known by its audio sink.
 		{map[string]any{"UUIDs": []string{"0000110B-0000-1000-8000-00805F9B34FB"}},
 			0, 0, false, true, battery.KindHeadset},

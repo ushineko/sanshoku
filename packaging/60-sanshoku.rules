@@ -18,3 +18,7 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"
 # AULA keyboards' 2.4 GHz receiver (Compx chip). The keyboard on its cable is
 # another vendor and is not read.
 KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="3554", TAG+="uaccess"
+# Sony DualSense and DualSense Edge, over USB or Bluetooth: by product and HID
+# ID, because Sony headphones share the vendor and Bluetooth has no USB parent.
+KERNEL=="hidraw*", KERNELS=="*054C:0CE6*", TAG+="uaccess"
+KERNEL=="hidraw*", KERNELS=="*054C:0DF2*", TAG+="uaccess"

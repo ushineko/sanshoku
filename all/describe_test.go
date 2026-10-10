@@ -68,5 +68,6 @@ func TestTheBatteryDriversSayWhatNothingFoundIs(t *testing.T) {
 		"no SteelSeries device",
 		"no Bluetooth device with a battery",
 		"no AULA receiver",
+		"no Sony controller",
 	}, said)
 }

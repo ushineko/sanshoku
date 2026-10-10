@@ -117,6 +117,7 @@ and the effect a product decision of the program that shows it.
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | An AULA keyboard's battery through its 2.4 GHz receiver. |
+| [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
 | [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
 | [`cmd/sanshoku-bench`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-bench) | The hardware testbench. |
@@ -245,6 +246,15 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- DualSense batteries (spec 017, #47). A new `sony` driver reads a DualSense's
+  level and charge state from its input report, over USB or Bluetooth; over
+  Bluetooth it first reads feature report 0x05, as Steam and the Linux kernel
+  do, which keeps the controller in its long-report mode until it reconnects.
+  `battery.KindGamepad` is a new kind, from BlueZ's `input-gaming` icon, the
+  Windows class of device and the Sony driver. Read on Windows over Bluetooth.
 
 ### 0.1.11 (2026-10-09)
 

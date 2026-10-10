@@ -98,6 +98,7 @@ var deviceKinds = map[string]battery.Kind{
 	"input-keyboard":   battery.KindKeyboard,
 	"audio-headset":    battery.KindHeadset,
 	"audio-headphones": battery.KindHeadset,
+	"input-gaming":     battery.KindGamepad,
 }
 
 /*

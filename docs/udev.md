@@ -18,6 +18,13 @@ drive costs nothing.
 | SteelSeries | `1038` | `steelseries` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1038", TAG+="uaccess"` |
 | NZXT | `1e71` | `nzxt` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"` and `SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"` |
 | AULA (2.4 GHz receiver) | `3554` | `aula` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="3554", TAG+="uaccess"` |
+| Sony (DualSense, DualSense Edge) | `054c` | `sony` | `KERNEL=="hidraw*", KERNELS=="*054C:0CE6*", TAG+="uaccess"` and the same for `0DF2` |
+
+Sony's rules match the controller by product and through its HID ID rather
+than by USB vendor, for two reasons: the same vendor ID is on Sony headphones
+the module does not drive, and a controller on Bluetooth has no USB parent for
+`ATTRS{idVendor}` to match. They are the rules Steam's `steam-devices`
+package installs, so a desk with Steam may have them already.
 
 NZXT needs two rules because its two interfaces surface differently: status
 and control as a hidraw character device, the LCD's bulk endpoint as the USB
