@@ -30,7 +30,7 @@ is a Linux tree.
 | steelseries | Apex Pro TKL Wireless Gen 3 | vendor 1038, usage page 0xFFC0; 1038:1644 (2.4 GHz) or 1038:1646 (cable) | battery, lighting | SteelSeries Apex Pro TKL Wireless Gen 3, on its cable (1038:1646) and its receiver (1038:1644) | – | 2026-10-01 | expected | 003 |
 | steelseries | Arctis Nova Pro Wireless | vendor 1038, usage page 0xFFC0; 1038:12e5 (X base station), or 1038:12e0 (base station, expected) | battery | SteelSeries Arctis Nova Pro Wireless, base station 1038:12e5 | – | 2026-09-29 | expected | 006 |
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | expected; coolant, pump and fan over HID; the screen needs usbfs, which Windows does not have | 005 |
-| bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | – | 004 |
+| bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | tested 2026-10-09; the Bluetooth stack's battery property, read from the device tree; nothing is sent to the device. Tested on a Bose QC35; a DualSense has no such property | 004 |
 | apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | – | 004 |
 
 ## Expected

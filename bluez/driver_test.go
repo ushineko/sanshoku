@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/godbus/dbus/v5"
@@ -164,6 +165,9 @@ address that resolves to nothing, because the wrapping is what is under test
 and a stub that returned ErrNoBlueZ would be asserting the test's own setup.
 */
 func TestAnUnreachableBusIsErrNoBlueZ(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("on Windows Devices reads the Bluetooth stack's device properties, not a bus (spec 016)")
+	}
 	t.Setenv("DBUS_SYSTEM_BUS_ADDRESS", "unix:path=/nonexistent/sanshoku-test")
 
 	_, err := Devices(context.Background())

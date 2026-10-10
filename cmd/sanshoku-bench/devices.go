@@ -97,9 +97,16 @@ func permissionHint(id sanshoku.Identity) string {
 // /org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF.
 var bluezAddress = regexp.MustCompile(`(?i)dev(_[0-9a-f]{2}){6}`)
 
+// windowsAddress is the address in a Windows Bluetooth device instance ID,
+// which carries it twice and unseparated:
+// BTHENUM\DEV_AABBCCDDEEFF\8&...&BLUETOOTHDEVICE_AABBCCDDEEFF for a device,
+// and ...\8&...&0&AABBCCDDEEFF_C00000000 for one of its profiles (spec 016).
+var windowsAddress = regexp.MustCompile(`(?i)(DEV_|DEVICE_|&)[0-9a-f]{12}`)
+
 // shownPath is a candidate's path as the bench prints it. A Bluetooth device's
-// D-Bus object path carries its address, which the bench never prints, so that
-// segment is masked.
+// D-Bus object path, and its Windows instance ID, carry its address, which the
+// bench never prints, so that part is masked.
 func shownPath(id sanshoku.Identity) string {
-	return bluezAddress.ReplaceAllString(id.Path, "dev_XX_XX_XX_XX_XX_XX")
+	p := bluezAddress.ReplaceAllString(id.Path, "dev_XX_XX_XX_XX_XX_XX")
+	return windowsAddress.ReplaceAllString(p, "${1}XXXXXXXXXXXX")
 }

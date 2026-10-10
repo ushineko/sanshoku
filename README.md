@@ -106,7 +106,7 @@ and the effect a product decision of the program that shows it.
 | [`usbfs`](https://pkg.go.dev/github.com/ushineko/sanshoku/usbfs) | Claim an interface and write a bulk endpoint through raw usbdevfs ioctls. |
 | [`hwmon`](https://pkg.go.dev/github.com/ushineko/sanshoku/hwmon) | Temperatures by chip and label; the CPU and GPU sensor tables. |
 | [`l2cap`](https://pkg.go.dev/github.com/ushineko/sanshoku/l2cap) | Bluetooth L2CAP sequenced-packet sockets with deadlines. |
-| [`bluez`](https://pkg.go.dev/github.com/ushineko/sanshoku/bluez) | Connected devices from the BlueZ system bus; the generic `Battery1` driver. |
+| [`bluez`](https://pkg.go.dev/github.com/ushineko/sanshoku/bluez) | Connected Bluetooth devices, from the BlueZ system bus on Linux and the Bluetooth stack's device properties on Windows; the generic battery driver. |
 | [`battery`](https://pkg.go.dev/github.com/ushineko/sanshoku/battery) | The battery reading and the `Source` capability. |
 | [`cooling`](https://pkg.go.dev/github.com/ushineko/sanshoku/cooling) | The cooler reading and the `Source` capability. |
 | [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display. |
@@ -245,6 +245,15 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- Bluetooth batteries are read on Windows (spec 016). `bluez.Devices` lists
+  connected devices there from the properties the Bluetooth stack keeps in the
+  device tree, with the level a headset reports (on the Hands-Free AG node,
+  joined to the device by container) and the kind from the class of device.
+  The `bluez` driver describes itself as reading on Windows. The bench masks
+  the address in a Windows instance ID. Read on a Bose QC35.
 
 ### 0.1.10 (2026-10-08)
 

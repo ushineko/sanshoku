@@ -165,12 +165,14 @@ once its owner was running; this is the fix.
   retried with the deadline recomputed. The Bluetooth address is passed in
   written order; `x/sys` reverses it.
 - **BlueZ**: the system bus `ObjectManager`. No `upower` and no BlueZ
-  experimental flag.
+  experimental flag. On Windows the same list comes from the device
+  properties the Bluetooth stack keeps, through setupapi (spec 016).
 - **hwmon**: chip name and label, never the hwmon index, which the kernel
   renumbers.
 
-All five are Linux. The module is Linux-only and says so; there are no stub
-files for other platforms.
+All five began on Linux. hidraw reads HID on Windows (spec 012) and the
+Bluetooth device list is read there from the device tree (spec 016); the rest
+find nothing off Linux.
 
 ## Contention
 
