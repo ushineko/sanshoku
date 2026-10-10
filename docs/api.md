@@ -842,6 +842,33 @@ type Panel interface {
 
 Panel is a device with a display a program can draw on.
 
+## sony
+
+`import "github.com/ushineko/sanshoku/sony"`
+
+Package sony is the driver for the battery of a Sony DualSense controller, read from the controller's own input report over USB or Bluetooth.
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct {
+	Timeout time.Duration
+}
+```
+
+Driver reads a DualSense's battery from its input report.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: a DualSense, on Linux and Windows.
+- `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per Sony interface that declares input report 0x01 on the Generic Desktop page, the controller's own.
+- `func (Driver) Name() string`: Name is "sony".
+
+### Functions
+
+- `func Decode(r []byte, overBluetooth bool) (battery.Battery, error)`: Decode reads the battery out of one input report.
+- `func Support() []support.Entry`: Support is the sony driver's support table: the controllers on the allow-list.
+
 ## steelseries
 
 `import "github.com/ushineko/sanshoku/steelseries"`

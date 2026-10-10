@@ -80,6 +80,10 @@ var udevRules = map[uint16][]string{
 		`KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"`,
 		`SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"`,
 	},
+	0x054c: {
+		`KERNEL=="hidraw*", KERNELS=="*054C:0CE6*", TAG+="uaccess"`,
+		`KERNEL=="hidraw*", KERNELS=="*054C:0DF2*", TAG+="uaccess"`,
+	},
 }
 
 // permissionHint says what to install when a node could not be opened for
