@@ -7,10 +7,11 @@ hayami orders its cells by it, because a desk has one mouse and several things
 that are sometimes there: the mouse is the reading a glance is usually after,
 and ordering by name put a headset first.
 
-It is deliberately coarse. It tells a mouse from a keyboard from a headset and
-nothing else; a taxonomy with a case per protocol would have to be kept in step
-with drivers that each name things differently. The BlueZ icons map onto it as
-input-mouse, input-keyboard, and audio-headset or audio-headphones.
+It is deliberately coarse. It tells a mouse from a keyboard from a headset
+from a game controller and nothing else; a taxonomy with a case per protocol
+would have to be kept in step with drivers that each name things differently.
+The BlueZ icons map onto it as input-mouse, input-keyboard, audio-headset or
+audio-headphones, and input-gaming.
 */
 type Kind int
 
@@ -27,6 +28,8 @@ const (
 	KindKeyboard
 	// KindHeadset is a headset or a pair of headphones or earbuds.
 	KindHeadset
+	// KindGamepad is a game controller: a gamepad or a joystick (#47).
+	KindGamepad
 )
 
 // String names a kind for display and for JSON.
@@ -38,6 +41,8 @@ func (k Kind) String() string {
 		return "keyboard"
 	case KindHeadset:
 		return "headset"
+	case KindGamepad:
+		return "gamepad"
 	default:
 		return "other"
 	}

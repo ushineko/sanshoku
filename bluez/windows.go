@@ -141,6 +141,8 @@ const (
 	// gamepad, remote control ...).
 	peripheralKeyboard = 0x1
 	peripheralPointing = 0x2
+	peripheralJoystick = 0x1
+	peripheralGamepad  = 0x2
 )
 
 /*
@@ -167,6 +169,10 @@ func classKind(class uint32) battery.Kind {
 			return battery.KindKeyboard
 		case peripheralPointing:
 			return battery.KindMouse
+		}
+		switch minor & 0xF {
+		case peripheralJoystick, peripheralGamepad:
+			return battery.KindGamepad
 		}
 	}
 	return battery.KindOther

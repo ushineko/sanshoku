@@ -27,7 +27,7 @@ func TestTheClassOfDeviceGivesTheKind(t *testing.T) {
 		want  battery.Kind
 	}{
 		{"headphones", classQC35, battery.KindHeadset},
-		{"a gamepad has no kind yet", classDualSense, battery.KindOther},
+		{"gamepad", classDualSense, battery.KindGamepad},
 		{"keyboard", classKeyboard, battery.KindKeyboard},
 		{"mouse", classMouse, battery.KindMouse},
 		{"a loudspeaker is not worn", classSpeaker, battery.KindOther},

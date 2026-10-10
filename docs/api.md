@@ -311,6 +311,7 @@ Kind is what sort of device a battery belongs to.
 - `const KindMouse Kind`: KindMouse is a mouse, and also a trackball or a touchpad: what they have in common is being the pointing device on the desk.
 - `const KindKeyboard Kind`: KindKeyboard is a keyboard, and also a numpad.
 - `const KindHeadset Kind`: KindHeadset is a headset or a pair of headphones or earbuds.
+- `const KindGamepad Kind`: KindGamepad is a game controller: a gamepad or a joystick (#47).
 - `func (k Kind) String() string`: String names a kind for display and for JSON.
 
 #### type Source
