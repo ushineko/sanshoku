@@ -83,7 +83,8 @@ automation: nothing syncs specs to issues, so the link is made by hand.
 - **Linux first, HID on Windows, no cgo.** hidraw, usbfs, L2CAP and BlueZ are
   Linux kernel and system interfaces. On Windows `hidraw` reads HID devices
   through the HID class driver (hid.dll, cfgmgr32) and the rest find nothing
-  (spec 012). `golang.org/x/sys` and `github.com/godbus/dbus/v5` are the only
+  (spec 012). `gpu` and `lhm` read the graphics card and the processor's
+  temperature on Windows (spec 018). `golang.org/x/sys` and `github.com/godbus/dbus/v5` are the only
   runtime dependencies; anything heavier is justified in the spec that adds
   it. No libusb, no hidapi.
 - **A driver matches by vendor and usage page, or an allow-list, never by
@@ -153,11 +154,16 @@ Release whose notes are that entry.
 
 ## Security Extensions
 
-- No credentials and no network access in any library package. BlueZ over the
+- No credentials in any library package, and no network access except `lhm`,
+  which makes one kind of request: a GET of the address its caller gives,
+  LibreHardwareMonitor's on loopback by default (spec 018). BlueZ over the
   system bus is local IPC, not network.
 - No captured traffic, address, serial or user-given device name in fixtures
   or error messages. The repository is public.
 - The module opens only the nodes its transports document:
   `/sys/class/hidraw`, `/dev/hidraw*`, `/dev/bus/usb`, `/sys/class/hwmon`,
-  the BlueZ bus and L2CAP sockets.
+  the BlueZ bus and L2CAP sockets. On Windows: HID collections, the
+  graphics kernel through gdi32, the GPU Engine counters through pdh, and
+  read-only looks at the service manager, the process list and the Task
+  Scheduler index for `lhm.ProbeHost`.
 - `govulncheck ./...` before each tagged release.

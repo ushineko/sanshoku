@@ -105,6 +105,8 @@ and the effect a product decision of the program that shows it.
 | [`hidraw`](https://pkg.go.dev/github.com/ushineko/sanshoku/hidraw) | HID interfaces: sysfs enumeration on Linux, the HID class driver on Windows; report-descriptor walking, report exchange with deadlines, feature reports. |
 | [`usbfs`](https://pkg.go.dev/github.com/ushineko/sanshoku/usbfs) | Claim an interface and write a bulk endpoint through raw usbdevfs ioctls. |
 | [`hwmon`](https://pkg.go.dev/github.com/ushineko/sanshoku/hwmon) | Temperatures by chip and label; the CPU and GPU sensor tables. |
+| [`gpu`](https://pkg.go.dev/github.com/ushineko/sanshoku/gpu) | A graphics card's name, temperature and load on Windows, from D3DKMT and the GPU Engine counters. |
+| [`lhm`](https://pkg.go.dev/github.com/ushineko/sanshoku/lhm) | The processor's temperature on Windows, from LibreHardwareMonitor's sensor tree over loopback. |
 | [`l2cap`](https://pkg.go.dev/github.com/ushineko/sanshoku/l2cap) | Bluetooth L2CAP sequenced-packet sockets with deadlines. |
 | [`bluez`](https://pkg.go.dev/github.com/ushineko/sanshoku/bluez) | Connected Bluetooth devices, from the BlueZ system bus on Linux and the Bluetooth stack's device properties on Windows; the generic battery driver. |
 | [`battery`](https://pkg.go.dev/github.com/ushineko/sanshoku/battery) | The battery reading and the `Source` capability. |
@@ -135,8 +137,9 @@ the stream as `lighting.Canvas`, and the effects stay the consumer's. Everything
 else follows the rule in [docs/design.md](docs/design.md): if direct access
 can reasonably be done without an external tool, it is. The Arctis Nova Pro
 Wireless is read directly (spec 006); other headsets are a candidate for a
-later spec. NVIDIA temperature stays with `nvidia-smi`
-because NVML is a vendor library, not a kernel node.
+later spec. On Linux, NVIDIA temperature stays with `nvidia-smi`
+because NVML is a vendor library, not a kernel node; on Windows the `gpu`
+package reads any vendor's card from Windows itself (spec 018).
 
 ## Using it
 
@@ -200,6 +203,12 @@ sent, acknowledged and timed out with the acknowledgement latency.
 `--only IDS` narrow the run, and `light --keys` lists the keys a frame may
 address.
 
+`sanshoku-bench host` reads the machine itself on Windows: the graphics card
+through the `gpu` package, and the processor's temperature through `lhm`.
+It is read-only. `--lhm URL` names LibreHardwareMonitor's address, and
+`--repeat N` with `--interval D` takes more than one reading. A source that
+is not there is said and is not a failure.
+
 ## Documentation
 
 - [docs/design.md](docs/design.md): the rules the packages follow.
@@ -235,7 +244,8 @@ No cgo. Runtime dependencies are `golang.org/x/sys` and
 HID drivers -- Logitech, Razer, SteelSeries and the Kraken's telemetry -- run
 through the HID class driver, with no vendor software and no driver of their
 own (spec 012); the Windows column of [docs/devices.md](docs/devices.md) says
-where each device stands there. BlueZ, AirPods, hwmon and the Kraken's screen
+where each device stands there. The `gpu` and `lhm` packages read the
+graphics card and the processor's temperature there (spec 018). BlueZ, AirPods, hwmon and the Kraken's screen
 need Linux interfaces: there they report `sanshoku.ErrUnavailable` or an error
 wrapping `errors.ErrUnsupported`, and find nothing. The module builds and its
 tests pass on Windows, Linux and macOS.
@@ -246,6 +256,16 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- The machine itself on Windows (spec 018). A new `gpu` package reads a
+  graphics card's name, temperature and load from D3DKMT and the GPU Engine
+  counters, with no vendor library and no subprocess. A new `lhm` package
+  reads the processor's temperature from LibreHardwareMonitor's sensor tree,
+  and says what a machine has of it when the server does not answer. Both are
+  hayami's readers, moved here so hotaru can share them. `sanshoku-bench host`
+  reads both.
 
 ### 0.1.12 (2026-10-09)
 

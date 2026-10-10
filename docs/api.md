@@ -434,6 +434,49 @@ type Status struct {
 
 Status is what a liquid cooler reports about itself.
 
+## gpu
+
+`import "github.com/ushineko/sanshoku/gpu"`
+
+Package gpu reads a graphics card's name, temperature and load from Windows itself, without a vendor's library and without a subprocess.
+
+### Constants
+
+- `const Warmup = 200 * time.Millisecond`: Warmup is how far apart two collections of the load counter are at the least, and so how long a Reader's first Read takes.
+
+### Variables
+
+- `var ErrNoCard error = absent("no graphics card on this machine")`: ErrNoCard is a machine with no hardware adapter: a virtual machine with the Basic Render Driver and nothing else.
+
+### Types
+
+#### type Card
+
+```go
+type Card struct {
+	Name string
+
+	Temperature    float64
+	HasTemperature bool
+
+	Load    float64
+	HasLoad bool
+}
+```
+
+Card is one reading of the graphics card.
+
+#### type Reader
+
+```go
+type Reader struct{}
+```
+
+Reader reads the card, keeping what it needs between reads.
+
+- `func (*Reader) Close() error`: Close has nothing to release.
+- `func (*Reader) Read(context.Context) (Card, error)`: Read reports errors.ErrUnsupported: D3DKMT and the GPU Engine counters are Windows interfaces.
+
 ## hidraw
 
 `import "github.com/ushineko/sanshoku/hidraw"`
@@ -635,6 +678,77 @@ Conn is an open L2CAP sequenced-packet channel.
 ### Functions
 
 - `func ParseAddress(s string) ([6]byte, error)`: ParseAddress reads a printed Bluetooth address, "A1:B2:C3:D4:E5:F6", into the order Dial wants, which is the order it is written.
+
+## lhm
+
+`import "github.com/ushineko/sanshoku/lhm"`
+
+Package lhm reads the processor's temperature from LibreHardwareMonitor's web server, the route a Windows program has to it without a kernel driver of its own.
+
+### Constants
+
+- `const Timeout = time.Second`: Timeout bounds one request made with a client that has no timeout of its own.
+- `const URL = "http://127.0.0.1:8085/data.json"`: URL is where LibreHardwareMonitor's web server serves its sensor tree when it is left on its default port.
+
+### Variables
+
+- `var ErrUnreachable = errors.New("LibreHardwareMonitor's web server is not answering")`: ErrUnreachable is nothing answering at the address.
+- `var ErrAuth = errors.New("LibreHardwareMonitor's web server wants a password")`: ErrAuth is a server that wants a password.
+- `var ErrNoSensor = errors.New("LibreHardwareMonitor has no CPU temperature")`: ErrNoSensor is a server that answered with no processor temperature, which is what it serves when its PawnIO driver is not installed.
+- `var ErrTooLarge = errors.New("the answer is not a sensor tree")`: ErrTooLarge is an answer too large to be a sensor tree.
+- `var CPULabels = []string{…}`: CPULabels are the processor temperatures looked for, in order: the first a machine has is the one read.
+
+### Types
+
+#### type Host
+
+```go
+type Host struct {
+	PawnIO bool
+
+	Running bool
+
+	Task bool
+}
+```
+
+Host is what a machine has of LibreHardwareMonitor: the reason, when its server does not answer, that tells one remedy from another.
+
+- `func ProbeHost() Host`: ProbeHost finds nothing off Windows: LibreHardwareMonitor and PawnIO are Windows programs, and Linux reads the processor through hwmon.
+
+#### type Node
+
+```go
+type Node struct {
+	Text       string `json:"Text"`
+	SensorID   string `json:"SensorId"`
+	Type       string `json:"Type"`
+	Value      Text   `json:"Value"`
+	RawValue   Text   `json:"RawValue"`
+	HardwareID string `json:"HardwareId"`
+	Children   []Node `json:"Children"`
+}
+```
+
+Node is one node of LibreHardwareMonitor's sensor tree, as data.json carries it: hardware, a group of sensors, or a sensor.
+
+- `func Fetch(ctx context.Context, client *http.Client, url string) (Node, error)`: Fetch reads the sensor tree at url, within the client's timeout, or Timeout for a client that has none.
+
+#### type Text
+
+```go
+type Text string
+```
+
+Text is a field that is text in every answer measured and may be a number in another.
+
+- `func (t *Text) UnmarshalJSON(b []byte) error`: UnmarshalJSON takes a string, a number, or null.
+
+### Functions
+
+- `func CPUTemperature(root Node) (degrees float64, label string, ok bool)`: CPUTemperature is the processor's temperature in a tree, and the label it was read under, in CPULabels' order.
+- `func ParseValue(s string) (float64, bool)`: ParseValue is the figure at the front of a value: "51.5 °C" is 51.5.
+- `func Read(ctx context.Context, client *http.Client, url string) (degrees float64, label string, err error)`: Read is the processor's temperature from the server at url, and the label it was read under: Fetch, then CPUTemperature.
 
 ## lighting
 

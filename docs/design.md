@@ -30,7 +30,9 @@ reason in a comment at that point.
 
 - **Transport**: a kernel interface the module speaks through. Four exist:
   hidraw (`/dev/hidrawN`), usbfs (`/dev/bus/usb/BBB/DDD`), L2CAP sockets and
-  the BlueZ D-Bus API. sysfs hwmon is a fifth, read-only.
+  the BlueZ D-Bus API. sysfs hwmon is a fifth, read-only. On Windows the
+  graphics kernel (D3DKMT) with the performance counters, and
+  LibreHardwareMonitor's sensor tree, are read-only too (spec 018).
 - **Driver**: a package that knows one vendor's protocol on one transport. It
   finds candidates and opens them. `logitech`, `razer`, `steelseries`, `apple`,
   `bluez` and `nzxt` are drivers.
@@ -73,6 +75,14 @@ tool is the exception and its reason is written down.
   not a kernel node; the hwmon path covers AMD and nouveau); `/proc/stat`,
   `/proc/meminfo`, `/proc/net/dev` and DRM busy counters (not devices, and
   the consumer reads them in a few lines).
+- **Windows' host readings are in, where they are not a few lines** (spec
+  018). The card through D3DKMT and the GPU Engine counters is 300 lines of
+  kernel struct layouts and a counter set reduced as Task Manager reduces it;
+  the processor through LibreHardwareMonitor is a tree of locale-formatted
+  text matched by label. Both are `gpu` and `lhm`. `GetSystemTimes` and
+  `GlobalMemoryStatusEx` are one call each and stay with the consumer, as
+  `/proc/stat` does. `lhm` is the one package that makes a network request:
+  a GET of an address its caller gives, loopback by default.
 - The testbench's `verify` shells out to liquidctl, solaar and
   headsetcontrol to cross-check a reading. That is the only place a tool is
   called from this repository.
