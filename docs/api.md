@@ -375,7 +375,7 @@ type Device struct {
 }
 ```
 
-Device is what BlueZ knows about one connected device.
+Device is what BlueZ, or on Windows the Bluetooth stack, knows about one connected device.
 
 - `func Devices(ctx context.Context) ([]Device, error)`: Devices lists every connected device BlueZ knows about, from the system bus's org.bluez ObjectManager.
 
@@ -387,7 +387,7 @@ type Driver struct{}
 
 Driver reads the battery BlueZ already has for a connected device, from org.bluez.Battery1.
 
-- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: connected Bluetooth devices with a battery, through BlueZ, on Linux only.
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: connected Bluetooth devices with a battery, through BlueZ on Linux and the Bluetooth stack's device properties on Windows (spec 016).
 - `func (Driver) Find(ctx context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per connected device that reports a Battery1 level and is not Apple audio.
 - `func (Driver) Name() string`: Name is "bluez".
 

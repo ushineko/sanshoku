@@ -43,10 +43,12 @@ var audioUUIDs = map[string]bool{
 // is what it is: nothing to find, not a fault.
 var ErrNoBlueZ = fmt.Errorf("bluez is not answering: %w", sanshoku.ErrUnavailable)
 
-// Device is what BlueZ knows about one connected device.
+// Device is what BlueZ, or on Windows the Bluetooth stack, knows about one
+// connected device.
 type Device struct {
-	// Path is the device's D-Bus object path. It is how a driver asks for the
-	// same device again. It carries the address, so it is not printed.
+	// Path is the device's D-Bus object path, or on Windows its device
+	// instance ID. It is how a driver asks for the same device again. It
+	// carries the address, so it is not printed.
 	Path string
 
 	// Name is what the device is called, preferring the alias its owner gave
@@ -107,12 +109,17 @@ call opens its own connection to the system bus and closes it, so the context
 bounds the whole of it and nothing is left running between calls. No bus, or
 no BlueZ on it, is ErrNoBlueZ.
 
-Off Linux it is ErrNoBlueZ without trying (spec 012). BlueZ is a Linux service,
-and godbus on Windows looks for a session bus on a TCP port, which costs a
-refused connection on every poll and reports it as though a bus were
-expected there.
+On Windows the same list comes from the device properties the Bluetooth stack
+keeps, with no BlueZ involved (spec 016; see windows.go). Elsewhere off Linux
+it is ErrNoBlueZ without trying (spec 012): BlueZ is a Linux service, and
+godbus on another system looks for a session bus on a TCP port, which costs a
+refused connection on every poll and reports it as though a bus were expected
+there.
 */
 func Devices(ctx context.Context) ([]Device, error) {
+	if runtime.GOOS == "windows" {
+		return windowsDevices(ctx)
+	}
 	if runtime.GOOS != "linux" {
 		return nil, fmt.Errorf("%w: BlueZ is a Linux service", ErrNoBlueZ)
 	}

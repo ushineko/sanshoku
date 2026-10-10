@@ -20,7 +20,9 @@ type lister func(context.Context) ([]Device, error)
 /*
 Driver reads the battery BlueZ already has for a connected device, from
 org.bluez.Battery1. Nothing is sent to the device; BlueZ is asked over the
-system bus.
+system bus. On Windows the battery is the one the Bluetooth stack keeps in the
+device's properties, and nothing is sent to the device there either (spec
+016).
 
 Every connected device with a Battery1 level is a candidate, whatever kind of
 device it is, with no per-device code — except an Apple audio device, which
