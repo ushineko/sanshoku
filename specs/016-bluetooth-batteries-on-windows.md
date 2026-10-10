@@ -2,7 +2,7 @@
 
 **Issue**: #46
 
-## Status: IN PROGRESS
+## Status: COMPLETE
 
 ## Context
 
@@ -52,8 +52,8 @@ all the nodes of one device share a container ID.
 - [x] The bench prints the instance ID with both copies of the address masked;
   a test holds it.
 - [x] hayami built against this branch reads the QC35 as a live headset.
-- [ ] Switching the QC35 off takes it off the list (the connected property
-  reads false on its device node).
+- [x] Switching the QC35 off takes it off the list (the connected property
+  reads false on its device node, which stays present).
 - [x] `go test ./...`, vet for linux, darwin and windows, golangci-lint for
   windows and linux, and the generated docs are clean.
 
@@ -73,7 +73,8 @@ all the nodes of one device share a container ID.
   release that moved it would make devices lose their level, not fail.
 - `{83DA6326-97A6-4088-9453-A1923F573B29} 15` is taken as "connected" from
   reading true on two connected devices' nodes and false on their profile
-  nodes; the switched-off reading is the open criterion above.
+  nodes, and false on the QC35's device node once it was switched off, while
+  the node stayed present with its last level on the profile node.
 - Additive on Linux: the D-Bus path is unchanged. Rollback: revert.
 
 ## Verification
@@ -82,4 +83,6 @@ all the nodes of one device share a container ID.
 `sanshoku-bench read --driver bluez` → "bluez  qc35 (009e:400c)
 BTHENUM\DEV_XXXXXXXXXXXX\…&BLUETOOTHDEVICE_XXXXXXXXXXXX  [tested]  battery:
 qc35  90%  discharging  headset". The DualSense was listed by `bluez.Devices`
-with no level (054c:0ce6) and so is not a candidate.
+with no level (054c:0ce6) and so is not a candidate. With the QC35 switched
+off, the same command found nothing, and the device node read present and not
+connected.
