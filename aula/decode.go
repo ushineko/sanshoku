@@ -59,8 +59,14 @@ func checksum(r []byte) byte {
 // answers reports whether a report is the reply to the battery question: the
 // report and command echoed, whole, and summing to its last byte. The
 // receiver's other frames on report 0x13 are somebody else's traffic.
-func answers(r []byte) bool {
-	return len(r) >= reportLen && r[0] == reportID && r[1]&0x7F == commandBat && checksum(r) == r[reportLen-1]
+func answers(r []byte) bool { return answersTo(commandBat)(r) }
+
+// answersTo is the test for a reply to command: the report and the command
+// echoed, with or without its high bit, whole, and summing to its last byte.
+func answersTo(command byte) func([]byte) bool {
+	return func(r []byte) bool {
+		return len(r) >= reportLen && r[0] == reportID && r[1]&0x7F == command && checksum(r) == r[reportLen-1]
+	}
 }
 
 // errNoReading is a reply that is a reply and not a reading.

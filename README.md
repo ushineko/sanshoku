@@ -118,7 +118,7 @@ and the effect a product decision of the program that shows it.
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
-| [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | An AULA keyboard's battery through its 2.4 GHz receiver. |
+| [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, and its lights as a canvas through the receiver or on its cable. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
 | [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
@@ -256,6 +256,21 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- **New API**: the AULA F75's lights (spec 019, #52). The `aula` driver's
+  device is now a `lighting.Canvas`, through the 2.4 GHz receiver and, as a
+  second device, on the keyboard's cable (`258a:010c`). The keyboard is asked
+  its model first, because other keyboards share both ids, and only an F75 is
+  drawn on. Through the receiver a frame shows at most `aula.ReceiverColours`
+  (37) colours at once and a fuller one has its nearest colours merged; on the
+  cable every key has its own. `lighting.Fading` is new: a canvas whose frame
+  the device takes back, with `Hold` for how long it lasts. The F75's
+  firmware effect returns about a second after frames stop, so a still frame
+  is sent again to be kept, and `Release` sends nothing. Nothing is written
+  to the keyboard's flash. The udev rules gain `258a:010c`. Measured with a
+  prototype on Windows; the driver's own frames are not bench-tested yet.
 
 ### 0.1.13 (2026-10-10)
 

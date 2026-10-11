@@ -81,6 +81,9 @@ func light(ctx context.Context, args []string, out, errOut io.Writer) int {
 		if cv, ok := dev.(lighting.Canvas); ok {
 			canvases++
 			writef(out, "%s  %s  %s  %d keys, floor %s\n", c.Driver, c.Identity, c.Path, len(cv.Keys()), cv.Floor())
+			if f, ok := dev.(lighting.Fading); ok {
+				writef(out, "  a frame fades after %s; each pattern sends one every interval\n", f.Hold())
+			}
 			if *keys {
 				for _, k := range cv.Keys() {
 					writef(out, "  %#02x  %s\n", k.ID, k.Name)

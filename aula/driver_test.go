@@ -30,6 +30,7 @@ type fake struct {
 }
 
 func (f *fake) Write(req []byte) error {
+	noteReceiver(req[1])
 	f.requests = append(f.requests, append([]byte(nil), req...))
 	if len(f.answers) > 0 {
 		f.pending = append(f.pending, f.answers[0]...)

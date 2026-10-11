@@ -70,7 +70,8 @@ func (Driver) Name() string { return driverName }
 
 /*
 Find returns one candidate per AULA receiver interface that declares report
-0x13 on vendor page 0xFF02. ErrAbsent when there is none.
+0x13 on vendor page 0xFF02, and one per F75 on its cable (258a:010c, report 6
+on vendor page 0xFF00). ErrAbsent when there is neither.
 
 The receiver's other interface is the keyboard itself, and the same interface
 carries a feature report on page 0xFF04 that nothing here sends to. A product
@@ -82,16 +83,23 @@ func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(nodes) == 0 {
+	cabled, err := hidraw.Nodes(wiredVendor, isWired)
+	if err != nil {
+		return nil, err
+	}
+	if len(nodes)+len(cabled) == 0 {
 		return nil, sanshoku.ErrAbsent
 	}
 	timeout := d.Timeout
 	if timeout <= 0 {
 		timeout = defaultTimeout
 	}
-	out := make([]sanshoku.Candidate, 0, len(nodes))
+	out := make([]sanshoku.Candidate, 0, len(nodes)+len(cabled))
 	for _, n := range nodes {
 		out = append(out, candidate(n, timeout, openNode))
+	}
+	for _, n := range cabled {
+		out = append(out, wiredCandidate(n, openWired))
 	}
 	return out, nil
 }
@@ -145,6 +153,10 @@ type device struct {
 	mu sync.Mutex
 	// rd is the open node. Nil once closed.
 	rd node
+	// model is what the keyboard said it is, asked before the first frame.
+	model model
+	// held is the frame the keyboard is showing.
+	held frame
 }
 
 // Identity is the receiver's, named after the keyboard.
