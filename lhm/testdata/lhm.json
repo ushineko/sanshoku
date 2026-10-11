@@ -1,0 +1,58 @@
+{
+  "id": 0, "Text": "Sensor", "Min": "Min", "Value": "Value", "Max": "Max", "ImageURL": "",
+  "Children": [
+    {
+      "id": 1, "Text": "DESK", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/computer.png",
+      "Children": [
+        {
+          "id": 2, "Text": "Example Board X1", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/mainboard.png",
+          "HardwareId": "/motherboard", "Children": []
+        },
+        {
+          "id": 3, "Text": "Example Ryzen 6 Processor", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/cpu.png",
+          "HardwareId": "/amdcpu/0",
+          "Children": [
+            {
+              "id": 4, "Text": "Temperatures", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/temperature.png",
+              "Children": [
+                { "id": 5, "Text": "Core (Tctl/Tdie)", "Min": "38.0 °C", "Value": "47.3 °C", "Max": "71.9 °C",
+                  "SensorId": "/amdcpu/0/temperature/2", "Type": "Temperature", "RawValue": "47.3 °C", "Children": [] },
+                { "id": 6, "Text": "CCD1 (Tdie)", "Min": "36.0 °C", "Value": "44.0 °C", "Max": "69.0 °C",
+                  "SensorId": "/amdcpu/0/temperature/3", "Type": "Temperature", "RawValue": "44.0 °C", "Children": [] }
+              ]
+            },
+            {
+              "id": 7, "Text": "Load", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/load.png",
+              "Children": [
+                { "id": 8, "Text": "CPU Total", "Min": "1.0 %", "Value": "12.5 %", "Max": "99.0 %",
+                  "SensorId": "/amdcpu/0/load/0", "Type": "Load", "RawValue": "12.5 %", "Children": [] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 9, "Text": "Example Graphics 9000", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/nvidia.png",
+          "HardwareId": "/gpu-nvidia/0",
+          "Children": [
+            {
+              "id": 10, "Text": "Temperatures", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/temperature.png",
+              "Children": [
+                { "id": 11, "Text": "GPU Core", "Min": "30.0 °C", "Value": "39.0 °C", "Max": "60.0 °C",
+                  "SensorId": "/gpu-nvidia/0/temperature/0", "Type": "Temperature", "RawValue": "39.0 °C", "Children": [] }
+              ]
+            },
+            {
+              "id": 12, "Text": "Load", "Min": "", "Value": "", "Max": "", "ImageURL": "images_icon/load.png",
+              "Children": [
+                { "id": 13, "Text": "GPU Memory", "Min": "1.0 %", "Value": "20.0 %", "Max": "40.0 %",
+                  "SensorId": "/gpu-nvidia/0/load/3", "Type": "Load", "RawValue": "20.0 %", "Children": [] },
+                { "id": 14, "Text": "GPU Bus", "Min": "0.0 %", "Value": "0.0 %", "Max": "5.0 %",
+                  "SensorId": "/gpu-nvidia/0/load/3", "Type": "Load", "RawValue": "0.0 %", "Children": [] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
