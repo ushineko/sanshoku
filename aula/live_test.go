@@ -38,7 +38,12 @@ func TestLiveAulaReadingsArePlausible(t *testing.T) {
 			continue
 		}
 		require.NoError(t, err, "%s did not open; see docs/udev.md", c.Path)
-		got, err := dev.(battery.Source).Batteries(ctx)
+		src, ok := dev.(battery.Source)
+		if !ok { // the keyboard on its cable has lights and no battery reading
+			require.NoError(t, dev.Close())
+			continue
+		}
+		got, err := src.Batteries(ctx)
 		assert.NoError(t, err, c.Path)
 		for _, b := range got {
 			assert.Equal(t, "F75", b.Name)

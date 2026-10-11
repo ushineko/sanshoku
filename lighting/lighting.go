@@ -51,3 +51,22 @@ type Canvas interface {
 	// Floor is the shortest interval at which frames reliably show.
 	Floor() time.Duration
 }
+
+/*
+Fading is a Canvas whose frame does not last: left alone, the device goes back
+to its own lighting.
+
+The AULA F75 is the first (spec 019). Its vendor's program streams all the
+time, and the firmware's own effect is back a moment after the stream stops.
+A consumer that wants a still frame kept up sends it again, on its own clock;
+this module starts no goroutine to do it. On a wireless device that is radio
+traffic for as long as the frame is wanted.
+
+A Canvas that is not Fading holds its last frame until the next.
+*/
+type Fading interface {
+	// Hold is how long a frame is shown before the device takes its lights
+	// back. A consumer holding a still frame sends it again sooner than
+	// this.
+	Hold() time.Duration
+}

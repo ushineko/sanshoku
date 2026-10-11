@@ -204,7 +204,11 @@ Driver reads Apple audio accessories (AirPods) over the accessory protocol on an
 
 `import "github.com/ushineko/sanshoku/aula"`
 
-Package aula is the driver for the battery of an AULA keyboard on its 2.4 GHz receiver: the F75, whose receiver answers a battery question for the keyboard on a vendor report.
+Package aula is the driver for an AULA keyboard, the F75.
+
+### Constants
+
+- `const ReceiverColours = (messageLimit - keyCount) / groupHeader`: ReceiverColours is how many colours a frame through the receiver can show at once with every key lit: what is left of one message after a byte for each key, at four bytes a colour.
 
 ### Types
 
@@ -218,14 +222,14 @@ type Driver struct {
 
 Driver reads an AULA keyboard's battery through its 2.4 GHz receiver.
 
-- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the AULA F75 through its 2.4 GHz receiver, on Linux and Windows.
-- `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per AULA receiver interface that declares report 0x13 on vendor page 0xFF02.
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads and draws on: the AULA F75 through its 2.4 GHz receiver or on its cable, on Linux and Windows.
+- `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per AULA receiver interface that declares report 0x13 on vendor page 0xFF02, and one per F75 on its cable (258a:010c, report 6 on vendor page 0xFF00).
 - `func (Driver) Name() string`: Name is "aula".
 
 ### Functions
 
 - `func Decode(r []byte) (battery.Battery, error)`: Decode reads a battery reply into a reading.
-- `func Support() []support.Entry`: Support is the aula driver's support table: the one receiver on the allow-list.
+- `func Support() []support.Entry`: Support is the aula driver's support table: the F75 by each of its two devices.
 
 ## battery
 
@@ -777,6 +781,16 @@ type Canvas interface {
 ```
 
 Canvas is a device whose lights a program draws by streaming frames.
+
+#### type Fading
+
+```go
+type Fading interface {
+	Hold() time.Duration
+}
+```
+
+Fading is a Canvas whose frame does not last: left alone, the device goes back to its own lighting.
 
 #### type Key
 

@@ -109,7 +109,24 @@ command found that brings the firmware's effect back is 0x41, which
 re-enumerates the keyboard. So `Release` costs the consumer its handle: the
 device is `ErrGone` afterwards and is found again by a scan.
 
-OpenRGB remains the lighting tool for every other device, and for this one
+The AULA F75 is the other way round (spec 019). Its firmware takes the lights
+back a moment after frames stop, so `Release` sends nothing and costs nothing,
+and a still frame has to be sent again to stay. `lighting.Fading` is how a
+canvas says so: its `Hold` is how long a frame lasts. The module starts no
+goroutine to keep a frame up. When to send again is the consumer's clock, as
+every other pace here is, and on a wireless keyboard it is the consumer that
+decides whether a still scene is worth the radio traffic.
+
+A canvas may also show less than it was given. Through its receiver the F75
+takes a frame as one message of 228 bytes, a byte for each key and four
+for each colour, and a second message replaces the first. So the driver merges
+a frame's nearest colours until it fits, the same way every time, and exports
+the number of colours that fit (`aula.ReceiverColours`). On its cable the same
+keyboard takes a colour for every key. Both drivers keep the frame they last
+sent, because the keyboard darkens what a frame does not name and the
+interface says an unnamed light is left as it was.
+
+OpenRGB remains the lighting tool for every other device, and for the Apex
 it is a second writer on the same node: two streams alternate frames.
 Choosing between them is the consumer's decision, as it already is for the
 Kraken.
