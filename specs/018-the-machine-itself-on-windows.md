@@ -2,7 +2,7 @@
 
 **Issue**: #50
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -89,7 +89,7 @@ RTX 3060 Ti, Windows 11) and recorded there:
   source.
 - [x] With LibreHardwareMonitor's address wrong, the bench says the server is
   not answering and what the machine has, and exits 0.
-- [ ] `make test`, `make lint`, `make check-api` and `make check-support` pass
+- [x] `make test`, `make lint`, `make check-api` and `make check-support` pass
   on Linux (CI).
 
 ## Out of scope
@@ -154,3 +154,6 @@ RTX 3060 Ti, Windows 11) and recorded there:
   above, then "cpu  none: LibreHardwareMonitor's web server is not answering",
   "PawnIO installed: true, LibreHardwareMonitor running: true, startup task:
   true", exit 0.
+- CI on PR #51, Linux: `go test -race ./...`, `make lint`, `make build`,
+  `make check-support` and `make check-api` pass. Its Windows job passes
+  `go test ./...` too, on a runner with no card.
