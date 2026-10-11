@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.13
+**Version**: 0.1.14
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -257,7 +257,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.14 (2026-10-11)
 
 - **New API**: the AULA F75's lights (spec 019, #52). The `aula` driver's
   device is now a `lighting.Canvas`, through the 2.4 GHz receiver and, as a
