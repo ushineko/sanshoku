@@ -269,8 +269,8 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
   the device takes back, with `Hold` for how long it lasts. The F75's
   firmware effect returns about a second after frames stop, so a still frame
   is sent again to be kept, and `Release` sends nothing. Nothing is written
-  to the keyboard's flash. The udev rules gain `258a:010c`. Measured with a
-  prototype on Windows; the driver's own frames are not bench-tested yet.
+  to the keyboard's flash. The udev rules gain `258a:010c`. Bench-tested
+  on Windows by both routes; not yet run against a keyboard on Linux.
 
 ### 0.1.13 (2026-10-10)
 
