@@ -265,7 +265,7 @@ one of them sends only the frame command.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries` and `CGO_ENABLED=0 make build` pass on Linux
       (CI).
 - [x] `go test ./...` passes on Windows, and the pinned golangci-lint reports
@@ -441,4 +441,6 @@ Not run:
   left alone, for the sleep timer and for two runs of 30 minutes.
 - The battery read while a `light` run is going. It was read before and after.
 - The Apex, which is on another desk.
-- Anything on Linux.
+- The driver against a keyboard on Linux. CI ran the suite, the linter, the
+  generated-doc checks and the build there on pull request 53, and all
+  passed.
