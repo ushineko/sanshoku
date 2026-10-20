@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.14
+**Version**: 0.1.15
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -257,7 +257,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.15 (2026-10-20)
 
 - A Logitech read that could not say which device it came from is no reading
   (spec 020, #54). When a battery answered and the device's name or type did
