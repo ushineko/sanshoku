@@ -257,6 +257,15 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- A Logitech read that could not say which device it came from is no reading
+  (spec 020, #54). When a battery answered and the device's name or type did
+  not come back whole, the driver reported the battery as a device called
+  `Logitech`, kind other, which a consumer keying devices by name drew as a
+  second device. It is now withheld, as a silent device's read is. A device
+  that answers it has no name feature is still read as `Logitech`.
+
 ### 0.1.14 (2026-10-11)
 
 - **New API**: the AULA F75's lights (spec 019, #52). The `aula` driver's
