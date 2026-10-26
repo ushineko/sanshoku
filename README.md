@@ -112,13 +112,13 @@ and the effect a product decision of the program that shows it.
 | [`battery`](https://pkg.go.dev/github.com/ushineko/sanshoku/battery) | The battery reading and the `Source` capability. |
 | [`cooling`](https://pkg.go.dev/github.com/ushineko/sanshoku/cooling) | The cooler reading and the `Source` capability. |
 | [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display. |
-| [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to. |
+| [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to, and `Onboard` for a device whose firmware effect has a colour of its own. |
 | [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw. |
 | [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
-| [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, and its lights as a canvas through the receiver or on its cable. |
+| [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
 | [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
@@ -256,6 +256,21 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- **New API**: the colour of the AULA F75's own effect (spec 021, #56).
+  `lighting.Onboard` is a device whose firmware runs an effect with a colour
+  it stores: `Effect` reads it, `SetEffect` chooses another by name, and
+  `SetColour` changes the colour and keeps the effect. It sits beside the canvas on the receiver's device, as a second way
+  to light the keyboard. The colour is in the keyboard's flash, so
+  `SetColour` writes only where it differs. A colour written into the
+  palette does not survive a power cycle: the keyboard loads its factory
+  settings at the next power-on, effect included, and a consumer puts its
+  colour back as it does for the Apex. A colour already in the effect's row
+  is stored through the config block alone and survives. `sanshoku-bench
+  onboard` reads the effect, saves both blocks, sets a colour and restores a
+  save.
 
 ### 0.1.15 (2026-10-20)
 

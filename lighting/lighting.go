@@ -70,3 +70,53 @@ type Fading interface {
 	// this.
 	Hold() time.Duration
 }
+
+// ErrNoColour is a firmware effect that takes no colour, such as off. A
+// driver wraps it with the effect's name.
+var ErrNoColour = errors.New("the effect takes no colour")
+
+// ErrNoEffect is an effect name the device's firmware does not have. A
+// driver wraps it with the name asked for.
+var ErrNoEffect = errors.New("no such effect")
+
+// Colour is one colour, absolute.
+type Colour struct{ R, G, B uint8 }
+
+// Effect is a firmware effect as the device reports it.
+type Effect struct {
+	// Name is the effect's name, as the vendor's program calls it.
+	Name string
+	// Coloured is whether the effect takes a colour. Off does not.
+	Coloured bool
+	// Colour is the effect's colour, or nil where it shows several.
+	Colour *Colour
+}
+
+/*
+Onboard is a device whose firmware runs a lighting effect of its own, with a
+colour the device stores.
+
+The AULA F75 is the first (spec 021). It is a second way to light a device
+that is also a Canvas, not a replacement for it: a consumer asks for the
+effect's colour, or draws frames, and frames cover the effect while they run.
+Setting a colour writes the device's storage, so the method writes only where
+the stored colour differs, and a consumer asks only when a person has asked.
+*/
+type Onboard interface {
+	// Effects names the effects the firmware runs, in the device's order.
+	Effects() []string
+
+	// Effect reads the effect the firmware is running now.
+	Effect(ctx context.Context) (Effect, error)
+
+	// SetEffect makes the firmware run the named effect, matched without
+	// regard to case, with that effect's own stored settings. It writes the
+	// device only where the running effect differs, and says whether it
+	// wrote.
+	SetEffect(ctx context.Context, name string) (wrote bool, err error)
+
+	// SetColour makes the running effect show c and keeps the effect. It
+	// writes the device only where the stored colour differs, and says
+	// whether it wrote.
+	SetColour(ctx context.Context, c Colour) (wrote bool, err error)
+}

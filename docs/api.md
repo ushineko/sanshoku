@@ -155,7 +155,7 @@ Presencer is a device that reports its Presence.
 
 ### Functions
 
-- `func Capabilities(d Device) []string`: Capabilities names the capability interfaces a device satisfies, in a fixed order: "battery", "cooling", "screen", "lighting".
+- `func Capabilities(d Device) []string`: Capabilities names the capability interfaces a device satisfies, in a fixed order: "battery", "cooling", "screen", "lighting", "onboard".
 - `func IsPermission(err error) bool`: IsPermission reports a refusal to open anywhere in err's chain: EACCES or EPERM on Linux, ERROR_ACCESS_DENIED on Windows (which matches fs.ErrPermission and neither errno, #39).
 
 ## all
@@ -209,6 +209,7 @@ Package aula is the driver for an AULA keyboard, the F75.
 ### Constants
 
 - `const ReceiverColours = (messageLimit - keyCount) / groupHeader`: ReceiverColours is how many colours a frame through the receiver can show at once with every key lit: what is left of one message after a byte for each key, at four bytes a colour.
+- `const SaveLen = configLen + paletteLen`: SaveLen is the length of a saved copy of the two blocks: the config block, then the palette.
 
 ### Types
 
@@ -225,6 +226,17 @@ Driver reads an AULA keyboard's battery through its 2.4 GHz receiver.
 - `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads and draws on: the AULA F75 through its 2.4 GHz receiver or on its cable, on Linux and Windows.
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per AULA receiver interface that declares report 0x13 on vendor page 0xFF02, and one per F75 on its cable (258a:010c, report 6 on vendor page 0xFF00).
 - `func (Driver) Name() string`: Name is "aula".
+
+#### type Saver
+
+```go
+type Saver interface {
+	Save(ctx context.Context) ([]byte, error)
+	Restore(ctx context.Context, saved []byte) error
+}
+```
+
+Saver is a copy of the F75's two blocks and the way back to one, for the bench: it saves before every write it makes, and restores from a save (spec 021 R3).
 
 ### Functions
 
@@ -763,6 +775,8 @@ Package lighting holds the Canvas capability for a device whose lights a program
 ### Variables
 
 - `var ErrNoCanvas = errors.New("no canvas on this device")`: ErrNoCanvas is a device that is here and whose lights cannot be drawn on.
+- `var ErrNoColour = errors.New("the effect takes no colour")`: ErrNoColour is a firmware effect that takes no colour, such as off.
+- `var ErrNoEffect = errors.New("no such effect")`: ErrNoEffect is an effect name the device's firmware does not have.
 
 ### Types
 
@@ -781,6 +795,28 @@ type Canvas interface {
 ```
 
 Canvas is a device whose lights a program draws by streaming frames.
+
+#### type Colour
+
+```go
+type Colour struct{ R, G, B uint8 }
+```
+
+Colour is one colour, absolute.
+
+#### type Effect
+
+```go
+type Effect struct {
+	Name string
+
+	Coloured bool
+
+	Colour *Colour
+}
+```
+
+Effect is a firmware effect as the device reports it.
 
 #### type Fading
 
@@ -803,6 +839,22 @@ type Key struct {
 ```
 
 Key is one addressable light, numbered as the device numbers it.
+
+#### type Onboard
+
+```go
+type Onboard interface {
+	Effects() []string
+
+	Effect(ctx context.Context) (Effect, error)
+
+	SetEffect(ctx context.Context, name string) (wrote bool, err error)
+
+	SetColour(ctx context.Context, c Colour) (wrote bool, err error)
+}
+```
+
+Onboard is a device whose firmware runs a lighting effect of its own, with a colour the device stores.
 
 #### type Pixel
 
