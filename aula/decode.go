@@ -20,6 +20,11 @@ state at byte 6:
 
 	13 4a 01 00 02 61 01 00 00 00 00 00 00 00 00 00 00 00 00 c2   97 %, on battery
 	13 4a 01 00 02 64 10 00 00 00 00 00 00 00 00 00 00 00 00 d4   cable in
+	13 4a 01 00 02 64 11 00 00 00 00 00 00 00 00 00 00 00 00 d5   on wireless, cable in
+
+The state is bit flags: 0x10 is the cable's power, and 0x01 is set on every
+reading taken over the wireless link. Measured on the receiver with the switch
+on wireless and the cable plugged and unplugged (issue #58).
 
 Only the getter is sent. The receiver speaks other commands on the same report
 -- it pushes a 0x0A status frame unasked -- and none of them is sent here.
@@ -37,6 +42,9 @@ const (
 	// stateCable is the keyboard on its cable. The level reads 100 whatever
 	// the battery holds, so it is not a level at all.
 	stateCable = 0x10
+	// stateCharging is the keyboard on wireless with its cable in: both bits.
+	// The level is read as the reply carries it.
+	stateCharging = stateBattery | stateCable
 )
 
 // request is the battery question, checksum included: 13 4a 00 ... 00 5d.
@@ -75,11 +83,13 @@ var errNoReading = errors.New("no reading in the reply")
 /*
 Decode reads a battery reply into a reading.
 
-On battery the level is the keyboard's own, 1 to 100. On its cable the
-receiver pins the level at 100, so the reading is charging with no level: a
-100 % that is not one would be the panel's lie. A level out of range, or a
-state this driver has not seen, is no reading rather than a guess: the keyboard
-is there and has not said anything this driver can stand behind.
+On battery the level is the keyboard's own, 1 to 100. On wireless with the
+cable in, the reading is charging with the level the reply carries. On its
+cable alone the receiver pins the level at 100, so the reading is charging
+with no level: a 100 % that is not one would be the panel's lie. A level out
+of range, or a state this driver has not seen, is no reading rather than a
+guess: the keyboard is there and has not said anything this driver can stand
+behind.
 */
 func Decode(r []byte) (battery.Battery, error) {
 	if !answers(r) {
@@ -89,12 +99,20 @@ func Decode(r []byte) (battery.Battery, error) {
 	case stateCable:
 		return battery.Battery{State: battery.Charging, Kind: battery.KindKeyboard}, nil
 	case stateBattery:
-		level := int(r[levelAt])
-		if level < 1 || level > 100 {
-			return battery.Battery{}, fmt.Errorf("%w: a level of %d", errNoReading, level)
-		}
-		return battery.Battery{Level: level, HasLevel: true, State: battery.Discharging, Kind: battery.KindKeyboard}, nil
+		return withLevel(r, battery.Discharging)
+	case stateCharging:
+		return withLevel(r, battery.Charging)
 	default:
 		return battery.Battery{}, fmt.Errorf("%w: a power state of %#02x", errNoReading, state)
 	}
+}
+
+// withLevel is a reading in state with the level at byte 5, which is no
+// reading when it is outside 1 to 100.
+func withLevel(r []byte, state battery.State) (battery.Battery, error) {
+	level := int(r[levelAt])
+	if level < 1 || level > 100 {
+		return battery.Battery{}, fmt.Errorf("%w: a level of %d", errNoReading, level)
+	}
+	return battery.Battery{Level: level, HasLevel: true, State: state, Kind: battery.KindKeyboard}, nil
 }

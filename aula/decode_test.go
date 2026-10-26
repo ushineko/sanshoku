@@ -28,8 +28,9 @@ func TestTheRequestIsTheBatteryCommandWithItsChecksum(t *testing.T) {
 The replies, from the captures in PyFlat/Device-Battery-Info PR #6 and from
 the receiver on the desk spec 013 was written at.
 
-On battery the level is read. On the cable the receiver pins the level at 100,
-and the reading is charging with no level. The receiver's 0x0A status frame
+On battery the level is read. On wireless with the cable in, the reading is
+charging and the level is read too (issue #58). On the cable alone the
+receiver pins the level at 100, and the reading is charging with no level. The receiver's 0x0A status frame
 on the same report is not a reply, and neither is a battery reply whose
 checksum does not add up.
 */
@@ -48,10 +49,16 @@ func TestDecode(t *testing.T) {
 			battery.Battery{Level: 97, HasLevel: true, State: battery.Discharging, Kind: battery.KindKeyboard}, true},
 		{"cable in", "134a0100026410000000000000000000000000d4",
 			battery.Battery{State: battery.Charging, Kind: battery.KindKeyboard}, true},
+		{"on wireless with the cable in, measured", "134a0100026411000000000000000000000000d5",
+			battery.Battery{Level: 100, HasLevel: true, State: battery.Charging, Kind: battery.KindKeyboard}, true},
+		{"charging below full", "134a0100024211000000000000000000000000b3",
+			battery.Battery{Level: 66, HasLevel: true, State: battery.Charging, Kind: battery.KindKeyboard}, true},
+		{"charging with a level of zero", "134a0100020011000000000000000000000000" + "71", battery.Battery{}, false},
 		{"a status frame", "130a0100040564010000000000000000000000008c", battery.Battery{}, false},
 		{"a corrupt checksum", "134a0100026101000000000000000000000000c3", battery.Battery{}, false},
 		{"a level of zero", "134a0100020001000000000000000000000000" + "61", battery.Battery{}, false},
 		{"an unknown state", "134a0100026102000000000000000000000000c3", battery.Battery{}, false},
+		{"an unknown bit with the cable's", "134a0100026412000000000000000000000000d6", battery.Battery{}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -62,7 +69,9 @@ func TestDecode(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, c.want, got)
-			assert.False(t, c.want.State == battery.Charging && got.HasLevel, "the pinned 100 was read as a level")
+			if fromHex(t, c.reply)[stateAt] == stateCable {
+				assert.False(t, got.HasLevel, "the pinned 100 was read as a level")
+			}
 		})
 	}
 }
