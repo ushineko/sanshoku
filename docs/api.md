@@ -236,7 +236,7 @@ type Saver interface {
 }
 ```
 
-Saver is a copy of the F75's two blocks and the way back to one, for the bench: it saves before every write it makes, and restores from a save (spec 020 R3).
+Saver is a copy of the F75's two blocks and the way back to one, for the bench: it saves before every write it makes, and restores from a save (spec 021 R3).
 
 ### Functions
 

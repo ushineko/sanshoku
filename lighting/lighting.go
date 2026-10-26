@@ -96,7 +96,7 @@ type Effect struct {
 Onboard is a device whose firmware runs a lighting effect of its own, with a
 colour the device stores.
 
-The AULA F75 is the first (spec 020). It is a second way to light a device
+The AULA F75 is the first (spec 021). It is a second way to light a device
 that is also a Canvas, not a replacement for it: a consumer asks for the
 effect's colour, or draws frames, and frames cover the effect while they run.
 Setting a colour writes the device's storage, so the method writes only where

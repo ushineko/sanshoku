@@ -21,7 +21,7 @@ sent is every command any test's fake was written, on either device. The
 frame and battery tests' receiver may be sent three commands and the cable
 two, and none of the commands that read or write the keyboard's flash; only
 the onboard tests' board may be sent those, and no frame. TestMain holds it
-to that across the whole package (spec 019 R4.4, spec 020 R4.4).
+to that across the whole package (spec 019 R4.4, spec 021 R4.4).
 */
 var sent = struct {
 	sync.Mutex

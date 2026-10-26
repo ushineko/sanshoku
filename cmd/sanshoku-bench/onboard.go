@@ -21,7 +21,7 @@ onboard reads the firmware effect of every device that runs one, and with
 --effect, --colour or --restore and --yes writes it. Every write saves both
 blocks first, to a file it names, so the write can be undone with --restore.
 --effect and --colour together set the effect first and then its colour,
-which is how a consumer puts both back after a power cycle. Spec 020 R3.
+which is how a consumer puts both back after a power cycle. Spec 021 R3.
 */
 func onboard(ctx context.Context, args []string, out, errOut io.Writer) int {
 	fs := flag.NewFlagSet("onboard", flag.ContinueOnError)

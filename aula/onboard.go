@@ -15,7 +15,7 @@ import (
 )
 
 /*
-The F75's own effect and its colour, through the receiver (spec 020).
+The F75's own effect and its colour, through the receiver (spec 021).
 
 The keyboard keeps two blocks in its flash: the config block, which names the
 running effect and each effect's colour slot, and the palette, a row of seven
@@ -80,7 +80,7 @@ const blockWait = 1500 * time.Millisecond
 
 /*
 ackWait bounds the wait for one written packet's acknowledgement. Not
-measured here; l65ctl.py waits for each and spec 020 E2 times them.
+measured here; l65ctl.py waits for each and spec 021 E2 times them.
 */
 const ackWait = 200 * time.Millisecond
 
@@ -165,7 +165,7 @@ func describe(cfg, pal []byte) lighting.Effect {
 
 /*
 recolour is the two blocks with the running effect showing c, and which of
-them changed. The least is changed (spec 020 R2.3):
+them changed. The least is changed (spec 021 R2.3):
 
   - the effect's slot already holds c: nothing;
   - another slot of the effect's row holds c: the config block, pointing there;
@@ -241,7 +241,7 @@ func (d *device) Effects() []string {
 SetEffect makes the keyboard run the named effect, with that effect's own
 stored brightness, speed and colour.
 
-It writes the config block only, which survives a power cycle (spec 020), and
+It writes the config block only, which survives a power cycle (spec 021), and
 nothing where the effect is already running. A name the firmware does not
 have is lighting.ErrNoEffect, refused before anything is read.
 */
@@ -305,7 +305,7 @@ write that stops part way says which block and packet.
 
 A colour stored through the palette does not survive the keyboard being
 switched off: at the next power-on it loads its factory settings, effect
-included (spec 020 E4). A colour already in the effect's row, stored through
+included (spec 021 E4). A colour already in the effect's row, stored through
 the config block alone, does. A consumer that wants the colour kept reads
 Effect when the keyboard comes back and asserts it again, as hotaru does for
 the Apex.
@@ -339,7 +339,7 @@ const SaveLen = configLen + paletteLen
 /*
 Saver is a copy of the F75's two blocks and the way back to one, for the
 bench: it saves before every write it makes, and restores from a save (spec
-020 R3). Not a capability; a consumer sets a colour through lighting.Onboard.
+021 R3). Not a capability; a consumer sets a colour through lighting.Onboard.
 */
 type Saver interface {
 	Save(ctx context.Context) ([]byte, error)
@@ -391,7 +391,7 @@ store writes the blocks that changed and reads both back.
 A palette is always followed by the config block, changed or not. The
 firmware applies settings when the config block is written, and a palette
 written alone was shown at once and then gone at the next power-on, with the
-keyboard on its factory settings (spec 020 E4); a config block written alone
+keyboard on its factory settings (spec 021 E4); a config block written alone
 persisted. l65ctl.py writes the config block after every palette.
 */
 func (d *device) store(ctx context.Context, cfg, pal []byte, cfgChanged, palChanged bool) error {

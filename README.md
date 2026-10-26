@@ -259,7 +259,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
-- **New API**: the colour of the AULA F75's own effect (spec 020, #56).
+- **New API**: the colour of the AULA F75's own effect (spec 021, #56).
   `lighting.Onboard` is a device whose firmware runs an effect with a colour
   it stores: `Effect` reads it, `SetEffect` chooses another by name, and
   `SetColour` changes the colour and keeps the effect. It sits beside the canvas on the receiver's device, as a second way

@@ -197,7 +197,7 @@ func TestTheBlocksDescribeTheRunningEffect(t *testing.T) {
 	assert.Equal(t, "Self-define", describe(self, palette()).Name, "the flag wins over the effect byte")
 }
 
-// Each case of spec 020 R2.3, and nothing outside the change moves.
+// Each case of spec 021 R2.3, and nothing outside the change moves.
 func TestRecolourWritesTheLeast(t *testing.T) {
 	n := byte(12)
 	row := int(n) * rowLen
