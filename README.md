@@ -261,8 +261,8 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 - **New API**: the colour of the AULA F75's own effect (spec 020, #56).
   `lighting.Onboard` is a device whose firmware runs an effect with a colour
-  it stores: `Effect` reads it, `SetColour` changes the colour and keeps the
-  effect. It sits beside the canvas on the receiver's device, as a second way
+  it stores: `Effect` reads it, `SetEffect` chooses another by name, and
+  `SetColour` changes the colour and keeps the effect. It sits beside the canvas on the receiver's device, as a second way
   to light the keyboard. The colour is in the keyboard's flash, so
   `SetColour` writes only where it differs. A colour written into the
   palette does not survive a power cycle: the keyboard loads its factory

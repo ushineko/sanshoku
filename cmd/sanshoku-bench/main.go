@@ -28,9 +28,9 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   light --yes          stream steady, breathe and wave to every lighting canvas and release it
                        --hold D  --rate D  --pattern P  --color RRGGBB  --only IDS
   light --keys         list each lighting canvas's keys
-  onboard              print the firmware effect and its colour on every device that runs one
-                       --save FILE  saves the device's blocks; --colour RRGGBB --yes and
-                       --restore FILE --yes write its flash, saving first
+  onboard              print the firmware effect, its colour and the effects on every device that runs one
+                       --save FILE  saves the device's blocks; --effect NAME, --colour RRGGBB
+                       and --restore FILE, with --yes, write its flash, saving first
   host                 read the graphics card and, through LibreHardwareMonitor, the CPU temperature (Windows)
                        --lhm URL  --repeat N  --interval D
 `

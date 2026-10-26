@@ -428,6 +428,79 @@ func TestAnotherKeyboardHasNoOnboardEffect(t *testing.T) {
 	}
 }
 
+// The firmware's effects by name, in its order, and every name maps back.
+func TestTheEffectsAreNamedInTheFirmwaresOrder(t *testing.T) {
+	names := onboardOf(t, openBoard(t, newBoard())).Effects()
+
+	require.Len(t, names, len(effectOrder))
+	assert.Equal(t, "Off", names[0])
+	assert.Equal(t, "Ripples shining", names[7])
+	assert.Equal(t, "Reaction", names[12])
+	assert.Equal(t, "Self-define", names[len(names)-1])
+	for i, name := range names {
+		n, ok := effectNumber(name)
+		require.True(t, ok, name)
+		assert.Equal(t, effectOrder[i], n)
+	}
+	_, ok := effectNumber("ripples SHINING")
+	assert.True(t, ok, "names match without regard to case")
+}
+
+// A new effect changes the effect byte and the Self-define flag, and nothing
+// else, so each effect keeps its own settings.
+func TestReeffectChangesTheEffectAndNothingElse(t *testing.T) {
+	cfg := config(12, 2)
+
+	out, changed, err := reeffect(cfg, 7)
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Equal(t, []int{configEffect}, differences(cfg, out))
+	assert.Equal(t, byte(7), out[configEffect])
+
+	self, changed, err := reeffect(cfg, selfDefine)
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Equal(t, []int{configSelfDefine, configEffect}, differences(cfg, self))
+	assert.Equal(t, byte(1), self[configSelfDefine])
+
+	back, changed, err := reeffect(self, 12)
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Equal(t, cfg, back, "leaving Self-define clears its flag")
+
+	_, changed, err = reeffect(cfg, 12)
+	require.NoError(t, err)
+	assert.False(t, changed, "the effect already running")
+}
+
+// SetEffect writes the config block alone and reads it back; the effect
+// already running, or a name the firmware lacks, writes nothing.
+func TestSetEffectWritesTheConfigBlockOnly(t *testing.T) {
+	b := newBoard()
+	ob := onboardOf(t, openBoard(t, b))
+
+	wrote, err := ob.SetEffect(context.Background(), "ripples shining")
+
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Equal(t, bytes.Repeat([]byte{commandWriteConfig}, configPackets), b.written())
+	e, err := ob.Effect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "Ripples shining", e.Name)
+	assert.Equal(t, palette(), b.pal)
+
+	b.requests = nil
+	wrote, err = ob.SetEffect(context.Background(), "Ripples shining")
+	require.NoError(t, err)
+	assert.False(t, wrote)
+	assert.Empty(t, b.written())
+
+	b.requests = nil
+	_, err = ob.SetEffect(context.Background(), "Disco")
+	require.ErrorIs(t, err, lighting.ErrNoEffect)
+	assert.Empty(t, b.requests, "nothing is read for a name the firmware lacks")
+}
+
 // A save restores what was there, writing only the block that changed; a
 // save that is not whole is refused before anything is sent.
 func TestASaveRestoresWhatWasThere(t *testing.T) {

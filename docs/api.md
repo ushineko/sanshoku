@@ -776,6 +776,7 @@ Package lighting holds the Canvas capability for a device whose lights a program
 
 - `var ErrNoCanvas = errors.New("no canvas on this device")`: ErrNoCanvas is a device that is here and whose lights cannot be drawn on.
 - `var ErrNoColour = errors.New("the effect takes no colour")`: ErrNoColour is a firmware effect that takes no colour, such as off.
+- `var ErrNoEffect = errors.New("no such effect")`: ErrNoEffect is an effect name the device's firmware does not have.
 
 ### Types
 
@@ -843,7 +844,11 @@ Key is one addressable light, numbered as the device numbers it.
 
 ```go
 type Onboard interface {
+	Effects() []string
+
 	Effect(ctx context.Context) (Effect, error)
+
+	SetEffect(ctx context.Context, name string) (wrote bool, err error)
 
 	SetColour(ctx context.Context, c Colour) (wrote bool, err error)
 }

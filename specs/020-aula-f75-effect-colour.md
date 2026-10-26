@@ -73,8 +73,16 @@ Nothing in that list about writes has been measured on this keyboard.
   // Onboard is a device whose firmware runs a lighting effect of its own,
   // with a colour the device stores.
   type Onboard interface {
+      // Effects names the effects the firmware runs, in the device's order.
+      Effects() []string
+
       // Effect reads the effect the firmware is running now.
       Effect(ctx context.Context) (Effect, error)
+
+      // SetEffect makes the firmware run the named effect, matched without
+      // regard to case, with that effect's own stored settings. It writes
+      // the device only where the running effect differs.
+      SetEffect(ctx context.Context, name string) (wrote bool, err error)
 
       // SetColour makes the running effect show c and keeps the effect. It
       // writes the device only where the stored colour differs, and says
@@ -97,6 +105,8 @@ Nothing in that list about writes has been measured on this keyboard.
 
 - R1.2 `ErrNoColour` is an effect that takes no colour. `SetColour` on one
   returns it wrapped with the effect's name and writes nothing.
+  `ErrNoEffect` is a name the firmware does not have; `SetEffect` returns it
+  before anything is read.
 - R1.3 `sanshoku.Capabilities` reports `"onboard"` for a device that
   implements it, and the support entry gains the capability.
 - R1.4 `Canvas` and `Fading` do not change.
@@ -132,6 +142,14 @@ Nothing in that list about writes has been measured on this keyboard.
   meant. A difference is an error that names the block.
 - R2.8 A keyboard that does not answer a read (asleep or out of range) is
   `hidraw.ErrSilent`, and nothing is written.
+- R2.8a `SetEffect` writes the config block only: the effect byte, and the
+  Self-define flag set for Self-define and clear for every other effect, as
+  `l65ctl.py set --effect` does. Every other byte is kept, so each effect
+  keeps its own brightness, speed and colour slot. The effect already
+  running writes nothing. Added after E4: a power cycle puts the effect back
+  to the factory's, and a consumer that puts its colour back has to put the
+  effect back first. A config block written through the receiver survives a
+  power cycle.
 - R2.9 Spec 019's R1.10 is replaced: the frame path sends `0x4A`, `0x05` and
   `0x88` only, as before; `0x44`, `0x49`, `0x04` and `0x09` are sent only by
   `Effect` and `SetColour`, and by `aula.Saver`'s `Save` and `Restore`, which
@@ -147,7 +165,9 @@ Nothing in that list about writes has been measured on this keyboard.
 - R3.2 `sanshoku-bench onboard --save FILE` writes both blocks to a file as
   read. Every write through the bench saves first, to a file it names.
 - R3.3 `sanshoku-bench onboard --colour RRGGBB --yes` calls `SetColour` and
-  prints whether it wrote and what it wrote.
+  prints whether it wrote and what it wrote. `--effect NAME --yes` calls
+  `SetEffect`; with both, the effect is set first and then the colour.
+  Without a write the verb also lists the effects.
 - R3.4 `sanshoku-bench onboard --restore FILE --yes` writes both blocks back
   from a saved file, after checking the length and the end marker.
 
@@ -193,22 +213,27 @@ Nothing in that list about writes has been measured on this keyboard.
 
 ## Acceptance Criteria
 
-- [ ] `lighting.Onboard`, `Effect`, `Colour` and `ErrNoColour` exist as R1
-      says, and `Capabilities` reports `"onboard"` for the F75's receiver.
-- [ ] The R2.3 choice is tested in each case, and no byte outside the change
-      is altered.
-- [ ] The packet encoding matches `l65ctl.py`'s byte for byte.
-- [ ] On the fake: no write when nothing changes, for a refused effect, or
-      for a bad block; a missing acknowledgement stops the write.
-- [ ] The guard test passes with the new command lists.
-- [ ] `make test` and `make lint` pass, on Linux and Windows.
+- [x] `lighting.Onboard`, `Effect`, `Colour`, `ErrNoColour` and
+      `ErrNoEffect` exist as R1 says, and `Capabilities` reports `"onboard"`
+      for the F75's receiver.
+- [x] The R2.3 choice is tested in each case, and no byte outside the change
+      is altered. `SetEffect` changes the effect byte and the Self-define
+      flag and nothing else.
+- [x] The packet encoding matches `l65ctl.py`'s byte for byte.
+- [x] On the fake: no write when nothing changes, for a refused effect, an
+      unknown effect name, or a bad block; a missing acknowledgement stops
+      the write.
+- [x] The guard test passes with the new command lists.
+- [ ] `make test` and `make lint` pass, on Linux and Windows. Windows done;
+      Linux not run.
 - [ ] E1 to E7 run on the desk and their results are recorded in
-      Verification.
-- [ ] Docs per R6.
+      Verification. E1 to E4 and E6 done; E5 (asleep) and E7 (frames over
+      the effect) not run.
+- [x] Docs per R6.
 
 ## Out of scope
 
-- Choosing the effect, its brightness or its speed.
+- An effect's brightness or speed.
 - The side strip, the key matrix and per-key colours (Self-define).
 - The cable (R2.10).
 - hotaru. Using `Onboard` from `light set` is a hotaru spec.
@@ -300,4 +325,12 @@ documentation says the colour does not survive a power cycle. A colour
 already in the effect's row, stored through the config block alone, does.
 The reset also puts the effect back to Neon stream and every other effect's
 settings to the factory's, so putting the colour back means putting the
-effect back too. That is the consumer's spec.
+effect back too, which is why `SetEffect` was added (R2.8a). When to put
+them back is the consumer's spec.
+
+- **SetEffect.** `onboard --effect Reaction --yes`: the config block only,
+  526 ms; it read back as Reaction, colourful (that effect's own slot 7).
+  `--effect "ripples shining" --yes`: 542 ms, and it read back as Ripples
+  shining, `#8000ff`, the purple still in its row. `--effect Disco --yes`:
+  `no such effect`, nothing written. Read back by the bench only; the user
+  did not watch this run.

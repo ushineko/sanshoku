@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ushineko/sanshoku"
@@ -91,6 +92,20 @@ var effectNames = map[byte]string{
 	10: "Retro snake", 11: "Neon stream", 12: "Reaction", 13: "Sine wave", 14: "Retinue scanning",
 	15: "Rotating windmill", 16: "Colourful waterfall", 17: "Blossoming", 18: "Rotating storm",
 	selfDefine: "Self-define",
+}
+
+// effectOrder is the firmware's effects in its own order. 6, 14 and 18 are
+// hidden by the vendor's program and run all the same (L65-protocol.md).
+var effectOrder = []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, selfDefine}
+
+// effectNumber is the effect called name, matched without regard to case.
+func effectNumber(name string) (byte, bool) {
+	for _, n := range effectOrder {
+		if strings.EqualFold(effectNames[n], name) {
+			return n, true
+		}
+	}
+	return 0, false
 }
 
 // effectName is the effect's name, or its number where the firmware has no
@@ -187,6 +202,76 @@ func recolour(cfg, pal []byte, c lighting.Colour) (newCfg, newPal []byte, cfgCha
 	p := int(n)*rowLen + int(slot)*3
 	newPal[p], newPal[p+1], newPal[p+2] = c.R, c.G, c.B
 	return newCfg, newPal, cfgChanged, true, nil
+}
+
+/*
+reeffect is the config block with effect n running, and whether it changed.
+
+The effect byte is set, and the Self-define flag with it: set for
+Self-define, clear for every other effect, as l65ctl.py sets them. Every
+other byte is as it was, so each effect keeps its own brightness, speed and
+colour slot. Pure, like recolour.
+*/
+func reeffect(cfg []byte, n byte) ([]byte, bool, error) {
+	if len(cfg) != configLen || !bytes.Equal(cfg[configLen-2:], configEnd) {
+		return nil, false, fmt.Errorf("the config block: %w (%d bytes)", errBadBlock, len(cfg))
+	}
+	if running(cfg) == n && cfg[configEffect] == n {
+		return cfg, false, nil
+	}
+	out := bytes.Clone(cfg)
+	out[configEffect] = n
+	out[configSelfDefine] = 0
+	if n == selfDefine {
+		out[configSelfDefine] = 1
+	}
+	return out, true, nil
+}
+
+// Effects is the F75's effects by name, in the firmware's order.
+func (d *device) Effects() []string {
+	out := make([]string, 0, len(effectOrder))
+	for _, n := range effectOrder {
+		out = append(out, effectNames[n])
+	}
+	return out
+}
+
+/*
+SetEffect makes the keyboard run the named effect, with that effect's own
+stored brightness, speed and colour.
+
+It writes the config block only, which survives a power cycle (spec 020), and
+nothing where the effect is already running. A name the firmware does not
+have is lighting.ErrNoEffect, refused before anything is read.
+*/
+func (d *device) SetEffect(ctx context.Context, name string) (bool, error) {
+	n, ok := effectNumber(name)
+	if !ok {
+		return false, fmt.Errorf("setting %s's effect: %q: %w", d.id, name, lighting.ErrNoEffect)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	wrote, err := d.setEffect(ctx, n)
+	if err != nil {
+		return wrote, fmt.Errorf("setting %s's effect: %w", d.id, err)
+	}
+	return wrote, nil
+}
+
+func (d *device) setEffect(ctx context.Context, n byte) (bool, error) {
+	cfg, pal, err := d.blocks(ctx)
+	if err != nil {
+		return false, err
+	}
+	if err := checkBlocks(cfg, pal); err != nil {
+		return false, err
+	}
+	newCfg, changed, err := reeffect(cfg, n)
+	if err != nil || !changed {
+		return false, err
+	}
+	return true, d.store(ctx, newCfg, pal, true, false)
 }
 
 /*

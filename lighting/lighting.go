@@ -75,6 +75,10 @@ type Fading interface {
 // driver wraps it with the effect's name.
 var ErrNoColour = errors.New("the effect takes no colour")
 
+// ErrNoEffect is an effect name the device's firmware does not have. A
+// driver wraps it with the name asked for.
+var ErrNoEffect = errors.New("no such effect")
+
 // Colour is one colour, absolute.
 type Colour struct{ R, G, B uint8 }
 
@@ -99,8 +103,17 @@ Setting a colour writes the device's storage, so the method writes only where
 the stored colour differs, and a consumer asks only when a person has asked.
 */
 type Onboard interface {
+	// Effects names the effects the firmware runs, in the device's order.
+	Effects() []string
+
 	// Effect reads the effect the firmware is running now.
 	Effect(ctx context.Context) (Effect, error)
+
+	// SetEffect makes the firmware run the named effect, matched without
+	// regard to case, with that effect's own stored settings. It writes the
+	// device only where the running effect differs, and says whether it
+	// wrote.
+	SetEffect(ctx context.Context, name string) (wrote bool, err error)
 
 	// SetColour makes the running effect show c and keeps the effect. It
 	// writes the device only where the stored colour differs, and says
