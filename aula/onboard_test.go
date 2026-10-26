@@ -296,20 +296,26 @@ func TestSetColourPointsTheEffectAtTheColourAndReadsItBack(t *testing.T) {
 }
 
 /*
-A colour the row does not hold would need the palette, and a palette written
-through the receiver was gone at the next power-on, with and without the
-config block after it (spec 020 E4). It is refused and nothing is written, on
-a slot or on colourful.
+A colour the row does not hold is written into the palette, and the config
+block follows it whether it changed or not, as l65ctl.py does. On a slot and
+on colourful alike.
 */
-func TestAColourThatNeedsThePaletteIsNotStoredYet(t *testing.T) {
+func TestAPaletteWriteIsFollowedByTheConfigBlock(t *testing.T) {
 	for _, slot := range []byte{0, slotColourful} {
 		b := newBoard()
 		b.cfg = config(12, slot)
-		wrote, err := onboardOf(t, openBoard(t, b)).SetColour(context.Background(), purple)
+		ob := onboardOf(t, openBoard(t, b))
 
-		require.ErrorIs(t, err, ErrPaletteWrite, "slot %d", slot)
-		assert.False(t, wrote)
-		assert.Empty(t, b.written())
+		wrote, err := ob.SetColour(context.Background(), purple)
+
+		require.NoError(t, err, "slot %d", slot)
+		assert.True(t, wrote)
+		want := append(bytes.Repeat([]byte{commandWritePalette}, paletteLen/bodyLen),
+			bytes.Repeat([]byte{commandWriteConfig}, configPackets)...)
+		assert.Equal(t, want, b.written(), "slot %d", slot)
+		e, err := ob.Effect(context.Background())
+		require.NoError(t, err)
+		assert.Equal(t, &purple, e.Colour, "slot %d", slot)
 	}
 }
 

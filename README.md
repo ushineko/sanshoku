@@ -264,12 +264,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
   it stores: `Effect` reads it, `SetColour` changes the colour and keeps the
   effect. It sits beside the canvas on the receiver's device, as a second way
   to light the keyboard. The colour is in the keyboard's flash, so
-  `SetColour` writes only where it differs. For now it stores only a colour
-  already in the effect's palette row, through the config block, and another
-  colour is `aula.ErrPaletteWrite`: a palette written through the receiver
-  showed at once and was gone at the next power-on, with the keyboard on its
-  factory settings. `sanshoku-bench onboard` reads the effect, saves both
-  blocks, sets a colour and restores a save.
+  `SetColour` writes only where it differs. A colour written into the
+  palette does not survive a power cycle: the keyboard loads its factory
+  settings at the next power-on, effect included, and a consumer puts its
+  colour back as it does for the Apex. A colour already in the effect's row
+  is stored through the config block alone and survives. `sanshoku-bench
+  onboard` reads the effect, saves both blocks, sets a colour and restores a
+  save.
 
 ### 0.1.14 (2026-10-11)
 

@@ -211,10 +211,6 @@ Package aula is the driver for an AULA keyboard, the F75.
 - `const ReceiverColours = (messageLimit - keyCount) / groupHeader`: ReceiverColours is how many colours a frame through the receiver can show at once with every key lit: what is left of one message after a byte for each key, at four bytes a colour.
 - `const SaveLen = configLen + paletteLen`: SaveLen is the length of a saved copy of the two blocks: the config block, then the palette.
 
-### Variables
-
-- `var ErrPaletteWrite = errors.New("storing a new colour in the palette is not supported through the receiver yet")`: ErrPaletteWrite is a colour the effect's palette row does not hold yet.
-
 ### Types
 
 #### type Driver

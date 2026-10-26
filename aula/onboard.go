@@ -105,18 +105,6 @@ func effectName(n byte) string {
 // errBadBlock is a block that is not the length or shape it should be.
 var errBadBlock = errors.New("not a whole block")
 
-/*
-ErrPaletteWrite is a colour the effect's palette row does not hold yet.
-
-The keyboard can show any colour, and storing a new one means writing the
-palette. Written through the receiver, the palette shows at once, and at the
-next power-on the keyboard loads its factory settings, the user's own
-included. It did so with and without the config block written after it
-(spec 020 E4). Until a write is found that the keyboard keeps, SetColour
-stores only colours already in the effect's row.
-*/
-var ErrPaletteWrite = errors.New("storing a new colour in the palette is not supported through the receiver yet")
-
 // checkBlocks refuses a config block or palette that is not whole.
 func checkBlocks(cfg, pal []byte) error {
 	if len(cfg) != configLen || !bytes.Equal(cfg[configLen-2:], configEnd) {
@@ -226,11 +214,16 @@ func (d *device) Effect(ctx context.Context) (lighting.Effect, error) {
 SetColour makes the running effect show c and keeps the effect.
 
 It reads both blocks, works out the least that shows c (recolour), writes it
-(store) and reads both back. For now that is the config block only, and a
-colour that would need the palette is ErrPaletteWrite. Nothing is written
-where the colour is already shown, for an effect with no colour, or for a
-block that is not whole. A write that stops part way says which block and
-packet.
+(store) and reads both back. Nothing is written where the colour is already
+shown, for an effect with no colour, or for a block that is not whole. A
+write that stops part way says which block and packet.
+
+A colour stored through the palette does not survive the keyboard being
+switched off: at the next power-on it loads its factory settings, effect
+included (spec 020 E4). A colour already in the effect's row, stored through
+the config block alone, does. A consumer that wants the colour kept reads
+Effect when the keyboard comes back and asserts it again, as hotaru does for
+the Apex.
 */
 func (d *device) SetColour(ctx context.Context, c lighting.Colour) (bool, error) {
 	d.mu.Lock()
@@ -250,9 +243,6 @@ func (d *device) setColour(ctx context.Context, c lighting.Colour) (bool, error)
 	newCfg, newPal, cfgChanged, palChanged, err := recolour(cfg, pal, c)
 	if err != nil || (!cfgChanged && !palChanged) {
 		return false, err
-	}
-	if palChanged {
-		return false, fmt.Errorf("#%02x%02x%02x: %w", c.R, c.G, c.B, ErrPaletteWrite)
 	}
 	return true, d.store(ctx, newCfg, newPal, cfgChanged, palChanged)
 }

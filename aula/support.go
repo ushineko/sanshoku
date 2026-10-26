@@ -32,8 +32,9 @@ func Support() []support.Entry {
 			"pinned at 100 and read as charging with no level. Lighting (spec 019) is frames of command 0x88, " +
 			"at most 37 colours on the board at once, sent again within half a second to hold; " +
 			"only a keyboard whose model reads 0xCD is drawn on. The firmware effect's colour (spec 020) " +
-			"is set by writing the keyboard's flash (palette 0x09, config block 0x04), only where it differs; " +
-			"not yet benched",
+			"is set by writing the keyboard's flash (palette 0x09, then config block 0x04), only where it " +
+			"differs; a new palette colour shows at once and does not survive a power cycle, which loads the " +
+			"factory settings",
 		Windows: &support.Port{
 			Tier:   support.Tested,
 			Tested: windowsBenched,

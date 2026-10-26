@@ -290,7 +290,14 @@ the next power-on, whether or not the config block follows it. The keyboard
 itself can show purple, and the vendor's program stores custom colours, so
 the fault is in this write. One explanation fits the documents: on the cable
 the colour table is 512 bytes with `5A A5` at `0x1FA`, and the receiver
-carries 490 of them. Not yet tested. Until a palette write is found that the
-keyboard keeps, `SetColour` stores only a colour already in the effect's row,
-refuses another with `aula.ErrPaletteWrite`, and writes nothing. A palette
-is still followed by the config block, in `Restore`, as `l65ctl.py` does.
+carries 490 of them. Not tested.
+
+Decided with the user, 2026-10-26: a power cycle is rare, and the consumer
+puts the colour back afterwards, as hotaru already does for the Apex, which
+also loses what it was showing. So `SetColour` writes the palette when the
+colour needs it, followed by the config block as `l65ctl.py` does, and the
+documentation says the colour does not survive a power cycle. A colour
+already in the effect's row, stored through the config block alone, does.
+The reset also puts the effect back to Neon stream and every other effect's
+settings to the factory's, so putting the colour back means putting the
+effect back too. That is the consumer's spec.
