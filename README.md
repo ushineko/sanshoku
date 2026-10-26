@@ -257,6 +257,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- The AULA F75 charging over its cable while on wireless reads as charging,
+  with its level (#58). The receiver reports that as power state `0x11`, the
+  cable's bit and the wireless bit together, and the driver read it as no
+  reading, so the keyboard showed no battery while it charged.
+
 ### 0.1.15 (2026-10-20)
 
 - A Logitech read that could not say which device it came from is no reading

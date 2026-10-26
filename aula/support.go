@@ -28,7 +28,8 @@ func Support() []support.Entry {
 		Capabilities: []string{"battery", "lighting"},
 		Tier:         support.Expected,
 		Spec:         13,
-		Notes: "command 0x4A, level and power state in one 20-byte report; on its cable the level is " +
+		Notes: "command 0x4A, level and power state in one 20-byte report; on wireless with the cable in " +
+			"it reads as charging with its level, and on the cable alone the level is " +
 			"pinned at 100 and read as charging with no level. Lighting (spec 019) is frames of command 0x88, " +
 			"at most 37 colours on the board at once, sent again within half a second to hold; " +
 			"only a keyboard whose model reads 0xCD is drawn on",
