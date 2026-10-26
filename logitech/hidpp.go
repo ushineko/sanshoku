@@ -94,6 +94,12 @@ var errNoDevice = errors.New("no device at that index")
 // not hear about it.
 var errSilent = errors.New("the device did not answer")
 
+// errUnidentified is a battery that answered and a device that would not say
+// which it is: its name or type did not come back whole. The reading is
+// withheld, as a silent one is, and the caller does not hear about it
+// (issue #54).
+var errUnidentified = errors.New("the device would not say which it is")
+
 // errNotReachable is an index that is paired and not answering: asleep,
 // switched off, or a slot left behind by hardware that has gone. The protocol
 // gives nothing to tell those apart, so neither does this.

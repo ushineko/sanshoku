@@ -270,8 +270,11 @@ func (d *device) Batteries(ctx context.Context) ([]battery.Battery, error) {
 			// "invalid sub-id" is a device from before this protocol refusing
 			// the question, which is an answer and not a fault. It is named
 			// above instead.
+			// errUnidentified too: a battery whose device would not say which
+			// it was is withheld as a silent one is (issue #54).
 			if !errors.Is(err, errNoDevice) && !errors.Is(err, errUnknownFeature) &&
-				!errors.Is(err, errSilent) && !errors.Is(err, errOldProtocol) {
+				!errors.Is(err, errSilent) && !errors.Is(err, errOldProtocol) &&
+				!errors.Is(err, errUnidentified) {
 				errs = append(errs, err)
 			}
 			if errors.Is(err, sanshoku.ErrGone) || ctx.Err() != nil {
@@ -405,9 +408,11 @@ func (d *device) read(ctx context.Context, loc located) (battery.Battery, error)
 
 	// The name the device gives is already the product's; Product is a no-op
 	// on it and is applied anyway so no battery name skips the rule.
-	var name string
-	name, b.Kind = d.identify(ctx, loc.index)
-	b.Name = battery.Product(vendorWord, name)
+	name, kind, err := d.identify(ctx, loc.index)
+	if err != nil {
+		return battery.Battery{}, err
+	}
+	b.Name, b.Kind = battery.Product(vendorWord, name), kind
 	return b, nil
 }
 
@@ -425,17 +430,49 @@ func (d *device) readFeature(ctx context.Context, index byte, feature uint16, fu
 	return decode(params)
 }
 
-// identify asks the device what it is called and what it is.
-//
-// Both come from feature 0x0005, which is looked up once and used twice: the
-// name is a label and the kind is where a consumer puts it, and neither is
-// worth a second round trip to the receiver for.
-func (d *device) identify(ctx context.Context, index byte) (string, battery.Kind) {
+/*
+identify asks the device what it is called and what it is.
+
+Both come from feature 0x0005, which is looked up once and used twice: the
+name is a label and the kind is where a consumer puts it, and neither is
+worth a second round trip to the receiver for.
+
+**An answer, or no reading** (issue #54). A device that says it has no
+feature 0x0005 has answered, and is defaultName and KindOther. A lookup, a
+name or a type that did not come back, or came back as somebody else's
+reply, is errUnidentified, and read withholds the battery with it: the level
+beside it arrived in the same exchange and is no more to be trusted, and a
+consumer that tells devices apart by name would take the placeholder for a
+second device. A G502 X PLUS read that way once came out as "Logitech" at
+0 %, kind other, beside itself, and hayami kept it for a week.
+*/
+func (d *device) identify(ctx context.Context, index byte) (string, battery.Kind, error) {
 	feature, err := featureIndex(ctx, d.rd, d.timeout, index, featureDeviceName)
-	if err != nil {
-		return defaultName, battery.KindOther
+	if errors.Is(err, errUnknownFeature) {
+		return defaultName, battery.KindOther, nil
 	}
-	return d.name(ctx, index, feature), d.kind(ctx, index, feature)
+	if err != nil {
+		return "", battery.KindOther, unidentified("feature 0x0005", err)
+	}
+	name, err := d.name(ctx, index, feature)
+	if err != nil {
+		return "", battery.KindOther, err
+	}
+	kind, err := d.kind(ctx, index, feature)
+	if err != nil {
+		return "", battery.KindOther, err
+	}
+	return name, kind, nil
+}
+
+// unidentified is a request of identify's that failed, as errUnidentified --
+// unless the node has gone, which Batteries has to hear as itself to stop
+// asking it.
+func unidentified(what string, err error) error {
+	if errors.Is(err, sanshoku.ErrGone) {
+		return err
+	}
+	return fmt.Errorf("%w: %s: %w", errUnidentified, what, err)
 }
 
 // featureDeviceName is feature 0x0005, which carries the name the device calls
@@ -464,7 +501,9 @@ const (
 	typeTrackball = 0x05
 )
 
-// defaultName is what a device that will not say is called.
+// defaultName is what a device that answers it has no name is called: one
+// without feature 0x0005, or one whose name is only spaces. A device whose
+// name did not arrive is not called anything; see identify.
 const defaultName = "Logitech"
 
 // maxNameLength bounds the name a device may claim to have. The protocol hands
@@ -474,19 +513,22 @@ const maxNameLength = 64
 
 // name asks the device what it is called.
 //
-// A device that will not say is not a failure. The name is a label, and a
-// reading labelled "Logitech" that carries the right number is better than no
-// reading -- but it is *not* used to tell devices apart, which is why a blank
-// one here does not stop the reading.
-func (d *device) name(ctx context.Context, index, feature byte) string {
+// A name that does not arrive whole is errUnidentified, not defaultName. It
+// used to be the other way round, on the argument that the name is only a
+// label; but a consumer tells devices apart by it, so a placeholder name is a
+// placeholder device (issue #54).
+func (d *device) name(ctx context.Context, index, feature byte) (string, error) {
 	params, err := request(ctx, d.rd, d.timeout, index, feature, functionDeviceName)
-	if err != nil || len(params) < 1 {
-		return defaultName
+	if err != nil {
+		return "", unidentified("its name's length", err)
+	}
+	if len(params) < 1 {
+		return "", fmt.Errorf("%w: its name's length was empty", errUnidentified)
 	}
 
 	length := int(params[0])
 	if length <= 0 || length > maxNameLength {
-		return defaultName
+		return "", fmt.Errorf("%w: a name of %d bytes", errUnidentified, length)
 	}
 
 	out := make([]byte, 0, length)
@@ -495,6 +537,9 @@ func (d *device) name(ctx context.Context, index, feature byte) string {
 		// above, which is well under one.
 		offset := byte(len(out) & 0xFF)
 		chunk, err := request(ctx, d.rd, d.timeout, index, feature, functionDeviceNameChunk, offset)
+		if errors.Is(err, sanshoku.ErrGone) {
+			return "", err
+		}
 		if err != nil || len(chunk) == 0 {
 			break
 		}
@@ -518,45 +563,48 @@ func (d *device) name(ctx context.Context, index, feature byte) string {
 		to be printable from end to end, which the real thing is and a stray
 		byte followed by padding is not.
 
-		defaultName is the honest answer. A device whose name will not read is
-		still a battery worth reporting, and an unnamed one says so rather than
-		inventing something that looks right.
+		Such a reply is errUnidentified. defaultName in its place made the
+		mouse a second device called "Logitech" (issue #54), and the level read
+		in the same exchange is no surer than the name.
 	*/
 	if len(out) < length {
-		return defaultName
+		return "", fmt.Errorf("%w: %d of a %d-byte name", errUnidentified, len(out), length)
 	}
 	name, whole := printableName(out[:length])
 	if !whole {
-		return defaultName
+		return "", fmt.Errorf("%w: a name with a hole in it", errUnidentified)
 	}
 	// Trimmed only for display: the check above is against the declared run,
 	// and a device whose name really does end in a space should keep its name.
 	if trimmed := strings.TrimSpace(name); trimmed != "" {
-		return trimmed
+		return trimmed, nil
 	}
-	return defaultName
+	return defaultName, nil
 }
 
 // kind asks the device what sort of device it is.
 //
-// A device that will not say is KindOther. This is a label like the name and
-// not part of the reading: it is not worth failing a battery over, and a mouse
-// whose type request was lost is still a mouse with a percentage.
-func (d *device) kind(ctx context.Context, index, feature byte) battery.Kind {
+// A type that does not come back is errUnidentified, as a name is: a consumer
+// places a device by its kind, and a mouse reported as KindOther is put in
+// another device's slot (issue #54).
+func (d *device) kind(ctx context.Context, index, feature byte) (battery.Kind, error) {
 	params, err := request(ctx, d.rd, d.timeout, index, feature, functionDeviceType)
-	if err != nil || len(params) < 1 {
-		return battery.KindOther
+	if err != nil {
+		return battery.KindOther, unidentified("its type", err)
+	}
+	if len(params) < 1 {
+		return battery.KindOther, fmt.Errorf("%w: its type was empty", errUnidentified)
 	}
 
 	switch params[0] {
 	case typeMouse, typeTouchpad, typeTrackball:
-		return battery.KindMouse
+		return battery.KindMouse, nil
 	case typeKeyboard, typeNumpad:
-		return battery.KindKeyboard
+		return battery.KindKeyboard, nil
 	default:
 		// A remote, a presenter, the receiver itself, and anything Logitech
 		// has numbered since. None of them is a kind this module names.
-		return battery.KindOther
+		return battery.KindOther, nil
 	}
 }
 

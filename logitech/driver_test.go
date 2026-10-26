@@ -41,6 +41,9 @@ R7.2 lists and hayami measured:
     idle does not.
   - With truncate set, the first name chunk is one stray byte, the shape of a
     reply from somebody else's conversation.
+  - With nameSilent or typeSilent set, the name's length or the device type
+    gets no answer, the lost half of a read whose battery did answer. With
+    noName set, the device answers that it has no feature 0x0005 at all.
 
 Silence costs nothing here: the fake reports the deadline at once rather than
 waiting it out.
@@ -52,6 +55,9 @@ type fake struct {
 	solaar   bool
 	silent   int
 	truncate bool
+
+	nameSilent, typeSilent, noName bool
+
 	// pairing is the name the receiver holds for index 1, empty for none.
 	pairing string
 
@@ -117,6 +123,9 @@ func (f *fake) respond(req []byte) [][]byte {
 		case featureUnifiedBattery:
 			return [][]byte{reportOf(reportShort, device, feature, function, fakeBatteryIdx)}
 		case featureDeviceName:
+			if f.noName {
+				return [][]byte{reportOf(reportShort, device, feature, function, 0x00)}
+			}
 			return [][]byte{reportOf(reportShort, device, feature, function, fakeNameIdx)}
 		default:
 			return [][]byte{reportOf(reportShort, device, feature, function, 0x00)}
@@ -134,9 +143,15 @@ func (f *fake) respond(req []byte) [][]byte {
 		return append(out, reportOf(reportLong, device, feature, function, f.level, 0x08, 0x00, 0x00))
 
 	case feature == fakeNameIdx && function>>4 == functionDeviceType:
+		if f.typeSilent {
+			return nil
+		}
 		return [][]byte{reportOf(reportShort, device, feature, function, typeMouse)}
 
 	case feature == fakeNameIdx && function>>4 == functionDeviceName:
+		if f.nameSilent {
+			return nil
+		}
 		return [][]byte{reportOf(reportShort, device, feature, function, byte(len(f.name)))}
 
 	case feature == fakeNameIdx && function>>4 == functionDeviceNameChunk:
@@ -231,21 +246,65 @@ func TestAFifthSilentAttemptWithholdsTheReadingWithoutAnError(t *testing.T) {
 }
 
 /*
-A name shorter than the device declared is refused (hayami issue #58).
+A name shorter than the device declared withholds the reading (hayami issue
+#58, sanshoku issue #54).
 
 The receiver declares a name of eleven characters and hands back one: a battery
-level of 81, 0x51, which is "Q". The reading carries defaultName, as hayami's
-does, and never the stray byte.
+level of 81, 0x51, which is "Q". Neither the stray byte nor defaultName is a
+name for the mouse, and a reading under either is a second device to a
+consumer that tells devices apart by name.
 */
-func TestANameShorterThanTheDeviceDeclaredIsRefused(t *testing.T) {
+func TestANameShorterThanTheDeviceDeclaredWithholdsTheReading(t *testing.T) {
 	d := onFake(&fake{level: 0x51, name: "G502 X PLUS", truncate: true}, receiverPhys, "Logitech USB Receiver")
+
+	found, err := d.Batteries(context.Background())
+
+	require.NoError(t, err, "a partial read is withheld, not reported as a fault")
+	assert.Empty(t, found, "a device that did not say which it was was reported")
+}
+
+/*
+A battery that answered beside a name or a type that did not is no reading
+(issue #54), and the next poll that hears all of it reads the device.
+
+The poll that went wrong on the Lightspeed receiver gave a battery named
+"Logitech", 0 %, kind other, beside a G502 X PLUS that read normally either
+side of it.
+*/
+func TestABatteryWithoutItsNameOrTypeIsNoReading(t *testing.T) {
+	for name, f := range map[string]*fake{
+		"the name's length": {level: 0x56, name: "G502 X PLUS", nameSilent: true},
+		"the device type":   {level: 0x56, name: "G502 X PLUS", typeSilent: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			d := onFake(f, receiverPhys, "Logitech USB Receiver")
+
+			found, err := d.Batteries(context.Background())
+			require.NoError(t, err)
+			assert.Empty(t, found, "a partial read was promoted into a reading")
+
+			f.nameSilent, f.typeSilent = false, false
+			found, err = d.Batteries(context.Background())
+			require.NoError(t, err)
+			require.Len(t, found, 1, "the device was not read again once it answered whole")
+			assert.Equal(t, "G502 X PLUS", found[0].Name)
+			assert.Equal(t, battery.KindMouse, found[0].Kind)
+		})
+	}
+}
+
+// A device that answers it has no feature 0x0005 has answered, and is read
+// as defaultName, kind other: the one case the placeholder is for.
+func TestADeviceWithNoNameFeatureIsReadAsTheVendor(t *testing.T) {
+	d := onFake(&fake{level: 0x56, noName: true}, receiverPhys, "Logitech USB Receiver")
 
 	found, err := d.Batteries(context.Background())
 
 	require.NoError(t, err)
 	require.Len(t, found, 1)
-	assert.Equal(t, 81, found[0].Level)
-	assert.Equal(t, defaultName, found[0].Name, "a stray byte was taken for a device name")
+	assert.Equal(t, defaultName, found[0].Name)
+	assert.Equal(t, battery.KindOther, found[0].Kind)
+	assert.Equal(t, 86, found[0].Level)
 }
 
 /*
