@@ -28,7 +28,7 @@ type Description struct {
 	Finds string
 
 	// Capabilities names what the driver's devices offer, in the words of
-	// Capabilities ("battery", "cooling", "screen", "lighting") and of the
+	// Capabilities ("battery", "cooling", "screen", "lighting", "onboard") and of the
 	// support table ("temperature" for a hwmon chip). A consumer reading
 	// batteries keeps the drivers that list "battery".
 	Capabilities []string

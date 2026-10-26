@@ -18,20 +18,27 @@ import (
 
 /*
 sent is every command any test's fake was written, on either device. The
-driver may send three to the receiver and two to the cable, and none of the
-commands that write the keyboard's flash; TestMain holds it to that across
-the whole package (spec 019 R4.4).
+frame and battery tests' receiver may be sent three commands and the cable
+two, and none of the commands that read or write the keyboard's flash; only
+the onboard tests' board may be sent those, and no frame. TestMain holds it
+to that across the whole package (spec 019 R4.4, spec 020 R4.4).
 */
 var sent = struct {
 	sync.Mutex
-	receiver, cable map[byte]bool
-	reports         map[byte]bool
-}{receiver: map[byte]bool{}, cable: map[byte]bool{}, reports: map[byte]bool{}}
+	receiver, board, cable map[byte]bool
+	reports                map[byte]bool
+}{receiver: map[byte]bool{}, board: map[byte]bool{}, cable: map[byte]bool{}, reports: map[byte]bool{}}
 
 func noteReceiver(command byte) {
 	sent.Lock()
 	defer sent.Unlock()
 	sent.receiver[command] = true
+}
+
+func noteBoard(command byte) {
+	sent.Lock()
+	defer sent.Unlock()
+	sent.board[command] = true
 }
 
 func noteCable(report, command byte) {
@@ -59,6 +66,16 @@ func onlyAllowedCommandsWereSent() bool {
 	for c := range sent.receiver {
 		if !allowed[c] {
 			fmt.Printf("the receiver was sent command %#02x, which the driver may not send\n", c)
+			ok = false
+		}
+	}
+	onboard := map[byte]bool{
+		commandModel: true, commandReadConfig: true, commandReadPalette: true,
+		commandWriteConfig: true, commandWritePalette: true,
+	}
+	for c := range sent.board {
+		if !onboard[c] {
+			fmt.Printf("the onboard tests sent command %#02x, which Effect and SetColour may not send\n", c)
 			ok = false
 		}
 	}
@@ -115,7 +132,7 @@ func TestTheMeasuredModelReplyIsAnF75(t *testing.T) {
 func TestTheReceiverIsACanvasThatFades(t *testing.T) {
 	dev := open(t, &fake{})
 
-	assert.Equal(t, []string{"battery", "lighting"}, sanshoku.Capabilities(dev))
+	assert.Equal(t, []string{"battery", "lighting", "onboard"}, sanshoku.Capabilities(dev))
 	cv := canvasOf(t, dev)
 	assert.Len(t, cv.Keys(), keyCount)
 	assert.Equal(t, frameFloor, cv.Floor())

@@ -25,13 +25,15 @@ func Support() []support.Entry {
 		Match:        "vendor 3554, report 0x13 on usage page 0xFF02; receiver 3554:fa09",
 		Vendor:       receiverVendor,
 		Products:     []uint16{0xFA09},
-		Capabilities: []string{"battery", "lighting"},
+		Capabilities: []string{"battery", "lighting", "onboard"},
 		Tier:         support.Expected,
 		Spec:         13,
 		Notes: "command 0x4A, level and power state in one 20-byte report; on its cable the level is " +
 			"pinned at 100 and read as charging with no level. Lighting (spec 019) is frames of command 0x88, " +
 			"at most 37 colours on the board at once, sent again within half a second to hold; " +
-			"only a keyboard whose model reads 0xCD is drawn on",
+			"only a keyboard whose model reads 0xCD is drawn on. The firmware effect's colour (spec 020) " +
+			"is set by writing the keyboard's flash (palette 0x09, config block 0x04), only where it differs; " +
+			"not yet benched",
 		Windows: &support.Port{
 			Tier:   support.Tested,
 			Tested: windowsBenched,
@@ -71,7 +73,7 @@ func (Driver) Describe() sanshoku.Description {
 	return sanshoku.Description{
 		Name:         "AULA",
 		Finds:        "receiver",
-		Capabilities: []string{"battery", "lighting"},
+		Capabilities: []string{"battery", "lighting", "onboard"},
 		Platforms:    []string{"linux", "windows"},
 		Quiet:        true,
 	}

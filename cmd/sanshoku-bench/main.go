@@ -1,7 +1,8 @@
 /*
 sanshoku-bench is the hardware testbench: the module's integration test and
-its correctness oracle. scan, read, verify and host are read-only; screen --yes
-and light --yes are the writes; support prints the support table. Spec 001 R7.
+its correctness oracle. scan, read, verify, host and onboard without --yes are
+read-only; screen --yes, light --yes and onboard --yes are the writes; support
+prints the support table. Spec 001 R7.
 
 Output never carries a Bluetooth address or a serial number: a device prints
 as its kernel name and vendor:product, and its node path.
@@ -27,6 +28,9 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   light --yes          stream steady, breathe and wave to every lighting canvas and release it
                        --hold D  --rate D  --pattern P  --color RRGGBB  --only IDS
   light --keys         list each lighting canvas's keys
+  onboard              print the firmware effect and its colour on every device that runs one
+                       --save FILE  saves the device's blocks; --colour RRGGBB --yes and
+                       --restore FILE --yes write its flash, saving first
   host                 read the graphics card and, through LibreHardwareMonitor, the CPU temperature (Windows)
                        --lhm URL  --repeat N  --interval D
 `
@@ -59,6 +63,8 @@ func run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return screenPush(ctx, rest, out, errOut)
 	case "light":
 		return light(ctx, rest, out, errOut)
+	case "onboard":
+		return onboard(ctx, rest, out, errOut)
 	case "host":
 		return host(ctx, rest, out, errOut)
 	case "help", "-h", "--help":

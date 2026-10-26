@@ -135,17 +135,27 @@ func (d *device) Frame(ctx context.Context, px []lighting.Pixel) error {
 // askModel asks the receiver's keyboard what it is, once per handle, and
 // refuses one that is not an F75.
 func (d *device) askModel(ctx context.Context) error {
-	if !d.model.asked {
-		actx, cancel := context.WithTimeout(ctx, d.timeout)
-		defer cancel()
-		d.rd.Drain(hidraw.QueueDepth)
-		reply, err := hidraw.Exchange(actx, d.rd, packet(commandModel, 1, 0, 0, nil), answersTo(commandModel), reportLen)
-		if err != nil {
-			return fmt.Errorf("asking its model: %w", err)
-		}
-		d.model = model{asked: true, id: reply[modelAt]}
+	if err := d.knowModel(ctx); err != nil {
+		return err
 	}
 	return d.model.refuse()
+}
+
+// knowModel asks the receiver's keyboard what it is, once per handle. Silence
+// is an error and is asked again next time.
+func (d *device) knowModel(ctx context.Context) error {
+	if d.model.asked {
+		return nil
+	}
+	actx, cancel := context.WithTimeout(ctx, d.timeout)
+	defer cancel()
+	d.rd.Drain(hidraw.QueueDepth)
+	reply, err := hidraw.Exchange(actx, d.rd, packet(commandModel, 1, 0, 0, nil), answersTo(commandModel), reportLen)
+	if err != nil {
+		return fmt.Errorf("asking its model: %w", err)
+	}
+	d.model = model{asked: true, id: reply[modelAt]}
+	return nil
 }
 
 /*

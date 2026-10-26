@@ -134,7 +134,8 @@ Nothing in that list about writes has been measured on this keyboard.
   `hidraw.ErrSilent`, and nothing is written.
 - R2.9 Spec 019's R1.10 is replaced: the frame path sends `0x4A`, `0x05` and
   `0x88` only, as before; `0x44`, `0x49`, `0x04` and `0x09` are sent only by
-  `Effect` and `SetColour`.
+  `Effect` and `SetColour`, and by `aula.Saver`'s `Save` and `Restore`, which
+  the bench uses (R3).
 - R2.10 The cable's device does not implement `Onboard` in this spec. Its
   blocks use other commands and another palette length, and it has not been
   measured.
@@ -249,4 +250,47 @@ Nothing in that list about writes has been measured on this keyboard.
 
 ## Verification
 
-To be filled in as the work is done.
+`go vet ./...` and `go test -skip Live ./...` pass on Windows.
+`TestLiveAulaReadingsArePlausible` fails on this desk for a reason outside
+this spec: with the keyboard charging on its cable and switched to 2.4 GHz,
+the receiver reports power state `0x11`, which `Decode` does not know.
+
+The bench, 2026-10-26, Windows 11, the F75 on its receiver and charging on
+its cable, the user watching:
+
+- **E1.** `onboard --save`: both blocks whole, 618 bytes in 203 ms. The
+  effect read as 7, Ripples shining, on slot 2, `#0000ff`; the user saw blue
+  ripples. The per-effect table sits at `0x38 + 2n` as the L65 document says,
+  but brightness reads 9 for most effects where the document says 0 to 4.
+  Every palette row held the factory colours.
+- **E2.** `onboard --colour 8000ff --yes`: a palette-only write, 35 packets,
+  each acknowledged; 789 ms with the reads, and the read-back matched. The
+  user saw purple ripples, the effect unchanged.
+- **E3.** The same again: wrote false, 199 ms, nothing written.
+- **E4, failed.** After the keyboard was switched off and on, it ran Neon
+  stream, the factory default. Both blocks read as the factory template: 11
+  config bytes back to defaults, the user's own colour slots on other effects
+  included, and the purple gone from the palette.
+- **Config only.** `onboard --restore` with E1's save wrote the config block
+  alone (the palette already matched), 10 packets, 573 ms. The user saw blue
+  ripples. After the keyboard was switched off and on, they were still blue,
+  and both blocks matched E1's save byte for byte.
+
+- **The config block after the palette.** The user's suggestion: re-assert
+  the effect after the colour, as `l65ctl.py colors` does. `onboard --colour
+  8000ff --yes` wrote the palette (35 packets) and then the config block (10
+  packets), 914 ms, and the read-back matched. The user saw purple ripples.
+  After off and on, the keyboard ran Neon stream again, and both blocks read
+  the same factory template as the first time, byte for byte. A config-only
+  restore from E1's save put the user's settings back.
+
+So a config block written through the receiver persists, and a palette
+written through the receiver makes the keyboard load its factory template at
+the next power-on, whether or not the config block follows it. The keyboard
+itself can show purple, and the vendor's program stores custom colours, so
+the fault is in this write. One explanation fits the documents: on the cable
+the colour table is 512 bytes with `5A A5` at `0x1FA`, and the receiver
+carries 490 of them. Not yet tested. Until a palette write is found that the
+keyboard keeps, `SetColour` stores only a colour already in the effect's row,
+refuses another with `aula.ErrPaletteWrite`, and writes nothing. A palette
+is still followed by the config block, in `Restore`, as `l65ctl.py` does.
