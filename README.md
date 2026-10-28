@@ -257,6 +257,17 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- A moving picture on the Kraken's screen no longer leaves it for the
+  firmware readout to make room (spec 021, #60). Placement counted the empty
+  slots as images at offset 0, so each image went above the last until memory
+  ran out, about every 8.5 minutes with a new image every three seconds. The
+  driver then cleared memory through the readout, which on the Kraken also
+  turned one ring LED green. Empty slots are now left out, and images
+  alternate between the start of memory and the space after the image on
+  screen. The readout clear stays for memory with no room beside that image.
+
 ### 0.1.15 (2026-10-20)
 
 - A Logitech read that could not say which device it came from is no reading

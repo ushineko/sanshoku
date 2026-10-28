@@ -338,6 +338,15 @@ func place(slots [][]byte, bucket, packets int) (int, bool) {
 
 	lowest, highest, overlaps := offset, 0, false
 	for i, reply := range slots {
+		/*
+			A vacant slot holds nothing and reports offset 0. Counted, it
+			overlapped every image placed at 0 and pinned lowest there, so
+			each image went after the last until memory ran out and the
+			panel was cleared through the readout (spec 021).
+		*/
+		if vacant(reply) {
+			continue
+		}
 		start := u16(reply[17:19])
 		end := start + u16(reply[19:21])
 		if end > highest {
