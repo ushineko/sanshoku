@@ -2,7 +2,15 @@
 
 **Issue**: #60
 
-## Status: INCOMPLETE
+## Status: COMPLETE
+
+## Executive Summary
+
+`place` no longer counts the Kraken's vacant image slots as images at offset
+0, so a moving picture alternates between the start of memory and the space
+after the image on screen instead of climbing until memory runs out. The
+readout clear stays as the last resort. Reviewers should look first at the
+`vacant` check in `place` and at the fake's slot memory that the new tests use.
 
 ## Context
 
@@ -57,23 +65,24 @@ asks for.
 
 ## Acceptance Criteria
 
-- [ ] AC1 (R1): `place`, with only the slot on screen occupied at the top of
+- [x] AC1 (R1): `place`, with only the slot on screen occupied at the top of
   memory and the rest vacant, returns offset 0 (unit test).
-- [ ] AC2 (R1, R3): `place`, with the slot on screen at offset 0, returns the
+- [x] AC2 (R1, R3): `place`, with the slot on screen at offset 0, returns the
   address after it, not 0 (unit test).
-- [ ] AC3 (R1): the existing `TestPlacement` cases still pass, apart from
+- [x] AC3 (R1): the existing `TestPlacement` cases still pass, apart from
   cases that relied on vacant slots counting, which are rewritten with the
   reason stated.
-- [ ] AC4 (R2): `place` still fails when the image cannot fit before or after
+- [x] AC4 (R2): `place` still fails when the image cannot fit before or after
   the slot on screen, and `send` then clears through the readout (unit test).
-- [ ] AC5: over 2,000 images sent through a fake that keeps slot offsets and
+- [x] AC5: over 2,000 images sent through a fake that keeps slot offsets and
   sizes, `send` never writes `38 01 02` and never writes into the slot on
   screen (unit test).
-- [ ] AC6 (live): hotaru built against this branch, with the dashboard on the
-  Kraken for at least two hours. The log shows no readout switch, the screen
-  never leaves the dashboard, and ring LED 22 stays its scene colour, with
-  somebody watching.
-- [ ] AC7: `make test` and `make lint` pass; changelog entry under
+- [x] AC6 (live): hotaru built against this branch, with the dashboard on the
+  Kraken for at least two hours. The screen never leaves the dashboard and
+  ring LED 22 stays its scene colour, with somebody watching. (Amended: the
+  first wording also asked for the log to show no readout switch, but
+  `clear()` logs nothing, so a quiet log is not evidence either way.)
+- [x] AC7: `make test` and `make lint` pass; changelog entry under
   `### Unreleased`.
 
 ## Risks & Assumptions
@@ -99,4 +108,27 @@ asks for.
 
 ## Verification
 
-(Filled in after the live run.)
+Unit tests and lint, 2026-10-28, on c468aaf:
+
+- `make test` passes, including the three new `TestPlacement` cases (AC1,
+  AC2, AC4), `TestAMovingPictureNeverLeavesTheScreenForTheReadout` (AC5) and
+  `TestNoRoomBesideTheImageOnScreenStillClears` (AC4). No existing
+  `TestPlacement` case changed (AC3).
+- On the code before the fix, the two new `send` tests fail: the moving
+  picture test reports "image 3 climbed to 15".
+- `make lint`: 0 issues. `govulncheck ./...`: no vulnerabilities found.
+- hotaru (v0.1.28, pinned to sanshoku v0.1.5) builds and passes `make test`
+  with a `replace` pointing at this branch.
+
+Live run (AC6), 2026-10-27 23:13:50 to 2026-10-28 01:13:56, Kraken 2024
+Elite:
+
+- hotaru `0.1.28-sanshoku021` (v0.1.28 with a `replace` to this branch) ran
+  as the user service with the dashboard on the cooler screen, a new image
+  every three seconds.
+- With the code before the fix, memory filled about every 8.5 minutes, so the
+  run would have switched to the readout about 14 times.
+- The person watching reported that the screen stayed on the dashboard and
+  ring LED 22 kept its scene colour for the whole run.
+- The service did not restart (`NRestarts=0`) and logged nothing after
+  startup.
