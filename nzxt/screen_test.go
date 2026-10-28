@@ -74,6 +74,11 @@ func TestPlacement(t *testing.T) {
 		// Bigger than its own slot, overlapping its neighbours, with room
 		// neither above nor below: the caller clears the screen.
 		{"memory too full to place anything says so", [][]byte{slot(0, 0, 10), slot(1, 10, capacity-10)}, 0, capacity, 0, false},
+		// Spec 021. A vacant slot reports offset 0 and holds nothing; counted,
+		// it pushed every image above the last until memory ran out.
+		{"vacant slots are not in the way of the start", [][]byte{blank(), slot(1, capacity-100, 90), blank()}, 0, 90, 0, true},
+		{"the image on screen at the start is gone around", [][]byte{blank(), slot(1, 0, 90), blank()}, 0, 90, 90, true},
+		{"no room either side of the image on screen says so", [][]byte{blank(), slot(1, 100, capacity-200), blank()}, 0, 150, 0, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -258,4 +263,52 @@ func TestSizeIsTheModels(t *testing.T) {
 	w, h := p.Size()
 	assert.Equal(t, 640, w)
 	assert.Equal(t, 640, h)
+}
+
+/*
+Spec 021: a moving picture never takes the panel off its image to make room.
+
+The fake keeps its slots as the cooler does. Before the fix, every image went
+above the last and memory ran out every few hundred images, which cleared the
+screen through the readout.
+*/
+func TestAMovingPictureNeverLeavesTheScreenForTheReadout(t *testing.T) {
+	f := newFake()
+	f.Chatter = 0
+	f.Memory = true
+	p := withPanel(f, &recorder{})
+
+	for i := range 2000 {
+		f.mu.Lock()
+		f.Told = nil
+		showing, held := p.showing, f.memory[byte(max(p.showing, 0))]
+		f.mu.Unlock()
+
+		require.NoError(t, p.Image(context.Background(), card(640, 640)), "image %d", i)
+
+		for _, r := range f.told(8) {
+			require.NotEqual(t, []byte{0x38, 0x01, modeLiquid}, r[:3], "image %d switched to the readout", i)
+			if r[0] == 0x32 && r[1] == 0x01 && showing >= 0 {
+				address, size := int(r[4])|int(r[5])<<8, int(r[6])|int(r[7])<<8
+				require.NotEqual(t, byte(showing), r[2], "image %d was written into the slot on screen", i)
+				require.True(t, address+size <= held[0] || address >= held[0]+held[1],
+					"image %d at %d+%d overlaps the image on screen at %d+%d", i, address, size, held[0], held[1])
+				require.Less(t, address, 2*size+1, "image %d climbed to %d", i, address)
+			}
+		}
+	}
+}
+
+// Spec 021 R2: with no room beside the image on screen, the readout clear is
+// still the way back.
+func TestNoRoomBesideTheImageOnScreenStillClears(t *testing.T) {
+	f := newFake()
+	f.Chatter = 0
+	f.Memory = true
+	p := withPanel(f, &recorder{})
+	f.memory = map[byte][2]int{3: {1, capacity - 2}}
+	p.showing = 3
+
+	require.NoError(t, p.Image(context.Background(), card(640, 640)))
+	assert.Contains(t, commands(f), "38 01 02")
 }

@@ -45,6 +45,15 @@ type fake struct {
 	LoseFirst int
 	Told      [][]byte
 
+	/*
+		Memory makes the fake keep its screen slots: a reserve (`32 01`)
+		records the slot's address and size, a delete (`32 02`) empties it,
+		and a question about a slot (`30 04`) is answered from them, as the
+		cooler does. Off, every slot reads vacant. Spec 021.
+	*/
+	Memory bool
+	memory map[byte][2]int
+
 	pending [][]byte
 	closed  bool
 }
@@ -79,6 +88,9 @@ func (f *fake) Write(report []byte) error {
 	} else {
 		reply[resultByte] = resultOK
 	}
+	if f.Memory {
+		f.remember(report, reply)
+	}
 	f.pending = append(f.pending, reply)
 	return nil
 }
@@ -99,6 +111,29 @@ func (f *fake) Read(ctx context.Context, buf []byte) (int, error) {
 	next := f.pending[0]
 	f.pending = f.pending[1:]
 	return copy(buf, next), nil
+}
+
+// remember keeps the slot map for Memory, and answers a question about a slot
+// from it.
+func (f *fake) remember(report, reply []byte) {
+	if f.memory == nil {
+		f.memory = map[byte][2]int{}
+	}
+	switch {
+	case report[0] == 0x32 && report[1] == 0x01:
+		f.memory[report[2]] = [2]int{int(report[4]) | int(report[5])<<8, int(report[6]) | int(report[7])<<8}
+	case report[0] == 0x32 && report[1] == 0x02:
+		delete(f.memory, report[2])
+	case report[0] == 0x30 && report[1] == 0x04:
+		held, ok := f.memory[report[2]]
+		if !ok {
+			return
+		}
+		reply[14], reply[15], reply[16] = report[2], report[2]+1, 0x02
+		reply[17], reply[18] = low(held[0]), low(held[0]>>8)
+		reply[19], reply[20] = low(held[1]), low(held[1]>>8)
+		reply[21], reply[22] = 0x01, 0x01
+	}
 }
 
 // Drain clears what was waiting before the question, as the real handle does.
