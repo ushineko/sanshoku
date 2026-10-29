@@ -2,7 +2,7 @@
 
 **Issue**: #62
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -149,7 +149,7 @@ Measured for the key, on the desk:
   Bluetooth as well, the DualSense appears under `sony` only.
 - [x] On Windows and darwin `Find` returns `ErrAbsent`; vet passes for linux,
   darwin and windows.
-- [ ] hayami, at its next sanshoku bump, shows the controller in its battery
+- [x] hayami, at its next sanshoku bump, shows the controller in its battery
   section, on a screenshot (checked there, recorded here).
 - [x] `go test ./...`, golangci-lint for linux and windows, and the generated
   docs are clean.
@@ -297,6 +297,21 @@ unchanged code, once `hidraw` imported `internal/hiddev`; they read a sysfs
 directory above a node under `SysRoot` and are marked `nolint` with that
 reason.
 
-Outstanding: the hayami criterion, which needs a sanshoku release and the
-bump there. The receiver case of the E2E plan (a device behind a Logitech
-receiver) did not occur on the desk.
+The receiver case of the E2E plan (a device behind a Logitech receiver) did
+not occur on the desk; fixtures cover it (`hiddev_test.go`).
+
+### hayami, 2026-10-28
+
+hayami bumped to 0.1.17 (ushineko/hayami#229). hayami scans one driver at a
+time, so `Scan`'s drop never sees `sony` and `powersupply` together; it
+applies the same rule itself, asking fallback drivers last and leaving out a
+fallback candidate whose key a direct driver listed in the poll. Before that
+change the DualSense was one cell only because its Bluetooth name is the same
+from both drivers.
+
+- `hayami-tui readings`, DualSense and 8BitDo on Bluetooth: one DualSense,
+  75 %; the Pro Controller as band Good, 3 segments, gamepad.
+- The panel, on a screenshot with the DualSense disconnected (hayami gives
+  one slot per kind, and the DualSense, connected last, held the gamepad
+  slot): the Pro Controller in the gamepad slot, three of four segments,
+  "Good". Not committed: the shot shows a personal device name.
