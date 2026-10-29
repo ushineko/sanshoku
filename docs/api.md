@@ -47,6 +47,8 @@ type Candidate struct {
 	Driver string
 
 	Open func(context.Context) (Device, error)
+
+	Key string
 }
 ```
 
@@ -107,6 +109,18 @@ type Driver interface {
 ```
 
 Driver knows one vendor's protocol on one transport and finds the devices that speak it.
+
+#### type Fallback
+
+```go
+type Fallback interface {
+	Driver
+
+	Fallback()
+}
+```
+
+Fallback is a driver whose devices other drivers may also read, and read better: the kernel's battery for a device a vendor driver speaks to directly.
 
 #### type Identity
 
@@ -555,6 +569,8 @@ type Node struct {
 	Reports []Report
 
 	USBPath string
+
+	Key string
 }
 ```
 
@@ -911,6 +927,35 @@ Size is a panel's width and height in pixels.
 
 - `func DecodeStatus(reply []byte) (cooling.Status, error)`: DecodeStatus reads a `75 01` status reply.
 - `func Support() []support.Entry`: Support is the nzxt driver's support table: the one product in Known.
+
+## powersupply
+
+`import "github.com/ushineko/sanshoku/powersupply"`
+
+Package powersupply reads the batteries the kernel itself reads for a HID device, from /sys/class/power_supply.
+
+### Variables
+
+- `var Root = "/sys/class/power_supply"`: Root is where the kernel lists power supplies.
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver reads a HID device's battery from the kernel's power_supply node for it.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the batteries the kernel reads for HID devices, on Linux.
+- `func (Driver) Fallback()`: Fallback marks the driver as one whose candidates give way to a driver that reads the same device directly (sanshoku.Fallback).
+- `func (Driver) Find(ctx context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per battery node that belongs to a device (scope=Device, so not a laptop's own battery), is present, and hangs off a HID device.
+- `func (Driver) Name() string`: Name is "powersupply".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the powersupply driver's support table: the Switch Pro Controller, and a driver-wide entry that support.Lookup matches for any other candidate of this driver.
 
 ## razer
 

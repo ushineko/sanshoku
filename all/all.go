@@ -8,6 +8,7 @@ import (
 	"github.com/ushineko/sanshoku/hwmon"
 	"github.com/ushineko/sanshoku/logitech"
 	"github.com/ushineko/sanshoku/nzxt"
+	"github.com/ushineko/sanshoku/powersupply"
 	"github.com/ushineko/sanshoku/razer"
 	"github.com/ushineko/sanshoku/sony"
 	"github.com/ushineko/sanshoku/steelseries"
@@ -26,6 +27,7 @@ func Drivers() []sanshoku.Driver {
 		apple.Driver{},
 		aula.Driver{},
 		sony.Driver{},
+		powersupply.Driver{},
 	}
 }
 
@@ -41,5 +43,6 @@ func Support() []support.Entry {
 	out = append(out, apple.Support()...)
 	out = append(out, aula.Support()...)
 	out = append(out, sony.Support()...)
+	out = append(out, powersupply.Support()...)
 	return out
 }

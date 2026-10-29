@@ -8,6 +8,7 @@ import (
 
 	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/battery"
+	"github.com/ushineko/sanshoku/internal/hiddev"
 )
 
 // driverName is the driver's name, as Name returns it and the support table keys it.
@@ -73,6 +74,7 @@ func candidate(d Device, list lister) sanshoku.Candidate {
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
+		Key:      hiddev.BluetoothKey(d.Address),
 		Open: func(context.Context) (sanshoku.Device, error) {
 			return &device{id: id, list: list}, nil
 		},

@@ -237,6 +237,7 @@ func candidate(n hidraw.Node, timeout time.Duration, open func(string) (node, er
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
+		Key:      n.Key,
 		Open: func(context.Context) (sanshoku.Device, error) {
 			switch products[n.Product] {
 			case unknown:
