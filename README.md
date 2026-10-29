@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.16
+**Version**: 0.1.17
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -259,7 +259,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.1.17 (2026-10-28)
 
 - A Bluetooth gamepad whose battery only the kernel reads is found (spec 022,
   #62): an 8BitDo pad in its Switch pose, which BlueZ has no battery for. The
