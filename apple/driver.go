@@ -11,6 +11,7 @@ import (
 	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/battery"
 	"github.com/ushineko/sanshoku/bluez"
+	"github.com/ushineko/sanshoku/internal/hiddev"
 	"github.com/ushineko/sanshoku/l2cap"
 )
 
@@ -104,6 +105,7 @@ func candidate(d bluez.Device, timeout time.Duration, list lister, dial dialer) 
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
+		Key:      hiddev.BluetoothKey(d.Address),
 		Open: func(context.Context) (sanshoku.Device, error) {
 			return &device{id: id, kind: d.Kind, timeout: timeout, list: list, dial: dial}, nil
 		},

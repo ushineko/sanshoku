@@ -32,6 +32,7 @@ is a Linux tree.
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen | NZXT Kraken Elite (1e71:3012) | 1.2.0 (USB bcdDevice 01.02) | 2026-09-29 | expected; coolant, pump and fan over HID; the screen needs usbfs, which Windows does not have | 005 |
 | bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | tested 2026-10-09; the Bluetooth stack's battery property, read from the device tree; nothing is sent to the device. Tested on a Bose QC35; a DualSense has no such property | 004 |
 | apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | – | 004 |
+| powersupply | Nintendo Switch Pro Controller | 057e:2009, hid-nintendo's power_supply node | battery | 8BitDo controller in its Switch (Bluetooth) mode | – | 2026-10-28 | – | 022 |
 
 ## Expected
 
@@ -52,6 +53,7 @@ is a Linux tree.
 | aula | F75 on its cable | 258a:010c, feature report 6 on usage page 0xFF00 | lighting | frames of command 0x08 on feature report 6, a colour for every key, about 66 ms a frame, sent again within half a second to hold; no battery reading; only a keyboard whose model reads 0xCD is drawn on; report 5, the bootloader's, is never sent | tested 2026-10-10; through the keyboard's vendor collection, with the plain HID class driver | 019 |
 | sony | DualSense | 054c:0ce6, input report 0x01 (USB) or 0x31 (Bluetooth, after feature report 0x05 is read) | battery | level in tenths and charge state from the input report's status byte, as hid-playstation reads it | tested 2026-10-09; Tested over Bluetooth; USB expected. Over Bluetooth the controller stays in its long-report mode until it reconnects | 017 |
 | sony | DualSense Edge | 054c:0df2, as the DualSense | battery | the DualSense's report; hid-playstation reads both the same way | expected | 017 |
+| powersupply | Any HID device whose battery the kernel reads | /sys/class/power_supply node with scope=Device on a HID device, unless another driver found the same device | battery | the kernel driver's own reading (hid-nintendo, xpadneo, hid-input); a level, or one of four bands where the kernel has only a capacity level; nothing is sent to the device | – | 022 |
 
 ## Listed
 

@@ -73,6 +73,13 @@ type Candidate struct {
 
 	// Open opens the device. The caller closes what it returns.
 	Open func(context.Context) (Device, error)
+
+	// Key says which physical device this is, so Scan can tell that two
+	// drivers found the same one (spec 022): "bt:" and the device's address,
+	// or "usb:" and the port chain of the USB device. Empty where the driver
+	// cannot tell. It is compared only within one Scan, because a port chain
+	// moves with the cable, and it carries an address, so it is never printed.
+	Key string
 }
 
 /*
@@ -110,6 +117,20 @@ var (
 )
 
 /*
+Fallback is a driver whose devices other drivers may also read, and read
+better: the kernel's battery for a device a vendor driver speaks to directly.
+Spec 022.
+
+Scan drops a fallback's candidate when a driver that is not a fallback found a
+candidate with the same Key in the same scan.
+*/
+type Fallback interface {
+	Driver
+	// Fallback marks the driver; it does nothing.
+	Fallback()
+}
+
+/*
 Scan runs each driver's Find in order and returns every candidate found.
 
 It is a pull: there is no udev monitor and no hotplug event, and a consumer
@@ -117,11 +138,16 @@ scans when it wants to know what is there. A driver's error does not stop the
 scan; errors are joined and returned beside the candidates the other drivers
 found. ErrAbsent is not joined, because absence is not an error. Scan opens
 nothing.
+
+A Fallback driver's candidate is left out when another driver's has the same
+Key: one device is listed once, by the driver that reads it directly. A
+candidate with no Key is never left out and leaves nothing out.
 */
 func Scan(ctx context.Context, drivers ...Driver) ([]Candidate, error) {
 	var (
-		found []Candidate
-		errs  []error
+		found    []Candidate
+		fallback []bool
+		errs     []error
 	)
 	for _, d := range drivers {
 		if err := ctx.Err(); err != nil {
@@ -129,12 +155,35 @@ func Scan(ctx context.Context, drivers ...Driver) ([]Candidate, error) {
 			break
 		}
 		cands, err := d.Find(ctx)
-		found = append(found, cands...)
+		_, fb := d.(Fallback)
+		for _, c := range cands {
+			found = append(found, c)
+			fallback = append(fallback, fb)
+		}
 		if err != nil && !errors.Is(err, ErrAbsent) {
 			errs = append(errs, fmt.Errorf("%s: %w", d.Name(), err))
 		}
 	}
-	return found, errors.Join(errs...)
+	return withoutSuperseded(found, fallback), errors.Join(errs...)
+}
+
+// withoutSuperseded drops each candidate marked fallback whose Key a candidate
+// not so marked also has. fallback runs beside found.
+func withoutSuperseded(found []Candidate, fallback []bool) []Candidate {
+	direct := map[string]bool{}
+	for i, c := range found {
+		if !fallback[i] && c.Key != "" {
+			direct[c.Key] = true
+		}
+	}
+	out := found[:0:0]
+	for i, c := range found {
+		if fallback[i] && direct[c.Key] {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 /*

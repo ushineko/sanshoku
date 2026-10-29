@@ -101,7 +101,7 @@ and the effect a product decision of the program that shows it.
 
 | Package | Purpose |
 |---|---|
-| [`sanshoku`](https://pkg.go.dev/github.com/ushineko/sanshoku) | The vocabulary: `Identity`, `Candidate`, `Device`, `Driver`, `Scan`, the sentinel errors, `Capabilities`. |
+| [`sanshoku`](https://pkg.go.dev/github.com/ushineko/sanshoku) | The vocabulary: `Identity`, `Candidate`, `Device`, `Driver`, `Fallback`, `Scan`, the sentinel errors, `Capabilities`. |
 | [`hidraw`](https://pkg.go.dev/github.com/ushineko/sanshoku/hidraw) | HID interfaces: sysfs enumeration on Linux, the HID class driver on Windows; report-descriptor walking, report exchange with deadlines, feature reports. |
 | [`usbfs`](https://pkg.go.dev/github.com/ushineko/sanshoku/usbfs) | Claim an interface and write a bulk endpoint through raw usbdevfs ioctls. |
 | [`hwmon`](https://pkg.go.dev/github.com/ushineko/sanshoku/hwmon) | Temperatures by chip and label; the CPU and GPU sensor tables. |
@@ -120,11 +120,13 @@ and the effect a product decision of the program that shows it.
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, and its lights as a canvas through the receiver or on its cable. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
+| [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
 | [`support`](https://pkg.go.dev/github.com/ushineko/sanshoku/support) | The hardware support table: tested, expected, listed. |
 | [`all`](https://pkg.go.dev/github.com/ushineko/sanshoku/all) | Every driver and every support entry, for a program that wants all of them. |
 | [`cmd/sanshoku-bench`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-bench) | The hardware testbench. |
 | [`cmd/sanshoku-apidoc`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-apidoc) | Writes [docs/api.md](docs/api.md), the signature index of the public packages. |
 | [`internal/apidoc`](https://pkg.go.dev/github.com/ushineko/sanshoku/internal/apidoc) | The generator behind `sanshoku-apidoc` and `api_test.go`; not importable outside the module. |
+| [`internal/hiddev`](https://pkg.go.dev/github.com/ushineko/sanshoku/internal/hiddev) | A kernel HID device as sysfs describes it: uevent fields, HID ID, and the key that says which physical device it is; shared by `hidraw` and `powersupply`. |
 
 ## What it does not do
 
@@ -256,6 +258,19 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- A Bluetooth gamepad whose battery only the kernel reads is found (spec 022,
+  #62): an 8BitDo pad in its Switch pose, which BlueZ has no battery for. The
+  new `powersupply` driver reads `/sys/class/power_supply`, as a level or,
+  where the kernel has only a capacity level, as a band. It reads every HID
+  device's battery the kernel has, and gives way to a driver that reads the
+  same device directly.
+- API, additive: `Candidate.Key` says which physical device a candidate is
+  (a Bluetooth address or a USB port chain, never printed), and a driver that
+  satisfies `Fallback` has its candidate dropped by `Scan` when another
+  driver's has the same key. Every driver in the module now sets a key.
 
 ### 0.1.16 (2026-10-28)
 
