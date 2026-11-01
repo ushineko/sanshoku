@@ -13,13 +13,23 @@ drive costs nothing.
 
 | Vendor | ID | Drivers | Rule |
 |---|---|---|---|
-| Logitech | `046d` | `logitech` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="046d", TAG+="uaccess"` |
-| Razer | `1532` | `razer` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1532", TAG+="uaccess"` |
-| SteelSeries | `1038` | `steelseries` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1038", TAG+="uaccess"` |
-| NZXT | `1e71` | `nzxt` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"` and `SUBSYSTEM=="usb", ATTRS{idVendor}=="1e71", TAG+="uaccess"` |
-| AULA (2.4 GHz receiver) | `3554` | `aula` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="3554", TAG+="uaccess"` |
-| AULA (F75 on its cable) | `258a` | `aula` | `KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="010c", TAG+="uaccess"` |
+| Logitech | `046d` | `logitech` | `KERNEL=="hidraw*", KERNELS=="0003:046D:*", TAG+="uaccess"` |
+| Razer | `1532` | `razer` | `KERNEL=="hidraw*", KERNELS=="0003:1532:*", TAG+="uaccess"` |
+| SteelSeries | `1038` | `steelseries` | `KERNEL=="hidraw*", KERNELS=="0003:1038:*", TAG+="uaccess"` |
+| NZXT | `1e71` | `nzxt` | `KERNEL=="hidraw*", KERNELS=="0003:1E71:*", TAG+="uaccess"` and `SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="1e71", TAG+="uaccess"` |
+| AULA (2.4 GHz receiver) | `3554` | `aula` | `KERNEL=="hidraw*", KERNELS=="0003:3554:*", TAG+="uaccess"` |
+| AULA (F75 on its cable) | `258a` | `aula` | `KERNEL=="hidraw*", KERNELS=="0003:258A:010C.*", TAG+="uaccess"` |
 | Sony (DualSense, DualSense Edge) | `054c` | `sony` | `KERNEL=="hidraw*", KERNELS=="*054C:0CE6*", TAG+="uaccess"` and the same for `0DF2` |
+
+**Every rule matches the device itself, not a parent** (#65). In one udev
+rule, an `ATTRS` key is satisfied by any ancestor of the device, so a rule
+by `ATTRS{idVendor}` would tag every device plugged into that vendor's hub
+or dock: a keyboard behind a Logitech dock, or, by the USB rule, any device
+behind an NZXT hub. A hidraw node is matched through its HID device's name,
+`0003:<vendor>:<product>.<n>` (`0003` is USB, and the hex is upper case),
+which only the device has; NZXT's USB node by `DEVTYPE` and its own
+`ATTR{idVendor}`. A device on Bluetooth is not matched by the USB rules,
+as before.
 
 Sony's rules match the controller by product and through its HID ID rather
 than by USB vendor, for two reasons: the same vendor ID is on Sony headphones
