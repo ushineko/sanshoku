@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.17
+**Version**: 0.1.18
 
 Direct device access for Linux, and for HID devices on Windows, in Go, without
 cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -258,6 +258,16 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### 0.1.18 (2026-11-01)
+
+- The udev rule matches each device itself, not a parent (#65). Matched by
+  `ATTRS{idVendor}`, which udev satisfies on any ancestor, it tagged every
+  device behind a Logitech, Razer, SteelSeries or NZXT hub or dock for the
+  seat user; NZXT's USB rule gave raw USB access to anything behind an NZXT
+  hub. A hidraw node is now matched by its HID device's name
+  (`0003:<vendor>:...`), and NZXT's USB node by its own `idVendor`. A
+  consumer that ships the rule should copy it again.
 
 ### 0.1.17 (2026-10-28)
 
