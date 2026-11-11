@@ -225,10 +225,9 @@ Nothing in that list about writes has been measured on this keyboard.
       the write.
 - [x] The guard test passes with the new command lists.
 - [ ] `make test` and `make lint` pass, on Linux and Windows. Windows done;
-      Linux not run.
-- [ ] E1 to E7 run on the desk and their results are recorded in
-      Verification. E1 to E4 and E6 done; E5 (asleep) and E7 (frames over
-      the effect) not run.
+      on Linux not run. `GOOS=linux` vet and lint are clean.
+- [x] E1 to E7 run on the desk and their results are recorded in
+      Verification.
 - [x] Docs per R6.
 
 ## Out of scope
@@ -334,3 +333,27 @@ them back is the consumer's spec.
   shining, `#8000ff`, the purple still in its row. `--effect Disco --yes`:
   `no such effect`, nothing written. Read back by the bench only; the user
   did not watch this run.
+
+2026-11-10, Windows 11, Go 1.27.2, after merging `main` (spec renumbered
+from 021 to 023, since `main` had taken 021). The keyboard ran Ripples
+shining, colourful.
+
+- **E7, the canvas after.** `onboard --colour 8000ff --yes` wrote the palette
+  and the config block (the effect was on colourful), 865 ms, and read back
+  `#8000ff`. `light --pattern steady --color 00ff00 --hold 30s --yes`: 375
+  frames at 80 ms, every one acknowledged. The user saw green, then purple
+  ripples when the frames stopped. Both blocks read after the frames matched
+  those read before, byte for byte.
+- **E5, asleep.** The keyboard switched off, the receiver plugged in:
+  `onboard --colour 00ffff --yes` stopped at the model question with
+  `hidraw.ErrSilent` ("no reply") after 1.2 s, before any block was read, and
+  nothing was written.
+- Switched on again, the keyboard ran Neon stream, as E4 found. `onboard
+  --restore` with the save from before E7 put Ripples shining back, and both
+  blocks matched that save byte for byte.
+- `go test ./...` on Windows: every package ok but
+  `TestLiveAulaReadingsArePlausible`, which fails on "a power state of 0x11"
+  while the keyboard charges. That is sanshoku PR #59, not this spec.
+  `make lint`: 0 issues. `GOOS=linux go vet ./...` and the pinned linter
+  under `GOOS=linux`: clean. `docs/api.md` and `docs/devices.md` match their
+  generators.
