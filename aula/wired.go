@@ -108,7 +108,7 @@ func (w *wired) Close() error {
 // Keys is the F75's 80 lights in slot order.
 func (w *wired) Keys() []lighting.Key { return f75KeyList() }
 
-// Floor is the shortest interval at which frames are sent: 80 ms. One frame
+// Floor is the shortest interval at which frames are sent: 120 ms. One frame
 // takes about 66 ms to write.
 func (w *wired) Floor() time.Duration { return frameFloor }
 
