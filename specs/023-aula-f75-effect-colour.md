@@ -2,7 +2,7 @@
 
 **Issue**: #56
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -224,8 +224,8 @@ Nothing in that list about writes has been measured on this keyboard.
       unknown effect name, or a bad block; a missing acknowledgement stops
       the write.
 - [x] The guard test passes with the new command lists.
-- [ ] `make test` and `make lint` pass, on Linux and Windows. Windows done;
-      on Linux not run. `GOOS=linux` vet and lint are clean.
+- [x] `make test` and `make lint` pass, on Linux and Windows. Windows on the
+      desk; Linux in PR #57's CI ("Test, lint, build").
 - [x] E1 to E7 run on the desk and their results are recorded in
       Verification.
 - [x] Docs per R6.
@@ -357,3 +357,5 @@ shining, colourful.
   `make lint`: 0 issues. `GOOS=linux go vet ./...` and the pinned linter
   under `GOOS=linux`: clean. `docs/api.md` and `docs/devices.md` match their
   generators.
+- PR #57's CI on the merged branch: "Test, lint, build" (Linux), "Test on
+  Windows, build for macOS" and "Vulnerability scan" passed.
