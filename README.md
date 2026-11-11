@@ -259,6 +259,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- The F75's frames are sent at most every 120 ms, not 80 ms (#68). A moving
+  frame at 80 ms flickered through the receiver, because a frame at the
+  message limit can take longer than 80 ms to write. At 120 ms it is smooth.
+
 ### 0.1.18 (2026-11-01)
 
 - The udev rule matches each device itself, not a parent (#65). Matched by

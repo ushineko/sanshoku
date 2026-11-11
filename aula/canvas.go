@@ -30,12 +30,13 @@ const (
 /*
 frameFloor is the shortest interval at which frames are sent.
 
-Measured (spec 019 E3). Through the receiver a frame at the message limit
-takes 50 ms to write, 65 ms at the 95th percentile; a moving one looked even
-at 80 ms and at 120 ms and rough at 60 ms. On the cable a frame is a 66 ms
-control transfer whatever is in it, and a moving one looked even at 80 ms.
+Measured (spec 019 E3, and #68). Through the receiver a frame at the message
+limit takes 50 ms to write at the median and up to 110 ms at worst. A moving
+one flickered at 80 ms in a 15 s run, and was smooth at 120 ms and 160 ms;
+spec 019's 10 s runs had seen 80 ms as even. On the cable a frame is a 66 ms
+control transfer whatever is in it. Both take the same floor.
 */
-const frameFloor = 80 * time.Millisecond
+const frameFloor = 120 * time.Millisecond
 
 /*
 frameHold is how long a frame is shown before the firmware's own effect is
@@ -85,7 +86,7 @@ func f75KeyList() []lighting.Key {
 // Keys is the F75's 80 lights in slot order.
 func (d *device) Keys() []lighting.Key { return f75KeyList() }
 
-// Floor is the shortest interval at which frames are sent: 80 ms.
+// Floor is the shortest interval at which frames are sent: 120 ms.
 func (d *device) Floor() time.Duration { return frameFloor }
 
 // Hold is how long a frame lasts before the firmware's effect returns. It
