@@ -91,6 +91,7 @@ func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 		out = append(out, sanshoku.Candidate{
 			Identity: id,
 			Driver:   driverName,
+			Key:      n.Key,
 			Open: func(context.Context) (sanshoku.Device, error) {
 				h, err := hidraw.Open(n.Path)
 				if err != nil {

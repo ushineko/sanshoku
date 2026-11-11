@@ -224,6 +224,7 @@ func candidate(n hidraw.Node, o Driver, dial func(string) (node, error), claim f
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
+		Key:      n.Key,
 		Open: func(ctx context.Context) (sanshoku.Device, error) {
 			model, ok := Known[n.Product]
 			if !ok {

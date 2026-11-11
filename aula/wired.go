@@ -60,6 +60,7 @@ func wiredCandidate(n hidraw.Node, open func(string) (wiredNode, error)) sanshok
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
+		Key:      n.Key,
 		Open: func(context.Context) (sanshoku.Device, error) {
 			nd, err := open(n.Path)
 			if err != nil {

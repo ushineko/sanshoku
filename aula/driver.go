@@ -130,6 +130,7 @@ func candidate(n hidraw.Node, timeout time.Duration, open func(string) (node, er
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
+		Key:      n.Key,
 		Open: func(context.Context) (sanshoku.Device, error) {
 			if _, ok := products[n.Product]; !ok {
 				return nil, fmt.Errorf("%s: not a product this driver speaks to: %w", id, sanshoku.ErrUnsupported)

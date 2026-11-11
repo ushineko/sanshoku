@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/ushineko/sanshoku/internal/hiddev"
 )
 
 /*
@@ -44,7 +46,7 @@ func Nodes(vendor uint16, want func(Node) bool) ([]Node, error) {
 		if err != nil {
 			continue
 		}
-		bus, v, p, ok := hidID(field(uevent, "HID_ID="))
+		bus, v, p, ok := hiddev.ID(hiddev.Field(uevent, "HID_ID="))
 		if !ok || (vendor != 0 && v != vendor) {
 			continue
 		}
@@ -54,13 +56,14 @@ func Nodes(vendor uint16, want func(Node) bool) ([]Node, error) {
 		}
 		n := Node{
 			Path:       path.Join(DevRoot, e.Name()),
-			Name:       undouble(field(uevent, "HID_NAME=")),
-			Phys:       field(uevent, "HID_PHYS="),
+			Name:       undouble(hiddev.Field(uevent, "HID_NAME=")),
+			Phys:       hiddev.Field(uevent, "HID_PHYS="),
 			Vendor:     v,
 			Product:    p,
 			Bus:        bus,
 			Descriptor: descriptor,
 			Reports:    reportsOf(descriptor),
+			Key:        hiddev.Key(dir),
 		}
 		if want != nil && !want(n) {
 			continue
@@ -71,42 +74,6 @@ func Nodes(vendor uint16, want func(Node) bool) ([]Node, error) {
 		found = append(found, n)
 	}
 	return found, nil
-}
-
-/*
-hidID reads HID_ID, which the kernel writes as bus:vendor:product with each
-field zero-padded to eight hex digits.
-
-The fields are read as *numbers* and matched as fields: comparing them as text
-means deciding what to do about the padding, and stripping the padding off
-"0000046D" with TrimLeft takes the vendor's own leading zero with it and leaves
-"46D", which matches nothing. Matching as a substring instead would take a
-product ID that happens to contain 046D for a Logitech device.
-*/
-func hidID(id string) (bus, vendor, product uint16, ok bool) {
-	fields := strings.Split(id, ":")
-	if len(fields) != 3 {
-		return 0, 0, 0, false
-	}
-	var v [3]uint16
-	for i, f := range fields {
-		n, err := strconv.ParseUint(strings.TrimSpace(f), 16, 16)
-		if err != nil {
-			return 0, 0, 0, false
-		}
-		v[i] = uint16(n)
-	}
-	return v[0], v[1], v[2], true
-}
-
-// field reads one `KEY=value` line out of a node's uevent.
-func field(uevent []byte, key string) string {
-	for line := range strings.SplitSeq(string(uevent), "\n") {
-		if value, ok := strings.CutPrefix(line, key); ok {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
 }
 
 // usbLevels bounds the walk up from a hidraw node: an interface, a device,
@@ -129,8 +96,8 @@ func usbNode(hidraw string) string {
 		return ""
 	}
 	for range usbLevels {
-		bus, err1 := os.ReadFile(filepath.Join(dir, "busnum"))
-		dev, err2 := os.ReadFile(filepath.Join(dir, "devnum"))
+		bus, err1 := os.ReadFile(filepath.Join(dir, "busnum")) //nolint:gosec // a sysfs directory above SysRoot's node, not input
+		dev, err2 := os.ReadFile(filepath.Join(dir, "devnum")) //nolint:gosec // a sysfs directory above SysRoot's node, not input
 		if err1 == nil && err2 == nil {
 			return path.Join(DevRoot, "bus", "usb",
 				fmt.Sprintf("%03d", atoi(bus)), fmt.Sprintf("%03d", atoi(dev)))

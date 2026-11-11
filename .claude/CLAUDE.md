@@ -162,6 +162,7 @@ Release whose notes are that entry.
   or error messages. The repository is public.
 - The module opens only the nodes its transports document:
   `/sys/class/hidraw`, `/dev/hidraw*`, `/dev/bus/usb`, `/sys/class/hwmon`,
+  `/sys/class/power_supply` (read only, spec 022),
   the BlueZ bus and L2CAP sockets. On Windows: HID collections, the
   graphics kernel through gdi32, the GPU Engine counters through pdh, and
   read-only looks at the service manager, the process list and the Task
