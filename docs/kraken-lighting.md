@@ -152,7 +152,15 @@ Two command families set every LED of a channel. Both use G, R, B order.
 
 ### The live write
 
-`26 14 <ch> 01` + 24 LEDs (G, R, B) (C).
+`26 14 <ch> <show>` + the channel's LEDs (G, R, B) (C, B).
+
+- **Byte 2 is the channel the colours are for. Byte 3 is a mask of the
+  channels to show**: bit 0 the ring, bit 1 the fans (B). A channel's frame is
+  held until a report with its bit arrives.
+- `26 14 01 01` draws the ring and `26 14 02 02` the fans. `26 14 02 01` sets
+  the fans' frame and shows nothing new. A later `26 14 01 03` then shows the
+  ring's colours and the fans' held frame together (B).
+- CAM only sent `26 14 01 01` (C), which cannot tell the two bytes apart.
 
 - CAM sends it once a second while a channel's "Sync" setting ties the ring to
   the screen's colour. It stopped 0.19 s after Sync was switched off.
