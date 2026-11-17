@@ -124,3 +124,15 @@ func TestKeysAreLeftRightLogo(t *testing.T) {
 	assert.Equal(t, []lighting.Key{{ID: 0, Name: "Left"}, {ID: 1, Name: "Right"}, {ID: 2, Name: "Logo"}}, d.Keys())
 	assert.Equal(t, []string{"lighting"}, sanshoku.Capabilities(d))
 }
+
+// The pad's zones are its lights, one each, as OpenRGB names them.
+func TestZonesAreLeftRightLogo(t *testing.T) {
+	d, err := opened(newFake())
+	require.NoError(t, err)
+	assert.Equal(t, []lighting.Zone{
+		{Name: "Left", First: 0, Count: 1},
+		{Name: "Right", First: 1, Count: 1},
+		{Name: "Logo", First: 2, Count: 1},
+	}, d.Zones())
+	require.ErrorIs(t, d.Resize("Left", 2), lighting.ErrNoZone)
+}

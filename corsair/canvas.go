@@ -24,10 +24,28 @@ const frameFloor = 20 * time.Millisecond
 
 type colour struct{ r, g, b uint8 }
 
-var _ lighting.Canvas = (*device)(nil)
+var (
+	_ lighting.Canvas = (*device)(nil)
+	_ lighting.Zoned  = (*device)(nil)
+)
 
 // Keys is the pad's three lights: Left, Right, Logo.
 func (d *device) Keys() []lighting.Key { return append([]lighting.Key(nil), keys[:]...) }
+
+// Zones is each light as its own zone, as OpenRGB names them: Left, Right
+// and Logo. A consumer's scenes written against OpenRGB address them so.
+func (d *device) Zones() []lighting.Zone {
+	out := make([]lighting.Zone, lights)
+	for i, k := range keys {
+		out[i] = lighting.Zone{Name: k.Name, First: i, Count: 1}
+	}
+	return out
+}
+
+// Resize refuses: the pad's zones are its own.
+func (d *device) Resize(zone string, _ int) error {
+	return fmt.Errorf("%q on %s: %w", zone, d.id, lighting.ErrNoZone)
+}
 
 // Floor is 20 ms.
 func (d *device) Floor() time.Duration { return frameFloor }
