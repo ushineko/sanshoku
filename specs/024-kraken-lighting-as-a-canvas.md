@@ -2,7 +2,7 @@
 
 **Issue**: #70
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -224,7 +224,7 @@ stopped or its detector for the cooler off. Results go in Verification.
 
 - [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries` and `CGO_ENABLED=0 make build` pass.
-- [ ] `go test ./...` passes on Windows, and `go vet ./...` passes for
+- [x] `go test ./...` passes on Windows, and `go vet ./...` passes for
       windows, linux and darwin.
 - [x] E1 to E9 run on the Kraken with the user watching, recorded in
       Verification, and R1.4, R1.6, R1.7, R1.8 and R1.10 amended to what was
@@ -471,5 +471,6 @@ both channels.
   `screen --yes --hold 3s` uploaded (95.1 ms) and returned to the readout
   (3.9 ms). The light run's 1,499 frames were all acknowledged.
 
-Not run: `go test ./...` on Windows. `go vet ./...` passes for windows, linux
-and darwin.
+`go test ./...` on Windows: passed in CI on this PR (run 44014247450, job
+"Test on Windows, build for macOS", 2026-11-17), `nzxt` included. `go vet
+./...` passes for windows, linux and darwin.
