@@ -292,6 +292,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: `lighting.Storing`, an onboard device whose effect writes go to
+  storage that wears (spec 034, #95). The F75 is one; the Kraken, the MSI card
+  and the K4 HE hold their effects in memory.
 - **New**: every product known to share a lighting driver's protocol, as
   expected (spec 033, #90), from OpenRGB's tables: four more Aura mainboard
   controllers and the ROG Strix LC III, with the AR32 firmware's channel

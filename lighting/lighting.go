@@ -105,13 +105,14 @@ type Effect struct {
 
 /*
 Onboard is a device whose firmware runs a lighting effect of its own, with a
-colour the device stores.
+colour.
 
 The AULA F75 is the first (spec 023). It is a second way to light a device
 that is also a Canvas, not a replacement for it: a consumer asks for the
 effect's colour, or draws frames, and frames cover the effect while they run.
-Setting a colour writes the device's storage, so the method writes only where
-the stored colour differs, and a consumer asks only when a person has asked.
+The methods write only where the effect or colour differs. On a device that
+is also Storing, a write goes to storage that wears, and a consumer asks only
+when a person has asked; on any other, the effect is held in memory.
 */
 type Onboard interface {
 	// Effects names the effects the firmware runs, in the device's order.
@@ -130,6 +131,21 @@ type Onboard interface {
 	// writes the device only where the stored colour differs, and says
 	// whether it wrote.
 	SetColour(ctx context.Context, c Colour) (wrote bool, err error)
+}
+
+/*
+Storing is an Onboard device whose firmware keeps its effect and colour in
+storage that outlives a power cycle and wears with every write: the F75's
+flash (spec 023). A consumer writes it only when a person asks.
+
+An Onboard device that is not Storing (the Kraken, the MSI card, the K4 HE)
+holds its effect in memory and loses it with power, so a consumer may write
+it again to put back what it recorded (spec 034).
+*/
+type Storing interface {
+	Onboard
+	// StoresEffects marks the device; it does nothing.
+	StoresEffects()
 }
 
 // EffectInfo is one firmware effect as a Catalogue describes it.

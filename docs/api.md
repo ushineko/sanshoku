@@ -1023,7 +1023,7 @@ type Onboard interface {
 }
 ```
 
-Onboard is a device whose firmware runs a lighting effect of its own, with a colour the device stores.
+Onboard is a device whose firmware runs a lighting effect of its own, with a colour.
 
 #### type Pixel
 
@@ -1061,6 +1061,18 @@ Shape is how a zone's lights are laid out.
 - `const ShapeRing Shape = "ring"`: lights in a circle: a fan, a pump's ring
 - `const ShapeGrid Shape = "grid"`: rows and columns: a keyboard
 - `const ShapeSet Shape = "set"`: lights in no order: a mouse's
+
+#### type Storing
+
+```go
+type Storing interface {
+	Onboard
+
+	StoresEffects()
+}
+```
+
+Storing is an Onboard device whose firmware keeps its effect and colour in storage that outlives a power cycle and wears with every write: the F75's flash (spec 023).
 
 #### type Tuned
 

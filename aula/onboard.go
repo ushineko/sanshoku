@@ -336,6 +336,11 @@ func (d *device) setColour(ctx context.Context, c lighting.Colour) (bool, error)
 // then the palette.
 const SaveLen = configLen + paletteLen
 
+var _ lighting.Storing = (*device)(nil)
+
+// StoresEffects marks the F75's effect and colour as kept in its flash.
+func (d *device) StoresEffects() {}
+
 /*
 Saver is a copy of the F75's two blocks and the way back to one, for the
 bench: it saves before every write it makes, and restores from a save (spec
