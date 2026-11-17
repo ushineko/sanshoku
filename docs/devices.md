@@ -23,7 +23,7 @@ is a Linux tree.
 | Driver | Device | Match | Capabilities | Hardware | Firmware | Tested | Windows | Spec |
 |---|---|---|---|---|---|---|---|---|
 | hwmon | Intel CPU package | `coretemp` / `Package id 0` | temperature | Intel Core i9-14900K | – | 2026-09-29 | – | 001 |
-| logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | expected | 002 |
+| logitech | G502 X PLUS via Lightspeed receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c547 | battery, lighting | Logitech G502 X PLUS, Lightspeed receiver | – | 2026-09-29 | expected | 002 |
 | logitech | K800 via Unifying receiver | vendor 046d, report ID 0x10 on a vendor page; receiver 046d:c52b, read on the keyboard's own node 046d:2010 | battery | Logitech K800, Unifying receiver | – | 2026-09-29 | expected; no node of its own: read on the receiver at index 1 and named from its pairing register; register 0x07 answered there through the HID class driver (spec 012), not yet through the driver | 002 |
 | razer | Mouse Dock Pro, and the mouse on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4 | battery | Razer Mouse Dock Pro with its mouse docked | – | 2026-09-29 | expected | 003 |
 | razer | Basilisk Ultimate via its dongle | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:0088 | battery | Razer Basilisk Ultimate, its dongle | – | 2026-09-29 | tested 2026-10-07; read 77% discharging, feature reports on interface 0 opened with no access | 003 |

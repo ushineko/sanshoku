@@ -113,7 +113,7 @@ and the effect a product decision of the program that shows it.
 | [`cooling`](https://pkg.go.dev/github.com/ushineko/sanshoku/cooling) | The cooler reading and the `Source` capability. |
 | [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display. |
 | [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to, and `Onboard` for a device whose firmware effect has a colour of its own. |
-| [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw. |
+| [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw, and the G502 X PLUS's lights as a canvas. |
 | [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
@@ -228,6 +228,8 @@ is not there is said and is not a failure.
   protocol, from OpenRGB and a capture of NZXT CAM.
 - [docs/asus-aura.md](docs/asus-aura.md): the ASUS Aura mainboard
   controller's lighting protocol, from OpenRGB and the bench.
+- [docs/logitech-lights.md](docs/logitech-lights.md): the G502 X PLUS's
+  lighting over HID++ 2.0, from OpenRGB and the bench.
 - [docs/msi-gpu.md](docs/msi-gpu.md): the MSI RTX 4090's lighting over
   I2C, from OpenRGB and hotaru's spike.
 - [docs/keychron.md](docs/keychron.md): the Keychron K4 HE's lighting
@@ -276,6 +278,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: the G502 X PLUS's eight LEDs as a `lighting.Canvas` (spec 030,
+  #79), on the `logitech` driver's node, for the first device behind it with
+  per-key lighting. It takes the lights as OpenRGB does, including the
+  vendor's unexplained prep, and gives them back to the onboard profile on
+  `Release`. The HID++ request gains a long form, and a HID++ 2.0 error is
+  now read from its code byte and matched to its request; it had been read
+  from the function byte.
 - **New**: the MSI RTX 4090 Suprim Liquid X's light (spec 029, #78), in a new
   `msi` driver over a new `i2c` package: its colour as a one-light
   `lighting.Canvas` (the static mode; about four colours a second at most),

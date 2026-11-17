@@ -158,6 +158,10 @@ type device struct {
 
 	// presence is what the last discovery learned besides the batteries.
 	presence Presence
+
+	// lights is the canvas of the first device on the node with per-key
+	// lighting (spec 030). Nil until first looked for.
+	lights *lit
 }
 
 // located is one device behind the node, where it was found.
