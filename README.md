@@ -117,7 +117,8 @@ and the effect a product decision of the program that shows it.
 | [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
-| [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD. |
+| [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD, its ring and fans as a canvas, and its firmware effects. |
+| [`corsair`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsair) | The Corsair MM700 mousepad's lights as a canvas. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
@@ -221,6 +222,8 @@ is not there is said and is not a failure.
   the Apex's nodes with OpenRGB and a second program measured.
 - [docs/kraken-lighting.md](docs/kraken-lighting.md): the Kraken's lighting
   protocol, from OpenRGB and a capture of NZXT CAM.
+- [docs/corsair-v2.md](docs/corsair-v2.md): the Corsair MM700's lighting
+  protocol, from OpenRGB and the bench.
 - [docs/credits.md](docs/credits.md): the projects each protocol was learned
   from, and their licences.
 - [docs/api.md](docs/api.md): every exported identifier with its signature
@@ -263,6 +266,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: the Corsair MM700 RGB mousepad's lights as a `lighting.Canvas`
+  (spec 026, #75), in a new `corsair` driver. The pad keeps a frame, so it is
+  not `Fading`. A frame sent in hardware mode is accepted and not shown, so the
+  driver reads the mode before each frame and claims software mode where it
+  has to. `Release` returns the pad's stored effect. The udev rules grant
+  vendor `1b1c`.
 - **New**: the Kraken Elite's 14 firmware effects as `lighting.Onboard`
   (spec 025, #72), at CAM's speeds and colours. The cooler reports no effect,
   so `Effect` is the one this handle set, and `lighting.ErrUnknownEffect`
