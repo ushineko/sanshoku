@@ -121,9 +121,10 @@ Each channel has one LED buffer and a mode (B).
   A `26 06` during an effect stops it and shows the effect's last frame.
 - `26 14` draws over whatever the mode shows and changes neither the buffer
   nor the mode.
-- **The screen's switch to the firmware readout re-applies the mode.** A
-  `26 14` frame is replaced by the buffer, or a stopped effect starts again.
-  A bucket upload does not re-apply it.
+- **The screen's switch to the firmware readout re-applies the mode**, 150 to
+  300 ms after the command. A `26 14` frame is replaced by the buffer, or a
+  stopped effect starts again. A bucket upload does not re-apply it. A buffer
+  committed before the switch shows unchanged.
 
 ## Setting the LEDs
 
@@ -140,11 +141,11 @@ Two command families set every LED of a channel. Both use G, R, B order.
 - CAM uses the `26` family for a fixed colour, for per-LED colours and after
   a change of brightness (C). hotaru drives this cooler through OpenRGB's `22`
   family today, so that family works on firmware 1.2.8 and 1.2.12.
-- **OpenRGB's split write corrupts LED 22** (B). Written as `22 10` and `22 11`
-  in 64-byte reports, the colours show correctly. After the next readout LED 22
-  is green with `22 A0` count `28`, and off with count `18`. One 512-byte
-  `22 10` carrying all 24 LEDs does not do this, nor does `26 04`. This is
-  hotaru spec 070's green LED.
+- **OpenRGB's split write does not set LED 22 in the buffer** (B). Written as
+  `22 10` and `22 11` in 64-byte reports, the colours show correctly. With
+  `22 A0` count `28`, LED 22 keeps its previous value, which the next readout
+  shows. With count `18` it read off. One 512-byte `22 10` carrying all 24 LEDs
+  sets it, and so does `26 04`. This is hotaru spec 070's green LED.
 - **Brightness is a multiply on the host** (C). At about three quarters of
   CAM's slider, blue `00 00 FF` was sent as `00 00 BC`. No command carries a
   brightness.
@@ -229,13 +230,9 @@ the buffer.
 
 ## Not known yet
 
-1. Whether the readout re-applies the mode at the switch or some seconds
-   later. hotaru spec 070 saw its green "some seconds after".
-2. Why the `22 A0` LED count turns LED 22 green or off after a split write.
-3. What rewrote the ring's buffer between hotaru's last write and the bench
-   runs: it held white with LED 22 green, not hotaru's colours.
-4. The meanings of `2A 04` bytes `0x37`, `0x39`, `0x3A` and `0x3B` beyond what
+1. Why LED 22 reads off after a split write with `22 A0` count `18`.
+2. The meanings of `2A 04` bytes `0x37`, `0x39`, `0x3A` and `0x3B` beyond what
    the two sources wrote.
 
 Answered on the bench (B): the rate `26 14` takes, the shared buffer, the
-hold, and the report length.
+hold, the report length, and when the readout re-applies.
