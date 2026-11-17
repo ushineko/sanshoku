@@ -281,7 +281,7 @@ func (d *device) SetEffectWith(_ context.Context, name string, s lighting.Settin
 	if speed != nil {
 		sp = byte(*speed) //nolint:gosec // 1, 2 or 4
 	}
-	if d.running == at && slices.Equal(given, d.given) && sp == d.speed {
+	if d.running == at && !s.Restart && slices.Equal(given, d.given) && sp == d.speed {
 		return false, nil
 	}
 	d.given, d.speed = given, sp

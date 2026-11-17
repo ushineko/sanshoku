@@ -242,3 +242,28 @@ func TestThePlusIsTakenToHoldItsFans(t *testing.T) {
 	empty := withFake(f2)
 	assert.Empty(t, empty.Zones(), "an Elite with nothing attached assumes nothing")
 }
+
+// A frame covers the effect, and the same effect after it is sent, not
+// skipped; Restart sends it with nothing changed (spec 035).
+func TestAFrameEndsTheEffectAndRestartSendsItAgain(t *testing.T) {
+	f := newFake()
+	d := withFake(f)
+	ctx := context.Background()
+	_, err := d.SetEffect(ctx, "Tai Chi")
+	require.NoError(t, err)
+	require.NoError(t, d.Frame(ctx, []lighting.Pixel{{ID: 0, R: 255}}))
+	_, err = d.Effect(ctx)
+	require.ErrorIs(t, err, lighting.ErrUnknownEffect, "the frame covered the effect")
+
+	sent := len(effectCommands(f))
+	wrote, err := d.SetEffect(ctx, "Tai Chi")
+	require.NoError(t, err)
+	assert.True(t, wrote, "the effect after a frame was skipped")
+	assert.Greater(t, len(effectCommands(f)), sent)
+
+	sent = len(effectCommands(f))
+	wrote, err = d.SetEffectWith(ctx, "Tai Chi", lighting.Settings{Restart: true})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Greater(t, len(effectCommands(f)), sent, "Restart sent nothing")
+}

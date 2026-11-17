@@ -1043,6 +1043,8 @@ type Settings struct {
 	Colours []Colour
 
 	Speed *int
+
+	Restart bool
 }
 ```
 
