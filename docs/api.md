@@ -464,6 +464,30 @@ type Status struct {
 
 Status is what a liquid cooler reports about itself.
 
+## corsair
+
+`import "github.com/ushineko/sanshoku/corsair"`
+
+Package corsair is the driver for Corsair's "V2" peripherals: the MM700 RGB mousepad first (spec 026).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens Corsair V2 devices.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: a Corsair V2 device's lights.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per Corsair node on usage page 0xFF42.
+- `func (Driver) Name() string`: Name is "corsair".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the corsair driver's support table: the MM700, Tested on the bench run spec 026 records.
+
 ## gpu
 
 `import "github.com/ushineko/sanshoku/gpu"`

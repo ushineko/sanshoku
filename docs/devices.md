@@ -32,6 +32,7 @@ is a Linux tree.
 | nzxt | Kraken Elite | 1e71:3012, allow-list; vendor-defined usage page tried first | cooling, screen, lighting, onboard | NZXT Kraken Elite (1e71:3012) | 1.2.12 (the `11 02` reply; USB bcdDevice reads 01.02 and does not follow it) | 2026-09-29 | expected; coolant, pump, fan and lighting over HID; the screen needs usbfs, which Windows does not have | 005 |
 | bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | tested 2026-10-09; the Bluetooth stack's battery property, read from the device tree; nothing is sent to the device. Tested on a Bose QC35; a DualSense has no such property | 004 |
 | apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | – | 004 |
+| corsair | Corsair MM700 | vendor 1b1c, usage page 0xFF42; allow-list 1b1c:1b9b | lighting | Corsair MM700 RGB mousepad (1b1c:1b9b) | property 0x13 reads 00050001 | 2026-11-17 | expected; the same 64-byte reports over HID | 026 |
 | powersupply | Nintendo Switch Pro Controller | 057e:2009, hid-nintendo's power_supply node | battery | 8BitDo controller in its Switch (Bluetooth) mode | – | 2026-10-28 | – | 022 |
 
 ## Expected
