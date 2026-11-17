@@ -278,6 +278,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- The Corsair MM700 is a `lighting.Zoned` canvas: Left, Right and Logo, one
+  light each, as OpenRGB names its zones, so scenes written against them find
+  them (hotaru spec 075).
 - **New**: the G502 X PLUS's eight LEDs as a `lighting.Canvas` (spec 030,
   #79), on the `logitech` driver's node, for the first device behind it with
   per-key lighting. It takes the lights as OpenRGB does, including the
