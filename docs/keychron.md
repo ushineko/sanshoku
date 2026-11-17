@@ -51,6 +51,34 @@ source for the `keychron` driver (spec 028).
 - QMK keeps the effect and colours in memory until the keyboard is replugged;
   `A8 02` saves them, and OpenRGB does not send it (O).
 
+## The keyboard's own effects
+
+The firmware runs 22 effects of its own, numbered 1 to 22 (`07 03 02 <n>`).
+The driver names them as OpenRGB names them (O), so a record made through
+OpenRGB finds them (spec 031):
+
+| n | Effect | n | Effect |
+|---|---|---|---|
+| 1 | Solid Color (colour) | 12 | Dual Beacon |
+| 2 | Breathing (colour) | 13 | Rainbow Beacon |
+| 3 | Band Spiral (colour) | 14 | Jellybean Raindrops |
+| 4 | Cycle All | 15 | Pixel Rain |
+| 5 | Cycle Left Right | 16 | Typing Heatmap |
+| 6 | Cycle Up Down | 17 | Digital Rain |
+| 7 | Rainbow Moving Chevron | 18 | Solid Reactive Simple (colour) |
+| 8 | Cycle Out In | 19 | Solid Reactive Multiwide (colour) |
+| 9 | Cycle Out In Dual | 20 | Solid Reactive Multinexus (colour) |
+| 10 | Cycle Pinwheel | 21 | Splash |
+| 11 | Cycle Spiral | 22 | Solid Splash (colour) |
+
+- The effects marked "colour" show the stored colour: its hue and saturation
+  (`07 03 04 H S`), at the board's brightness (`07 03 01`) (O+B).
+- OpenRGB sets the effect, the colour, the brightness and the speed together.
+  The driver sets the effect alone, and the colour alone, each only where it
+  differs. The speed (`07 03 03`) is one value for every effect, and the
+  driver does not set it.
+- Nothing is saved: the keyboard keeps the effect until it is replugged (B).
+
 ## Order and names
 
 OpenRGB orders the keys by the firmware's LED index, in one zone named
