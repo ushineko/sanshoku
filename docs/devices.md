@@ -33,6 +33,7 @@ is a Linux tree.
 | bluez | Any connected device with Battery1 | connected org.bluez.Device1 with org.bluez.Battery1, not Apple audio | battery | Sony WH-1000XM6 | – | 2026-09-29 | tested 2026-10-09; the Bluetooth stack's battery property, read from the device tree; nothing is sent to the device. Tested on a Bose QC35; a DualSense has no such property | 004 |
 | apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | – | 004 |
 | corsair | Corsair MM700 | vendor 1b1c, usage page 0xFF42; allow-list 1b1c:1b9b | lighting | Corsair MM700 RGB mousepad (1b1c:1b9b) | property 0x13 reads 00050001 | 2026-11-17 | expected; the same 64-byte reports over HID | 026 |
+| asus | Aura USB mainboard controller | vendor 0b05, usage page 0xFF72; allow-list 0b05:18f3 | lighting | ASUS ROG Maximus Z790 Hero (0b05:18f3) | AULA3-6K75-0309 | 2026-11-17 | expected; the same 65-byte reports over HID; the board's name is not read there | 027 |
 | powersupply | Nintendo Switch Pro Controller | 057e:2009, hid-nintendo's power_supply node | battery | 8BitDo controller in its Switch (Bluetooth) mode | – | 2026-10-28 | – | 022 |
 
 ## Expected

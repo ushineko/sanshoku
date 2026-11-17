@@ -27,7 +27,8 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   screen --yes         push a test image to a screen and return it to its readout
   light --yes          stream steady, breathe and wave to every lighting canvas and release it
                        (--driver restricts it to one driver; --readout returns a
-                       screen to its readout on the same handle before release)
+                       screen to its readout on the same handle before release;
+                       --zone NAME=N gives a resizable zone its lights)
                        --hold D  --rate D  --pattern P  --color RRGGBB  --only IDS
   light --keys         list each lighting canvas's keys
   onboard              print the firmware effect, its colour and the effects on every device that runs one

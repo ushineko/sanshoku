@@ -214,6 +214,30 @@ Driver reads Apple audio accessories (AirPods) over the accessory protocol on an
 - `func DecodeBattery(packet []byte) ([]battery.Cell, error)`: DecodeBattery reads an accessory-protocol battery packet into its cells, in the order the device sent them.
 - `func Support() []support.Entry`: Support is the apple driver's support table.
 
+## asus
+
+`import "github.com/ushineko/sanshoku/asus"`
+
+Package asus is the driver for an ASUS Aura USB mainboard controller: the ROG Maximus Z790 Hero's first (spec 027).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens ASUS Aura USB mainboard controllers.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: an Aura mainboard's lights.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per ASUS node on usage page 0xFF72.
+- `func (Driver) Name() string`: Name is "asus".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the asus driver's support table: the Aura USB controller on the ROG Maximus Z790 Hero, Tested on the bench run spec 027 records.
+
 ## aula
 
 `import "github.com/ushineko/sanshoku/aula"`
@@ -817,6 +841,7 @@ Package lighting holds the Canvas capability for a device whose lights a program
 - `var ErrNoCanvas = errors.New("no canvas on this device")`: ErrNoCanvas is a device that is here and whose lights cannot be drawn on.
 - `var ErrNoColour = errors.New("the effect takes no colour")`: ErrNoColour is a firmware effect that takes no colour, such as off.
 - `var ErrNoEffect = errors.New("no such effect")`: ErrNoEffect is an effect name the device's firmware does not have.
+- `var ErrNoZone = errors.New("no such resizable zone")`: ErrNoZone is a zone name a device does not have, or one it does not let a consumer resize.
 - `var ErrUnknownEffect = errors.New("the device does not report its running effect")`: ErrUnknownEffect is a device that cannot say which effect it runs: the Kraken reports none, and its driver knows only what it set (spec 025).
 
 ### Types
@@ -934,6 +959,34 @@ type Pixel struct {
 ```
 
 Pixel is one light's colour for one frame.
+
+#### type Zone
+
+```go
+type Zone struct {
+	Name string
+
+	First, Count int
+
+	Min, Max int
+}
+```
+
+Zone is a run of a canvas's lights that is one thing: the board's own, a header's strip, a fan chain.
+
+- `func (z Zone) Resizable() bool`: Resizable is whether a consumer sets the zone's length.
+
+#### type Zoned
+
+```go
+type Zoned interface {
+	Zones() []Zone
+
+	Resize(zone string, lights int) error
+}
+```
+
+Zoned is a Canvas that says which of its lights are which zone, and takes the length of a zone it cannot read from the consumer: an addressable header does not know what is plugged into it (spec 027).
 
 ## logitech
 

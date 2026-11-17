@@ -149,3 +149,36 @@ that wants more than a name asks here.
 type Catalogue interface {
 	Catalogue() []EffectInfo
 }
+
+// Zone is a run of a canvas's lights that is one thing: the board's own, a
+// header's strip, a fan chain.
+type Zone struct {
+	// Name is the zone's name, as the device's own software calls it.
+	Name string
+	// First and Count are the zone's lights, by their position in Keys.
+	First, Count int
+	// Min and Max are the fewest and most lights a consumer may give a zone
+	// whose length it sets; both zero for a zone the device knows.
+	Min, Max int
+}
+
+// Resizable is whether a consumer sets the zone's length.
+func (z Zone) Resizable() bool { return z.Max > 0 }
+
+/*
+Zoned is a Canvas that says which of its lights are which zone, and takes the
+length of a zone it cannot read from the consumer: an addressable header does
+not know what is plugged into it (spec 027). A resizable zone starts at its
+Min. Keys and Zones change with Resize.
+*/
+type Zoned interface {
+	Zones() []Zone
+	// Resize sets a resizable zone's length. A zone that is not resizable, a
+	// name that is no zone, or a length outside Min to Max is an error and
+	// changes nothing. The zone's held colours are kept as far as they go.
+	Resize(zone string, lights int) error
+}
+
+// ErrNoZone is a zone name a device does not have, or one it does not let a
+// consumer resize. A driver wraps it with the name.
+var ErrNoZone = errors.New("no such resizable zone")

@@ -119,6 +119,7 @@ and the effect a product decision of the program that shows it.
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD, its ring and fans as a canvas, and its firmware effects. |
 | [`corsair`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsair) | The Corsair MM700 mousepad's lights as a canvas. |
+| [`asus`](https://pkg.go.dev/github.com/ushineko/sanshoku/asus) | An ASUS Aura USB mainboard's lights as a canvas with zones. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
@@ -222,6 +223,8 @@ is not there is said and is not a failure.
   the Apex's nodes with OpenRGB and a second program measured.
 - [docs/kraken-lighting.md](docs/kraken-lighting.md): the Kraken's lighting
   protocol, from OpenRGB and a capture of NZXT CAM.
+- [docs/asus-aura.md](docs/asus-aura.md): the ASUS Aura mainboard
+  controller's lighting protocol, from OpenRGB and the bench.
 - [docs/corsair-v2.md](docs/corsair-v2.md): the Corsair MM700's lighting
   protocol, from OpenRGB and the bench.
 - [docs/credits.md](docs/credits.md): the projects each protocol was learned
@@ -266,6 +269,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: an ASUS Aura USB mainboard's lights as a `lighting.Canvas` (spec
+  027, #76), in a new `asus` driver: the ROG Maximus Z790 Hero's own light and
+  its four addressable headers, named as OpenRGB names them.
+- **New API**: `lighting.Zoned`, a canvas that says which lights are which
+  zone and takes the length of a zone the device cannot read (an addressable
+  header's strip) from the consumer, and `lighting.Zone`.
 - **New**: the Corsair MM700 RGB mousepad's lights as a `lighting.Canvas`
   (spec 026, #75), in a new `corsair` driver. The pad keeps a frame, so it is
   not `Fading`. A frame sent in hardware mode is accepted and not shown, so the
