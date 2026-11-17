@@ -149,6 +149,13 @@ and `lighting.Catalogue` for their numbers, speeds and colours), and a
 mainboard's addressable headers take their length from the consumer
 (`lighting.Zoned`), because the board cannot read it.
 
+A device whose effects take their own colours and speed is `lighting.Tuned`
+(spec 032): `SetEffectWith` sets them, checked against the catalogue by
+`lighting.Fit`. A zone says its shape (a single light, a line, a ring, a grid,
+or a set of lights in no order) and its parts, where the driver knows them;
+an addressable header's shape is whatever is plugged in, so it is left
+unknown for the consumer to ask.
+
 OpenRGB is not a dependency. A machine that also runs it has a second writer
 on the same nodes, and two streams alternate frames: a consumer stops it, or
 switches off its detectors for the devices it draws (see contention.md).

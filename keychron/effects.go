@@ -19,36 +19,43 @@ type effect struct {
 	name     string
 	number   uint8
 	coloured bool
+	// paced is an effect that moves at the keyboard's one speed.
+	paced bool
 }
 
 var effects = []effect{
-	{"Solid Color", 1, true},
-	{"Breathing", 2, true},
-	{"Band Spiral", 3, true},
-	{"Cycle All", 4, false},
-	{"Cycle Left Right", 5, false},
-	{"Cycle Up Down", 6, false},
-	{"Rainbow Moving Chevron", 7, false},
-	{"Cycle Out In", 8, false},
-	{"Cycle Out In Dual", 9, false},
-	{"Cycle Pinwheel", 10, false},
-	{"Cycle Spiral", 11, false},
-	{"Dual Beacon", 12, false},
-	{"Rainbow Beacon", 13, false},
-	{"Jellybean Raindrops", 14, false},
-	{"Pixel Rain", 15, false},
-	{"Typing Heatmap", 16, false},
-	{"Digital Rain", 17, false},
-	{"Solid Reactive Simple", 18, true},
-	{"Solid Reactive Multiwide", 19, true},
-	{"Solid Reactive Multinexus", 20, true},
-	{"Splash", 21, false},
-	{"Solid Splash", 22, true},
+	{"Solid Color", 1, true, false},
+	{"Breathing", 2, true, true},
+	{"Band Spiral", 3, true, true},
+	{"Cycle All", 4, false, true},
+	{"Cycle Left Right", 5, false, true},
+	{"Cycle Up Down", 6, false, true},
+	{"Rainbow Moving Chevron", 7, false, true},
+	{"Cycle Out In", 8, false, true},
+	{"Cycle Out In Dual", 9, false, true},
+	{"Cycle Pinwheel", 10, false, true},
+	{"Cycle Spiral", 11, false, true},
+	{"Dual Beacon", 12, false, true},
+	{"Rainbow Beacon", 13, false, true},
+	{"Jellybean Raindrops", 14, false, false},
+	{"Pixel Rain", 15, false, false},
+	{"Typing Heatmap", 16, false, false},
+	{"Digital Rain", 17, false, true},
+	{"Solid Reactive Simple", 18, true, true},
+	{"Solid Reactive Multiwide", 19, true, true},
+	{"Solid Reactive Multinexus", 20, true, true},
+	{"Splash", 21, false, true},
+	{"Solid Splash", 22, true, true},
 }
 
-var (
-	_ lighting.Onboard   = (*device)(nil)
-	_ lighting.Catalogue = (*device)(nil)
+var _ lighting.Tuned = (*device)(nil)
+
+// The keyboard's one speed, for every effect that moves: 0 to 255, 127 as it
+// came (spec 032).
+const (
+	slowest      = 0
+	fastest      = 255
+	defaultSpeed = 127
 )
 
 // Effects names the keyboard's own effects, as OpenRGB names them, in the
@@ -66,10 +73,19 @@ func (d *device) Effects() []string {
 func (d *device) Catalogue() []lighting.EffectInfo {
 	out := make([]lighting.EffectInfo, len(effects))
 	for i, e := range effects {
-		out[i] = lighting.EffectInfo{Name: e.name, Number: int(e.number)}
-		if e.coloured {
-			out[i].MinColours, out[i].MaxColours = 1, 1
-		}
+		out[i] = info(e)
+	}
+	return out
+}
+
+// info is e as the catalogue describes it.
+func info(e effect) lighting.EffectInfo {
+	out := lighting.EffectInfo{Name: e.name, Number: int(e.number)}
+	if e.coloured {
+		out.MinColours, out.MaxColours = 1, 1
+	}
+	if e.paced {
+		out.Speeds, out.Speed = []int{slowest, fastest}, defaultSpeed
 	}
 	return out
 }
@@ -95,6 +111,14 @@ func (d *device) Effect(ctx context.Context) (lighting.Effect, error) {
 		return lighting.Effect{}, fmt.Errorf("%s runs effect %d: %w", d.id, r[3], lighting.ErrUnknownEffect)
 	}
 	out := lighting.Effect{Name: e.name, Coloured: e.coloured}
+	if e.paced {
+		sp, err := d.ask(ctx, cmdGetValue, matrix, valueSpeed)
+		if err != nil {
+			return lighting.Effect{}, fmt.Errorf("reading %s: %w", d.id, err)
+		}
+		speed := int(sp[3])
+		out.Speed = &speed
+	}
 	if !e.coloured {
 		return out, nil
 	}
@@ -104,7 +128,51 @@ func (d *device) Effect(ctx context.Context) (lighting.Effect, error) {
 	}
 	c := rgb(h, s, v)
 	out.Colour = &lighting.Colour{R: c.r, G: c.g, B: c.b}
+	out.Colours = []lighting.Colour{*out.Colour}
 	return out, nil
+}
+
+/*
+SetEffectWith runs the named effect with its colour and the keyboard's speed
+(spec 032), each written only where it differs from what the keyboard
+reports. The speed is one value for every effect that moves.
+*/
+func (d *device) SetEffectWith(ctx context.Context, name string, s lighting.Settings) (bool, error) {
+	e, ok := byName(name)
+	if !ok {
+		return false, fmt.Errorf("%q on %s: %w", name, d.id, lighting.ErrNoEffect)
+	}
+	colours, speed, err := lighting.Fit(info(e), s, false)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", d.id, err)
+	}
+	wrote, err := d.SetEffect(ctx, e.name)
+	if err != nil {
+		return false, err
+	}
+	if len(colours) > 0 {
+		w, err := d.SetColour(ctx, colours[0])
+		if err != nil {
+			return wrote, err
+		}
+		wrote = wrote || w
+	}
+	if speed == nil {
+		return wrote, nil
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	r, err := d.ask(ctx, cmdGetValue, matrix, valueSpeed)
+	if err != nil {
+		return wrote, fmt.Errorf("setting %s: %w", d.id, err)
+	}
+	if int(r[3]) == *speed {
+		return wrote, nil
+	}
+	if _, err := d.ask(ctx, cmdSetValue, matrix, valueSpeed, byte(*speed)); err != nil { //nolint:gosec // 0 to 255, checked by Fit
+		return wrote, fmt.Errorf("setting %s: %w", d.id, err)
+	}
+	return true, nil
 }
 
 /*

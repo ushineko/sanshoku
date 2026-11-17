@@ -24,7 +24,7 @@ func TestOpenLaysOutTheBoardFromItsTable(t *testing.T) {
 	assert.Equal(t, "ASUS ROG MAXIMUS Z790 HERO", d.Identity().Name)
 	assert.Equal(t, []lighting.Key{{ID: 0, Name: "Aura Mainboard, LED 1"}}, d.Keys())
 	assert.Equal(t, []lighting.Zone{
-		{Name: "Aura Mainboard", First: 0, Count: 1},
+		{Name: "Aura Mainboard", First: 0, Count: 1, Shape: lighting.ShapeSingle},
 		{Name: "Addressable RGB Header 1", First: 1, Max: 500},
 		{Name: "Addressable RGB Header 2", First: 1, Max: 500},
 		{Name: "Addressable RGB Header 3", First: 1, Max: 500},

@@ -18,7 +18,7 @@ func TestOpenAsksWhatTheKeyboardIs(t *testing.T) {
 	assert.Equal(t, []string{"01", "a2", "a8"}, f.told(1))
 	assert.Equal(t, "Keychron K4 HE", d.Identity().Name)
 	assert.Len(t, d.Keys(), 100)
-	assert.Equal(t, []lighting.Zone{{Name: "Keyboard", Count: 100}}, d.Zones())
+	assert.Equal(t, []lighting.Zone{{Name: "Keyboard", Count: 100, Shape: lighting.ShapeGrid}}, d.Zones())
 	require.ErrorIs(t, d.Resize("Keyboard", 10), lighting.ErrNoZone)
 
 	noRGB := newFake()

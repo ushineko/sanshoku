@@ -123,8 +123,15 @@ func (d *device) Zones() []lighting.Zone {
 	first := 0
 	for _, c := range d.ch {
 		z := lighting.Zone{Name: c.name, First: first, Count: len(c.held)}
-		if c.resizable {
+		switch {
+		case c.resizable:
+			// A header's shape is what is plugged in, which the board cannot
+			// tell (spec 032).
 			z.Max = headerMax
+		case len(c.held) == 1:
+			z.Shape = lighting.ShapeSingle
+		default:
+			z.Shape = lighting.ShapeLine
 		}
 		out = append(out, z)
 		first += len(c.held)

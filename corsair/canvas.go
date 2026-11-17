@@ -37,7 +37,7 @@ func (d *device) Keys() []lighting.Key { return append([]lighting.Key(nil), keys
 func (d *device) Zones() []lighting.Zone {
 	out := make([]lighting.Zone, lights)
 	for i, k := range keys {
-		out[i] = lighting.Zone{Name: k.Name, First: i, Count: 1}
+		out[i] = lighting.Zone{Name: k.Name, First: i, Count: 1, Shape: lighting.ShapeSingle}
 	}
 	return out
 }

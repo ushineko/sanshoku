@@ -130,9 +130,9 @@ func TestZonesAreLeftRightLogo(t *testing.T) {
 	d, err := opened(newFake())
 	require.NoError(t, err)
 	assert.Equal(t, []lighting.Zone{
-		{Name: "Left", First: 0, Count: 1},
-		{Name: "Right", First: 1, Count: 1},
-		{Name: "Logo", First: 2, Count: 1},
+		{Name: "Left", First: 0, Count: 1, Shape: lighting.ShapeSingle},
+		{Name: "Right", First: 1, Count: 1, Shape: lighting.ShapeSingle},
+		{Name: "Logo", First: 2, Count: 1, Shape: lighting.ShapeSingle},
 	}, d.Zones())
 	require.ErrorIs(t, d.Resize("Left", 2), lighting.ErrNoZone)
 }

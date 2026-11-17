@@ -52,7 +52,7 @@ func TestKeysAreTheLitDevicesZones(t *testing.T) {
 	require.Len(t, keys, 8)
 	assert.Equal(t, lighting.Key{ID: 0, Name: "LED A"}, keys[0])
 	assert.Equal(t, lighting.Key{ID: 7, Name: "LED H"}, keys[7])
-	assert.Equal(t, []lighting.Zone{{Name: "Mouse LEDs", Count: 8}}, d.Zones())
+	assert.Equal(t, []lighting.Zone{{Name: "Mouse LEDs", Count: 8, Shape: lighting.ShapeSet}}, d.Zones())
 	assert.Equal(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, d.lights.zones)
 	assert.Equal(t, []byte{0x20, 0x64}, d.lights.template)
 	assert.Equal(t, byte(4), d.lights.effects)

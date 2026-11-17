@@ -66,3 +66,10 @@ The modes OpenRGB offers for this card, and how each takes its colours (O):
 
 Each is `2E` = `00`, `22` = `1C`, its colours, `36` and `38`, then `22` = the
 mode (O). OpenRGB starts each with red, green and blue (O).
+
+## Colours and speed (spec 032)
+
+`SetEffectWith` writes an effect's colours by its shape (one into `30`–`32`,
+two or three into the colour blocks) and its speed into `38`, the nearest of
+`04`, `02` and `01`, slow to fast. The card's zone is a single light.
+

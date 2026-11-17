@@ -246,6 +246,20 @@ way: a `26 04` buffer, then `26 06 <ch> 00 02 <speed> 00 18 ...`, with byte 4
 `02` and the speed in byte 5 (Marquee `29`, Wave `35`) (C). The cooler moves
 the buffer.
 
+## Colours, speed and zones (spec 032)
+
+- `SetEffectWith` sends an effect with the colours and speed a consumer gives:
+  the colours fill the slots in order (byte `0x38` is their number), and the
+  speed is the period in bytes 5 and 6, any value from the fastest to the
+  slowest the catalogue lists. `SetEffect` still sends CAM's colours and
+  speed.
+- The cooler is `lighting.Zoned`: one zone per channel with keys, "Ring" and
+  "Fan" as consumers name them, each a ring. A zone's parts are the
+  accessories in its slots. An RGB Core frame is several fans in one slot,
+  and is that many parts: F280 (`1C`) two of eight, F360 (`1D`) and F420
+  (`1F`) three of eight (OpenRGB's Hue 2 table, NZXT's product pages). The
+  order of LEDs inside a frame is not recorded.
+
 ## What is out of scope
 
 - **Pump and fan duty.** CAM sends `72 01 01 00` and `72 02 01 01`, each with

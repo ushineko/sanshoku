@@ -910,6 +910,8 @@ Package lighting holds the Canvas capability for a device whose lights a program
 - `var ErrNoColour = errors.New("the effect takes no colour")`: ErrNoColour is a firmware effect that takes no colour, such as off.
 - `var ErrNoEffect = errors.New("no such effect")`: ErrNoEffect is an effect name the device's firmware does not have.
 - `var ErrNoZone = errors.New("no such resizable zone")`: ErrNoZone is a zone name a device does not have, or one it does not let a consumer resize.
+- `var ErrSpeed = errors.New("a speed outside the effect's range")`: ErrSpeed is a speed outside an effect's range.
+- `var ErrTooManyColours = errors.New("more colours than the effect takes")`: ErrTooManyColours is more colours than an effect takes.
 - `var ErrUnknownEffect = errors.New("the device does not report its running effect")`: ErrUnknownEffect is a device that cannot say which effect it runs: the Kraken reports none, and its driver knows only what it set (spec 025).
 
 ### Types
@@ -948,6 +950,8 @@ type Colour struct{ R, G, B uint8 }
 
 Colour is one colour, absolute.
 
+- `func Fit(info EffectInfo, s Settings, nearest bool) ([]Colour, *int, error)`: Fit checks s against an effect's catalogue entry, and returns its colours with fewer than MinColours repeated up to it, and its speed, the nearest listed where nearest is set.
+
 #### type Effect
 
 ```go
@@ -957,6 +961,10 @@ type Effect struct {
 	Coloured bool
 
 	Colour *Colour
+
+	Colours []Colour
+
+	Speed *int
 }
 ```
 
@@ -1028,6 +1036,44 @@ type Pixel struct {
 
 Pixel is one light's colour for one frame.
 
+#### type Settings
+
+```go
+type Settings struct {
+	Colours []Colour
+
+	Speed *int
+}
+```
+
+Settings are an effect's colours and speed, for Tuned (spec 032).
+
+#### type Shape
+
+```go
+type Shape string
+```
+
+Shape is how a zone's lights are laid out.
+
+- `const ShapeSingle Shape = "single"`: one light
+- `const ShapeLine Shape = "line"`: lights in a row: a strip
+- `const ShapeRing Shape = "ring"`: lights in a circle: a fan, a pump's ring
+- `const ShapeGrid Shape = "grid"`: rows and columns: a keyboard
+- `const ShapeSet Shape = "set"`: lights in no order: a mouse's
+
+#### type Tuned
+
+```go
+type Tuned interface {
+	Onboard
+	Catalogue
+	SetEffectWith(ctx context.Context, name string, s Settings) (wrote bool, err error)
+}
+```
+
+Tuned is an Onboard device whose effects take their colours and speed, as its Catalogue describes them (spec 032).
+
 #### type Zone
 
 ```go
@@ -1037,6 +1083,10 @@ type Zone struct {
 	First, Count int
 
 	Min, Max int
+
+	Shape Shape
+
+	Parts []int
 }
 ```
 
