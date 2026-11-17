@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/ushineko/sanshoku"
-	"github.com/ushineko/sanshoku/all"
 	"github.com/ushineko/sanshoku/lighting"
+	"github.com/ushineko/sanshoku/screen"
 )
 
 // lightOptions are the light verb's flags, parsed.
@@ -24,6 +24,7 @@ type lightOptions struct {
 	pattern string
 	colour  [3]uint8
 	only    []byte
+	readout bool
 }
 
 // patterns are the bench's demonstration patterns, in the order `all` runs
@@ -46,10 +47,12 @@ func light(ctx context.Context, args []string, out, errOut io.Writer) int {
 	pattern := fs.String("pattern", "all", "steady, breathe, wave or all")
 	colour := fs.String("color", "ff0000", "the steady and breathe colour, RRGGBB")
 	only := fs.String("only", "", "address only these key ids, comma-separated hex (e.g. 29,00)")
+	driver := fs.String("driver", "", "restrict to one driver")
+	readout := fs.Bool("readout", false, "before releasing, put the test card up and return the screen to its readout on the same handle, then wait 10 s")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	opts := lightOptions{hold: *hold, rate: *rate, pattern: *pattern}
+	opts := lightOptions{hold: *hold, rate: *rate, pattern: *pattern, readout: *readout}
 	var err error
 	if opts.colour, err = parseColour(*colour); err != nil {
 		writef(errOut, "--color: %v\n", err)
@@ -68,7 +71,12 @@ func light(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return 2
 	}
 
-	found, scanErr := sanshoku.Scan(ctx, all.Drivers()...)
+	ds, err := drivers(*driver)
+	if err != nil {
+		writef(errOut, "--driver: %v\n", err)
+		return 2
+	}
+	found, scanErr := sanshoku.Scan(ctx, ds...)
 	if scanErr != nil {
 		writef(errOut, "scan: %v\n", scanErr)
 	}
@@ -135,6 +143,10 @@ func stream(ctx context.Context, out io.Writer, cv lighting.Canvas, opts lightOp
 		}
 	}
 
+	if p, isPanel := cv.(screen.Panel); opts.readout && isPanel && ok {
+		ok = readoutHeld(ctx, out, p)
+	}
+
 	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), screenTimeout)
 	defer cancel()
 	start := time.Now()
@@ -144,6 +156,39 @@ func stream(ctx context.Context, out io.Writer, cv lighting.Canvas, opts lightOp
 	}
 	writef(out, "  release: ok (%.1f ms); watch the board for what the firmware shows\n", ms(time.Since(start)))
 	return ok
+}
+
+// readoutWatch is how long the lights are left after the readout, so someone
+// can see whether the firmware's re-apply took the held frame away.
+const readoutWatch = 10 * time.Second
+
+/*
+readoutHeld puts the test card up and returns the screen to its readout on the
+same handle as the frame, then waits. The Kraken's readout re-applies each
+lighting channel's mode, and the driver commits the held frame first, so the
+lights should not change (spec 024 R1.13).
+*/
+func readoutHeld(ctx context.Context, out io.Writer, p screen.Panel) bool {
+	sctx, cancel := context.WithTimeout(ctx, screenTimeout)
+	defer cancel()
+	w, h := p.Size()
+	start := time.Now()
+	if err := p.Image(sctx, testCard(w, h)); err != nil {
+		writef(out, "  readout: the test card failed: %v\n", err)
+		return false
+	}
+	writef(out, "  readout: test card up (%.1f ms)\n", ms(time.Since(start)))
+	start = time.Now()
+	if err := p.Readout(sctx); err != nil {
+		writef(out, "  readout: error after %.1f ms: %v\n", ms(time.Since(start)), err)
+		return false
+	}
+	writef(out, "  readout: ok (%.1f ms); the lights should not change for %s\n", ms(time.Since(start)), readoutWatch)
+	select {
+	case <-ctx.Done():
+	case <-time.After(readoutWatch):
+	}
+	return true
 }
 
 // frameStats is one pattern's run: frames sent, acknowledged and timed out,

@@ -99,6 +99,20 @@ and by this module's `steelseries` driver at the same time. Measured on
 - Two streamers (OpenRGB in Direct mode and this module) were not run: they
   would alternate frames, and choosing one is the consumer's decision.
 
+## The Kraken's lighting and OpenRGB (spec 024)
+
+**OpenRGB must not drive the Kraken's lighting while this module does.** Both
+write the same LED buffer on the cooler: OpenRGB through its `22` commands,
+this module through `26 04` (docs/kraken-lighting.md). The last writer wins,
+and the screen's readout shows whichever buffer is current. OpenRGB's split
+write also leaves ring LED 22 unset, which the readout shows as a stale
+colour (hotaru spec 070's green LED).
+
+Switch off OpenRGB's detector for the cooler: in `OpenRGB.json`, under
+`Detectors`, set `"NZXT Kraken 2024 ELITE Series RGB"` to `false`, and
+restart its server. OpenRGB then keeps no handle that writes lighting to the
+cooler. Reading status from the same node stays safe, as above.
+
 ## Not measured
 
 - A second consumer calling a panel method while hotaru holds the claim. The

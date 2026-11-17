@@ -295,6 +295,9 @@ type device struct {
 		slot it is showing, so the driver remembers what it last asked for.
 	*/
 	showing int
+
+	// canvas is the lighting as this handle has drawn it (spec 024).
+	canvas canvasState
 }
 
 // Identity is the node's.

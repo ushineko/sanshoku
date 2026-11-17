@@ -77,8 +77,8 @@ func push(ctx context.Context, out io.Writer, c sanshoku.Candidate, p screen.Pan
 	}
 	// The card stays up for at least the floor, so it lands, and for longer
 	// when someone wants to look at it.
-	wait := max(p.Floor(encoded.Len()), hold)
-	writef(out, "%s  %s  panel %dx%d, test card %d bytes, floor %s\n", c.Driver, c.Identity, w, h, encoded.Len(), p.Floor(encoded.Len()))
+	wait := max(p.ImageFloor(encoded.Len()), hold)
+	writef(out, "%s  %s  panel %dx%d, test card %d bytes, floor %s\n", c.Driver, c.Identity, w, h, encoded.Len(), p.ImageFloor(encoded.Len()))
 
 	ok := step(ctx, out, "image", func(ctx context.Context) error { return p.Image(ctx, card) })
 	if ok {

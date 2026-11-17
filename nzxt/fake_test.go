@@ -24,9 +24,14 @@ hotaru's cooler.Fake and carrying only the behaviours hotaru measured:
   - Faulty: the temperature bytes read `FF FF`, liquidctl#172.
   - LoseFirst: this many replies go to another reader, as OpenRGB takes them.
   - Told: every report written, in order.
+  - Accessories: each lighting channel's six accessory slots, as `21 03`
+    reports them. newFake has this desk's: the Kraken Elite ring (`1E`) on
+    channel 1 and an F360 Core (`1D`) on channel 2.
 
-Every other command is answered with its prefix incremented and a result byte
-of 0x01, which is how the device answers a command it accepted. A read with
+A lighting command (`26 xx`) is acknowledged as the cooler does, with `FF 01`
+and the command at bytes 14 and 15 (spec 024). Every other command is answered
+with its prefix incremented and a result byte of 0x01, which is how the device
+answers a command it accepted. A read with
 nothing to read reports the deadline at once rather than waiting it out.
 */
 type fake struct {
@@ -45,6 +50,12 @@ type fake struct {
 	LoseFirst int
 	Told      [][]byte
 
+	Accessories [channels][slotsPer]byte
+
+	// buffered is the channels whose last `26` command was a `26 04`, for
+	// the guard on `26 06`.
+	buffered map[byte]bool
+
 	/*
 		Memory makes the fake keep its screen slots: a reserve (`32 01`)
 		records the slot's address and size, a delete (`32 02`) empties it,
@@ -61,7 +72,10 @@ type fake struct {
 // newFake is a cooler reporting plausible numbers, chattering as the real one
 // does.
 func newFake() *fake {
-	return &fake{Coolant: 37.5, PumpRPM: 2608, PumpDuty: 81, FanRPM: 1190, FanDuty: 51, Chatter: 3}
+	return &fake{
+		Coolant: 37.5, PumpRPM: 2608, PumpDuty: 81, FanRPM: 1190, FanDuty: 51, Chatter: 3,
+		Accessories: [channels][slotsPer]byte{{0x1E}, {0x1D}},
+	}
 }
 
 func (f *fake) Write(report []byte) error {
@@ -71,6 +85,7 @@ func (f *fake) Write(report []byte) error {
 		return errors.New("closed")
 	}
 	f.Told = append(f.Told, append([]byte(nil), report...))
+	f.guard(report)
 	for range f.Chatter {
 		f.pending = append(f.pending, f.broadcast())
 	}
@@ -83,9 +98,16 @@ func (f *fake) Write(report []byte) error {
 	}
 	reply := make([]byte, reportLen)
 	reply[0], reply[1] = report[0]+1, report[1]
-	if reply[0] == 0x75 {
+	switch {
+	case report[0] == 0x26:
+		reply[0], reply[1], reply[14], reply[15] = 0xFF, 0x01, report[0], report[1]
+	case reply[0] == 0x75:
 		f.fill(reply)
-	} else {
+	case report[0] == 0x20 && report[1] == 0x03:
+		for i, slots := range f.Accessories {
+			copy(reply[slotsAt+slotsPer*i:], slots[:])
+		}
+	default:
 		reply[resultByte] = resultOK
 	}
 	if f.Memory {
@@ -182,6 +204,47 @@ func (f *fake) fill(r []byte) {
 	r[19] = low(f.PumpDuty)
 	r[23], r[24] = low(f.FanRPM), low(f.FanRPM>>8)
 	r[25] = low(f.FanDuty)
+}
+
+/*
+misuse is every lighting command any fake in the package was sent outside
+spec 024 R1.11, which TestMain fails the run on (R4.4): the `22` family, a
+firmware effect (`2A`), a `26` command other than `14`, `04` and `06`, and a
+`26 06` whose channel's last `26` command was not a `26 04`.
+*/
+var misuse struct {
+	sync.Mutex
+	seen []string
+}
+
+func (f *fake) guard(report []byte) {
+	bad := ""
+	switch {
+	case report[0] == 0x22 || report[0] == 0x2A:
+		bad = "a command the driver never sends"
+	case report[0] != 0x26:
+		return
+	case report[1] == 0x04:
+		if f.buffered == nil {
+			f.buffered = map[byte]bool{}
+		}
+		f.buffered[report[2]] = true
+		return
+	case report[1] == 0x06:
+		if !f.buffered[report[2]] {
+			bad = "26 06 without a 26 04 before it"
+		}
+		delete(f.buffered, report[2])
+	case report[1] == 0x14:
+		return
+	default:
+		bad = "a 26 command the driver never sends"
+	}
+	if bad != "" {
+		misuse.Lock()
+		misuse.seen = append(misuse.seen, fmt.Sprintf("% x: %s", report[:4], bad))
+		misuse.Unlock()
+	}
 }
 
 // low is the bottom byte of a value, which is what a report field holds.

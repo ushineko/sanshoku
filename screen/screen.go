@@ -22,9 +22,9 @@ var ErrNoPanel = errors.New("no panel on this device")
 /*
 Panel is a device with a display a program can draw on.
 
-Floor is part of the device rather than the program because it is a property
-of the device. On the Kraken hotaru measured, a frame pushed faster than its
-floor is accepted (every transfer and the switch that shows it report
+ImageFloor is part of the device rather than the program because it is a
+property of the device. On the Kraken hotaru measured, a frame pushed faster
+than its floor is accepted (every transfer and the switch that shows it report
 success) and the screen does not change. Nothing in the protocol announces
 this, so a consumer asks the device before it pushes.
 */
@@ -42,7 +42,9 @@ type Panel interface {
 	// Appearance sets brightness as a percentage and rotation in degrees.
 	Appearance(ctx context.Context, brightness, degrees int) error
 
-	// Floor is the shortest interval at which a frame of the given encoded
-	// size, in bytes, reliably appears.
-	Floor(bytes int) time.Duration
+	// ImageFloor is the shortest interval at which a frame of the given
+	// encoded size, in bytes, reliably appears. It is not called Floor
+	// because lighting.Canvas has a Floor of its own, and a device with a
+	// screen and lights (the Kraken) is both (spec 024).
+	ImageFloor(bytes int) time.Duration
 }
