@@ -157,8 +157,8 @@ func (d *device) SetEffect(ctx context.Context, name string) (bool, error) {
 }
 
 /*
-SetColour runs the effect this handle set again, with c in every colour slot
-CAM fills for it, and keeps c for later effects. An effect that draws its own
+SetColour runs the effect this handle set again, with c as its first colour
+and CAM's in the rest, and keeps c for later effects. An effect that draws its own
 colours is lighting.ErrNoColour; no effect set is lighting.ErrUnknownEffect.
 */
 func (d *device) SetColour(ctx context.Context, c lighting.Colour) (bool, error) {
@@ -211,15 +211,15 @@ func (d *device) runEffect(ctx context.Context, at int, colour *lighting.Colour)
 // set is whether this handle has set an effect.
 func (f firmwareState) set() bool { return f.running >= 0 }
 
-// coloursFor is the colours effect e runs in: the colour last given, in
-// every slot CAM fills, or CAM's own.
+/*
+coloursFor is the colours effect e runs in: CAM's, with the colour last given
+in the first slot. Only the first: Tai Chi with both its colours the same is a
+still ring, as the maintainer saw through hotaru (spec 025).
+*/
 func (f firmwareState) coloursFor(e effect) []lighting.Colour {
-	if f.colour == nil || len(e.colours) == 0 {
-		return e.colours
-	}
-	out := make([]lighting.Colour, len(e.colours))
-	for i := range out {
-		out[i] = *f.colour
+	out := append([]lighting.Colour(nil), e.colours...)
+	if f.colour != nil && len(out) > 0 {
+		out[0] = *f.colour
 	}
 	return out
 }

@@ -60,16 +60,17 @@ Breathing, Covering Marquee and Candle, and 1 to 2 for Alternating.
   acknowledgement within 1 s. An unknown name is `lighting.ErrNoEffect`. It
   writes nothing, and says so, when this handle already set that effect with
   the same colours.
-- R1.3 `SetColour(c)` sends the running effect again with `c` in every
-  colour slot CAM fills for it (three for Fading, two for Tai Chi, one for
-  Breathing), and keeps it for later effects. An effect with no colours is
+- R1.3 `SetColour(c)` sends the running effect again with `c` as its first
+  colour and CAM's in the rest (Tai Chi in red chases red and blue), and
+  keeps it for later effects. Filling every slot with `c` was tried first:
+  Tai Chi in red then showed a still red ring, through hotaru. An effect with no colours is
   `lighting.ErrNoColour`. With no effect set on this handle it is
   `lighting.ErrUnknownEffect`.
 - R1.4 `Effect` is the effect this handle last set, with its colour where it
   takes one, and `lighting.ErrUnknownEffect` before it has set one. It sends
   nothing.
-- R1.5 Each effect's speed is CAM's. Its colours are the colour this handle
-  last set through `SetColour`, in every slot, or else CAM's colours.
+- R1.5 Each effect's speed is CAM's. Its colours are CAM's, with the first
+  replaced by the colour this handle last set through `SetColour`.
 - R1.6 Setting an effect forgets the canvas's held frame on the channels it
   set, so the commit before a readout (spec 024 R1.13) does not replace the
   effect. A frame drawn afterwards draws over the effect, which the next
@@ -148,7 +149,8 @@ Breathing, Covering Marquee and Candle, and 1 to 2 for Alternating.
 Alternating byte for byte; the catalogue (14 effects, each running at a speed
 it lists); `SetEffect` sends one `2A 04` per channel with keys and nothing
 for the same effect again; `Effect` before a set is `ErrUnknownEffect`;
-`SetColour` fills Tai Chi's two slots, is `ErrNoColour` on Rainbow Flow, and
+`SetColour` puts the colour first in Tai Chi and keeps CAM's second, is
+`ErrNoColour` on Rainbow Flow, and
 the colour carries to the next effect; an effect set over a drawn frame is not
 committed over by the readout. The package guard allows `2A 04` and no other
 `2A` command.

@@ -84,7 +84,7 @@ func TestSetEffectRunsOnEveryChannelOnce(t *testing.T) {
 	require.ErrorIs(t, err, lighting.ErrNoEffect)
 }
 
-func TestSetColourFillsTheEffectsSlots(t *testing.T) {
+func TestSetColourIsTheEffectsFirstColour(t *testing.T) {
 	f := newFake()
 	d := withFake(f)
 	ctx := context.Background()
@@ -99,7 +99,7 @@ func TestSetColourFillsTheEffectsSlots(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, wrote)
 	last := f.Told[len(f.Told)-1]
-	assert.Equal(t, []byte{0xC0, 0xFF, 0x00, 0xC0, 0xFF, 0x00, 0x00}, last[7:14], "both of Tai Chi's slots, and no third")
+	assert.Equal(t, []byte{0xC0, 0xFF, 0x00, 0x00, 0x00, 0xBC, 0x00}, last[7:14], "gold first, CAM's blue second, and no third")
 	assert.Equal(t, byte(2), last[0x38])
 
 	wrote, err = d.SetColour(ctx, gold)
