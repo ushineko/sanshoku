@@ -4,20 +4,29 @@
 
 **Version**: 0.1.19
 
-Direct device access for Linux, and for HID devices on Windows, in Go, without
-cgo: peripheral batteries over HID++ and vendor report protocols, AirPods over
-Bluetooth, an NZXT Kraken's telemetry and LCD, and hwmon temperatures. It is
-the maintained home of the device code that
+Device drivers for Linux, and for HID devices on Windows, in Go, without cgo:
+peripheral batteries over HID++ and vendor report protocols, AirPods over
+Bluetooth, an NZXT Kraken's telemetry, LCD and lights, the lights of keyboards,
+mice, mousepads, mainboards and graphics cards, and hwmon temperatures.
+
+It is a first-class driver set. Each driver speaks to the kernel itself, and
+nothing in it needs another program, daemon or library to be running. It is
+the home of every driver its upstream projects need:
 [hayami](https://github.com/ushineko/hayami) and
-[hotaru](https://github.com/ushineko/hotaru) each wrote for themselves.
+[hotaru](https://github.com/ushineko/hotaru). A device either one wants to
+support is added here, with its spec and its bench run, and not in the
+program.
 
 Three colours, for the range of things under one roof.
 
-> **Status**: v0.1.10. Every Linux driver but aula is bench-tested on real hardware:
-> Logitech HID++ 1.0 and 2.0, Razer, SteelSeries keyboards and the Arctis Nova
-> Pro Wireless, NZXT Kraken Elite telemetry and LCD, BlueZ `Battery1`, AirPods
-> and hwmon. On Windows the HID drivers read through the HID class driver: the
-> Razer and AULA drivers are bench-tested there. hayami imports the module.
+> **Status**: every Linux driver but aula is bench-tested on real hardware:
+> Logitech HID++ 1.0 and 2.0 and the G502 X PLUS's lights, Razer, SteelSeries
+> keyboards and the Arctis Nova Pro Wireless, the NZXT Kraken Elite's
+> telemetry, LCD and lights, the lights of an ASUS Aura mainboard, the Corsair
+> MM700, the Keychron K4 HE and the MSI RTX 4090, BlueZ `Battery1`, AirPods and
+> hwmon. On Windows the HID drivers read through the HID class driver: the
+> Razer and AULA drivers are bench-tested there, and the other HID drivers are
+> expected to work. hayami and hotaru import the module.
 
 ## Contents
 
@@ -58,8 +67,8 @@ whether or not anything else needs it):
 The point is not the bytes, though 84 MiB for a temperature is a lot; it is
 that a panel polling four devices every fifteen seconds was forking Python
 to do it, and that two programs had to agree by hand on what the devices
-say. OpenRGB stays: it knows every lit device on the machine, and that
-breadth is the one thing not worth rewriting.
+say. Lighting followed (specs 024 to 031): every lit device hotaru drives is
+driven here, and hotaru no longer runs OpenRGB.
 
 ### Another project already does this
 
@@ -81,9 +90,10 @@ exists anyway, for three reasons:
   writing the decoder from the bytes is how this module's knowledge was
   built, and it is written down where the code is.
 
-Where an existing project covers something this module cannot reasonably
-do in Go, it is used instead. OpenRGB is that case for lighting in general.
-It is not, deliberately, for the SteelSeries Apex Pro TKL Wireless Gen 3:
+None of them is a dependency. A device an upstream project needs is given a
+driver here, not a call out to another tool (see
+[docs/design.md](docs/design.md)). The SteelSeries Apex Pro TKL Wireless Gen 3
+was the first lit device to show why:
 
 | For the Apex's lighting | What it takes | Effects |
 |---|---|---|
@@ -94,8 +104,9 @@ It is not, deliberately, for the SteelSeries Apex Pro TKL Wireless Gen 3:
 The board has no firmware effect to switch to (spec 010 measured that), so
 every option renders on the host. The difference is where: in a GUI
 application the consumer remote-controls, or in the consumer, through a
-handle it already holds for the battery. The second keeps OpenRGB headless
-and the effect a product decision of the program that shows it.
+handle it already holds for the battery. The second needs nothing else
+running and keeps the effect a product decision of the program that shows it.
+Every lit device since has followed it.
 
 ## What is in it
 
@@ -135,14 +146,15 @@ and the effect a product decision of the program that shows it.
 
 ## What it does not do
 
-Lighting effects, and lighting for most devices. Every lit device is
-[OpenRGB](https://openrgb.org/)'s and stays in hotaru; that breadth is the
-one thing not worth reimplementing. The one exception is the SteelSeries
-Apex Pro TKL Wireless Gen 3, whose only lighting path is a stream of frames
-its vendor's software renders on the host (spec 010): this module carries
-the stream as `lighting.Canvas`, and the effects stay the consumer's. Everything
-else follows the rule in [docs/design.md](docs/design.md): if direct access
-can reasonably be done without an external tool, it is. The Arctis Nova Pro
+Render lighting effects. A driver carries frames, the device's own firmware
+effects and their colours; what moves across the lights is the consumer's to
+draw (see [docs/design.md](docs/design.md), "Lighting").
+
+Chase hardware nobody upstream uses. A driver is added when hayami or hotaru
+needs one, with the device on the bench; the breadth of a project like
+[OpenRGB](https://openrgb.org/) is not the goal. Everything else follows the
+rule in [docs/design.md](docs/design.md): if direct access can reasonably be
+done without an external tool, it is. The Arctis Nova Pro
 Wireless is read directly (spec 006); other headsets are a candidate for a
 later spec. On Linux, NVIDIA temperature stays with `nvidia-smi`
 because NVML is a vendor library, not a kernel node; on Windows the `gpu`
@@ -184,8 +196,10 @@ has three tiers: **tested** on named hardware with the bench output in the
 spec, **expected** to work because the protocol is generic and the code
 path exists (run the bench on yours and report), and **listed** by ID but
 not implemented. A program can ask `support` the same question at runtime;
-the bench prints the tier beside every device it finds. The Apex Pro TKL
-Wireless Gen 3 is the one device with a `lighting` capability.
+the bench prints the tier beside every device it finds. A Windows column says
+where each entry stands there, which is usually expected rather than tested.
+`lighting` is a device whose lights a program draws; `onboard` is one whose
+firmware also runs effects of its own.
 
 ## Testbench
 
@@ -278,6 +292,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- Docs: sanshoku is a first-class driver set that needs no other program
+  running, and the home of every driver hayami and hotaru need; lighting is
+  in scope, rendering effects is not (README, `docs/design.md`).
 - The Keychron K4 HE's 22 own effects, as `lighting.Onboard` and
   `lighting.Catalogue` (spec 031, #86), named and numbered as OpenRGB names
   them, with the stored colour and the board's brightness. A keyboard recorded

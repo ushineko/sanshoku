@@ -61,7 +61,7 @@ func Support() []support.Entry {
 	apex.Tested = lightingBenched
 	apex.Capabilities = []string{"battery", "lighting"}
 	apex.Notes = "0x92 wired, 0xD2 through the dongle. " +
-		"Lighting: 0x61 direct frames of 85 keys, as SteelSeries GG streams them; floor 16 ms; 0x41 releases by rebooting the keyboard"
+		"Lighting (spec 010): 0x61 direct frames of 85 keys, as SteelSeries GG streams them; floor 16 ms; 0x41 releases by rebooting the keyboard"
 
 	arctis := support.Entry{
 		Driver:       driverName,
