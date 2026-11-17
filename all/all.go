@@ -3,6 +3,7 @@ package all
 import (
 	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/apple"
+	"github.com/ushineko/sanshoku/asus"
 	"github.com/ushineko/sanshoku/aula"
 	"github.com/ushineko/sanshoku/bluez"
 	"github.com/ushineko/sanshoku/corsair"
@@ -28,6 +29,7 @@ func Drivers() []sanshoku.Driver {
 		apple.Driver{},
 		aula.Driver{},
 		corsair.Driver{},
+		asus.Driver{},
 		sony.Driver{},
 		powersupply.Driver{},
 	}
@@ -45,6 +47,7 @@ func Support() []support.Entry {
 	out = append(out, apple.Support()...)
 	out = append(out, aula.Support()...)
 	out = append(out, corsair.Support()...)
+	out = append(out, asus.Support()...)
 	out = append(out, sony.Support()...)
 	out = append(out, powersupply.Support()...)
 	return out

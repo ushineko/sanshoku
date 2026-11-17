@@ -48,6 +48,8 @@ func light(ctx context.Context, args []string, out, errOut io.Writer) int {
 	colour := fs.String("color", "ff0000", "the steady and breathe colour, RRGGBB")
 	only := fs.String("only", "", "address only these key ids, comma-separated hex (e.g. 29,00)")
 	driver := fs.String("driver", "", "restrict to one driver")
+	var zones zoneFlags
+	fs.Var(&zones, "zone", "give a resizable zone its lights, NAME=N (repeatable), before anything else")
 	readout := fs.Bool("readout", false, "before releasing, put the test card up and return the screen to its readout on the same handle, then wait 10 s")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -88,11 +90,19 @@ func light(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		if cv, ok := dev.(lighting.Canvas); ok {
 			canvases++
+			if z, ok := dev.(lighting.Zoned); ok && !resize(out, z, zones) {
+				code = 1
+			}
 			writef(out, "%s  %s  %s  %d keys, floor %s\n", c.Driver, c.Identity, c.Path, len(cv.Keys()), cv.Floor())
 			if f, ok := dev.(lighting.Fading); ok {
 				writef(out, "  a frame fades after %s; each pattern sends one every interval\n", f.Hold())
 			}
 			if *keys {
+				if z, ok := dev.(lighting.Zoned); ok {
+					for _, zone := range z.Zones() {
+						writef(out, "  zone %q: lights %d from %d%s\n", zone.Name, zone.Count, zone.First, sizeWords(zone))
+					}
+				}
 				for _, k := range cv.Keys() {
 					writef(out, "  %#02x  %s\n", k.ID, k.Name)
 				}
@@ -321,4 +331,44 @@ func parseIDs(s string) ([]byte, error) {
 		ids = append(ids, byte(v))
 	}
 	return ids, nil
+}
+
+// zoneFlags is the --zone flags: NAME=N, in the order given.
+type zoneFlags []string
+
+func (z *zoneFlags) String() string { return strings.Join(*z, ",") }
+
+func (z *zoneFlags) Set(v string) error {
+	if _, _, ok := strings.Cut(v, "="); !ok {
+		return fmt.Errorf("%q is not NAME=N", v)
+	}
+	*z = append(*z, v)
+	return nil
+}
+
+// resize gives each named zone its lights, and says so.
+func resize(out io.Writer, z lighting.Zoned, zones zoneFlags) bool {
+	ok := true
+	for _, v := range zones {
+		name, n, _ := strings.Cut(v, "=")
+		lights, err := strconv.Atoi(n)
+		if err == nil {
+			err = z.Resize(name, lights)
+		}
+		if err != nil {
+			writef(out, "  zone %q: %v\n", name, err)
+			ok = false
+			continue
+		}
+		writef(out, "  zone %q: %d lights\n", name, lights)
+	}
+	return ok
+}
+
+// sizeWords is how a zone's length is set, for --keys.
+func sizeWords(z lighting.Zone) string {
+	if z.Resizable() {
+		return fmt.Sprintf(", resizable %d to %d", z.Min, z.Max)
+	}
+	return ""
 }
