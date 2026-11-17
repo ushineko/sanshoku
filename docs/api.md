@@ -237,7 +237,7 @@ Driver finds and opens ASUS Aura USB mainboard controllers.
 
 ### Functions
 
-- `func Support() []support.Entry`: Support is the asus driver's support table: the Aura USB controller on the ROG Maximus Z790 Hero, Tested on the bench run spec 027 records.
+- `func Support() []support.Entry`: Support is the asus driver's support table: the Aura USB controller on the ROG Maximus Z790 Hero, Tested on the bench run spec 027 records, and the products that share its protocol, Expected (spec 033).
 
 ## aula
 
@@ -1172,7 +1172,7 @@ Driver finds and opens MSI graphics cards' lighting controllers.
 
 ### Functions
 
-- `func Support() []support.Entry`: Support is the msi driver's support table: the RTX 4090 Suprim Liquid X, Tested on the bench run spec 029 records.
+- `func Support() []support.Entry`: Support is the msi driver's support table: the RTX 4090 Suprim Liquid X, Tested on the bench run spec 029 records, and the cards that share its controller, Expected (spec 033).
 
 ## nzxt
 
@@ -1207,6 +1207,8 @@ Driver finds and opens NZXT Kraken coolers.
 type Model struct {
 	Name   string
 	Screen Size
+
+	AssumedFans byte
 }
 ```
 
@@ -1225,7 +1227,7 @@ Size is a panel's width and height in pixels.
 ### Functions
 
 - `func DecodeStatus(reply []byte) (cooling.Status, error)`: DecodeStatus reads a `75 01` status reply.
-- `func Support() []support.Entry`: Support is the nzxt driver's support table: the one product in Known.
+- `func Support() []support.Entry`: Support is the nzxt driver's support table: each product in Known.
 
 ## powersupply
 

@@ -92,3 +92,22 @@ keyboard's zone is a grid.
 OpenRGB orders the keys by the firmware's LED index, in one zone named
 "Keyboard", and names each key from the VIA keymap (`04`, layer 0) at the key's
 row and column (O).
+
+## Other keyboards (spec 033)
+
+The driver opens any Keychron keyboard on VIA's raw page whose Keychron
+features answer with the RGB bit, as OpenRGB detects all 426 of its Keychron
+IDs (O). The LED count and order are read from the board, so no ID is needed.
+A board off the tested list is named by its own USB name, without the maker
+twice ("Keychron V1 Max").
+
+What may differ, and is expected rather than tested:
+
+- **The per-key effect.** It is 23 on the K4 HE, and the number is the count
+  of a firmware's effects plus two (O), so a firmware with another set of
+  effects numbers it, and its own effects, differently.
+- **ZMK firmware** lays out the feature reply differently, and **a board
+  behind a wireless dongle** answers with the dongle's ID (O). Neither is
+  handled yet.
+- **A board that answers the RGB commands without the feature bit** is
+  refused, where OpenRGB tries the RGB protocol version instead.

@@ -292,6 +292,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: every product known to share a lighting driver's protocol, as
+  expected (spec 033, #90), from OpenRGB's tables: four more Aura mainboard
+  controllers and the ROG Strix LC III, with the AR32 firmware's channel
+  numbering; the MM700 3XL; any Keychron keyboard with Keychron RGB over VIA;
+  46 more MSI cards on the RTX 4090's controller, with their effect tables;
+  the Kraken 2024 Plus. The Corsair and Logitech keyboards and mice are #92 and
+  #93.
 - **New**: an effect's colours and speed, and a zone's shape (spec 032, #89).
   `lighting.Tuned` sets a firmware effect with all its colours and a speed,
   checked against the catalogue (`lighting.Fit`); the Kraken, the MSI card

@@ -25,9 +25,67 @@ const adapterName = "NVIDIA i2c adapter 1 "
 // card is a graphics card on the allow-list, by its PCI IDs.
 type card struct{ vendor, device, subVendor, subDevice uint16 }
 
-// cards is the allow-list, and each card's name, as OpenRGB names it.
-var cards = map[card]string{
-	{0x10DE, 0x2684, 0x1462, 0x5104}: "MSI GeForce RTX 4090 Suprim Liquid X",
+/*
+cards is the allow-list: every card OpenRGB pairs with this controller (its
+"v2") at this address, each named as OpenRGB names it, with the effects it
+has (spec 033). Matched on all four IDs, because a subsystem ID repeats across
+cards. The RTX 4090 Suprim Liquid X is tested; the rest are expected.
+*/
+var cards = map[card]cardInfo{
+	{0x10DE, 0x2882, 0x1462, 0x5160}: {"MSI GeForce RTX 4060 Gaming X", familyV2},
+	{0x10DE, 0x2882, 0x1462, 0x5164}: {"MSI GeForce RTX 4060 Gaming X NV Edition", familyV2},
+	{0x10DE, 0x2803, 0x1462, 0x5152}: {"MSI GeForce RTX 4060 Ti Gaming X", familyV2},
+	{0x10DE, 0x2805, 0x1462, 0x5172}: {"MSI GeForce RTX 4060 Ti 16GB Gaming X", familyV2},
+	{0x10DE, 0x2805, 0x1462, 0x5171}: {"MSI GeForce RTX 4060 Ti 16GB Gaming X Slim White", familyNoStack},
+	{0x10DE, 0x2786, 0x1462, 0x5136}: {"MSI GeForce RTX 4070 Gaming X Trio", familyV2},
+	{0x10DE, 0x2786, 0x1462, 0x513F}: {"MSI GeForce RTX 4070 Gaming X Slim", familyV2},
+	{0x10DE, 0x2786, 0x1462, 0xE131}: {"MSI GeForce RTX 4070 Gaming X Slim White", familyV2},
+	{0x10DE, 0x2783, 0x1462, 0x513F}: {"MSI GeForce RTX 4070 SUPER Gaming X Slim", familyNoStack},
+	{0x10DE, 0x2783, 0x1462, 0xE131}: {"MSI GeForce RTX 4070 SUPER Gaming X Slim White", familyV2},
+	{0x10DE, 0x2783, 0x1462, 0xE134}: {"MSI GeForce RTX 4070 SUPER Gaming X Slim MLG", familyV2},
+	{0x10DE, 0x2782, 0x1462, 0x5132}: {"MSI GeForce RTX 4070 Ti Gaming X Trio", familyV2},
+	{0x10DE, 0x2782, 0x1462, 0x5139}: {"MSI GeForce RTX 4070 Ti Gaming X Trio White", familyV2},
+	{0x10DE, 0x2782, 0x1462, 0xE132}: {"MSI GeForce RTX 4070 Ti Gaming X Slim White", familyV2},
+	{0x10DE, 0x2782, 0x1462, 0x5133}: {"MSI GeForce RTX 4070 Ti Suprim X Trio", familyV2},
+	{0x10DE, 0x2705, 0x1462, 0x5139}: {"MSI GeForce RTX 4070 Ti SUPER Gaming X Trio White", familyNoStack},
+	{0x10DE, 0x2705, 0x1462, 0xE130}: {"MSI GeForce RTX 4070 Ti SUPER Gaming Slim", familyV2},
+	{0x10DE, 0x2705, 0x1462, 0xE13D}: {"MSI GeForce RTX 4070 Ti SUPER Gaming X Slim", familyV2},
+	{0x10DE, 0x2705, 0x1462, 0xE13E}: {"MSI GeForce RTX 4070 Ti SUPER Gaming White X Slim", familyV2},
+	{0x10DE, 0x2705, 0x1462, 0xE132}: {"MSI GeForce RTX 4070 Ti SUPER Gaming White X Slim", familyV2},
+	{0x10DE, 0x2704, 0x1462, 0x511A}: {"MSI GeForce RTX 4080 Gaming X Slim White", familyNoStack},
+	{0x10DE, 0x2704, 0x1462, 0x5111}: {"MSI GeForce RTX 4080 Gaming X Trio", familyV2},
+	{0x10DE, 0x2704, 0x1462, 0x5115}: {"MSI GeForce RTX 4080 Gaming X Trio White", familyV2},
+	{0x10DE, 0x2704, 0x1462, 0x5110}: {"MSI GeForce RTX 4080 Suprim X", familyV2},
+	{0x10DE, 0x2702, 0x1462, 0x5117}: {"MSI GeForce RTX 4080 SUPER Gaming X Slim", familyV2},
+	{0x10DE, 0x2702, 0x1462, 0x511A}: {"MSI GeForce RTX 4080 SUPER Gaming X Slim White", familyNoStack},
+	{0x10DE, 0x2702, 0x1462, 0x5110}: {"MSI GeForce RTX 4080 SUPER Suprim X", familyV2},
+	{0x10DE, 0x2702, 0x1462, 0x5111}: {"MSI GeForce RTX 4080 SUPER Gaming X Trio", familyNoStack},
+	{0x10DE, 0x2684, 0x1462, 0x5103}: {"MSI GeForce RTX 4090 Gaming X Trio", familyV2},
+	{0x10DE, 0x2684, 0x1462, 0x510B}: {"MSI GeForce RTX 4090 Gaming X Slim", familyV2},
+	{0x10DE, 0x2684, 0x1462, 0x5104}: {"MSI GeForce RTX 4090 Suprim Liquid X", familyV2},
+	{0x10DE, 0x2684, 0x1462, 0x5102}: {"MSI GeForce RTX 4090 Suprim X", familyV2},
+	{0x10DE, 0x2684, 0x1462, 0x5105}: {"MSI GeForce RTX 4090 Suprim X Classic", familyV2},
+	{0x10DE, 0x2D04, 0x1462, 0x5354}: {"MSI GeForce RTX 5060 Ti Gaming OC", familyRTX50},
+	{0x10DE, 0x2D05, 0x1462, 0x5372}: {"MSI GeForce RTX 5060 8G Gaming Trio OC", familyRTX50},
+	{0x10DE, 0x2D04, 0x1462, 0x5353}: {"MSI GeForce RTX 5060 Ti 16G Gaming Trio OC", familyRTX50},
+	{0x10DE, 0x2F04, 0x1462, 0x5322}: {"MSI GeForce RTX 5070 Gaming Trio", familyRTX50},
+	{0x10DE, 0x2C05, 0x1462, 0x5315}: {"MSI GeForce RTX 5070 Ti Gaming Trio OC Plus", familyRTX50},
+	{0x10DE, 0x2C05, 0x1462, 0x5314}: {"MSI GeForce RTX 5070 Ti VANGUARD SOC", familyRTX50},
+	{0x10DE, 0x2C02, 0x1462, 0x5315}: {"MSI GeForce RTX 5080 Gaming Trio OC", familyRTX50},
+	{0x10DE, 0x2C02, 0x1462, 0x5314}: {"MSI GeForce RTX 5080 VANGUARD OC SOC", familyRTX50},
+	{0x10DE, 0x2C02, 0x1462, 0x5313}: {"MSI GeForce RTX 5080 SUPRIM SOC", familyRTX50},
+	{0x10DE, 0x2C02, 0x1462, 0x5312}: {"MSI GeForce RTX 5080 SUPRIM LIQUID SOC", familyRTX50},
+	{0x10DE, 0x2B85, 0x1462, 0x5303}: {"MSI GeForce RTX 5090 Gaming Trio OC", familyRTX50},
+	{0x10DE, 0x2B85, 0x1462, 0x5302}: {"MSI GeForce RTX 5090 VANGUARD SOC", familyRTX50},
+	{0x10DE, 0x2B85, 0x1462, 0x5301}: {"MSI GeForce RTX 5090 SUPRIM SOC", familyRTX50},
+	{0x10DE, 0x2B85, 0x1462, 0x5300}: {"MSI GeForce RTX 5090 SUPRIM LIQUID SOC", familyRTX50},
+}
+
+// cardInfo is a card's name and which of the controller's effect tables it
+// has.
+type cardInfo struct {
+	name   string
+	family family
 }
 
 // settle is the pause after every register write (OpenRGB's 20 ms).
@@ -61,11 +119,11 @@ func (Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 	}
 	var out []sanshoku.Candidate
 	for _, a := range adapters {
-		name, ok := cards[card{a.Vendor, a.Device, a.SubVendor, a.SubDevice}]
+		info, ok := cards[card{a.Vendor, a.Device, a.SubVendor, a.SubDevice}]
 		if !ok || !strings.HasPrefix(a.Name+" ", adapterName) {
 			continue
 		}
-		out = append(out, candidate(a, name))
+		out = append(out, candidate(a, info))
 	}
 	if len(out) == 0 {
 		return nil, sanshoku.ErrAbsent
@@ -73,10 +131,10 @@ func (Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 	return out, nil
 }
 
-func candidate(a i2c.Adapter, name string) sanshoku.Candidate {
+func candidate(a i2c.Adapter, info cardInfo) sanshoku.Candidate {
 	id := sanshoku.Identity{
 		Vendor: a.SubVendor, Product: a.SubDevice, Bus: sanshoku.BusI2C,
-		Name: name, Phys: fmt.Sprintf("%s, address 0x%02x", a.Name, address), Path: a.Path,
+		Name: info.name, Phys: fmt.Sprintf("%s, address 0x%02x", a.Name, address), Path: a.Path,
 	}
 	return sanshoku.Candidate{
 		Identity: id,
@@ -87,7 +145,7 @@ func candidate(a i2c.Adapter, name string) sanshoku.Candidate {
 			if err != nil {
 				return nil, err //nolint:wrapcheck // i2c names the node
 			}
-			return &device{id: id, bus: bus, running: -1}, nil
+			return &device{id: id, bus: bus, running: -1, fx: effectsFor(info.family)}, nil
 		},
 	}
 }
@@ -98,6 +156,8 @@ type device struct {
 
 	mu  sync.Mutex
 	bus i2c.Bus
+	// fx is this card's effects, by its family.
+	fx []effect
 	// held is the static colour, and shown whether the card shows it.
 	held  colour
 	shown bool

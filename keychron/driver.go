@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,7 +23,8 @@ const vendor = 0x3434
 // rawPage is VIA's raw HID page.
 const rawPage = 0xFF60
 
-// products is the allow-list, and what each is called (OpenRGB's names).
+// products are the boards tested here, and what each is called (OpenRGB's
+// names). Any other board takes its own USB name (spec 033).
 var products = map[uint16]string{
 	0x0E40: "Keychron K4 HE",
 }
@@ -73,8 +75,8 @@ func (Driver) Name() string { return driverName }
 
 /*
 Find returns one candidate per Keychron node on VIA's raw page. ErrAbsent when
-there is none. A product not on the allow-list is a candidate, so it can be
-seen, and opening it is refused without its node being opened.
+there is none. Any of them is opened: the keyboard is read, not assumed, and
+one without Keychron RGB is refused when it is (spec 033).
 */
 func (Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 	nodes, err := hidraw.Nodes(vendor, hidraw.UsagePage(rawPage))
@@ -107,15 +109,14 @@ func candidate(n hidraw.Node, open func(string) (node, error)) sanshoku.Candidat
 	}
 	if name, ok := products[n.Product]; ok {
 		id.Name = name
+	} else {
+		id.Name = ownName(n.Name)
 	}
 	return sanshoku.Candidate{
 		Identity: id,
 		Driver:   driverName,
 		Key:      n.Key,
 		Open: func(ctx context.Context) (sanshoku.Device, error) {
-			if _, ok := products[n.Product]; !ok {
-				return nil, fmt.Errorf("%s: not a product this driver speaks to: %w", id, sanshoku.ErrUnsupported)
-			}
 			nd, err := open(n.Path)
 			if err != nil {
 				return nil, err
@@ -128,6 +129,15 @@ func candidate(n hidraw.Node, open func(string) (node, error)) sanshoku.Candidat
 			return d, nil
 		},
 	}
+}
+
+/*
+ownName is a keyboard's USB product name as a person reads it: the kernel
+joins the maker and the product, and a Keychron board names itself in both
+("Keychron Keychron V1 Max"), so the repeat is dropped.
+*/
+func ownName(name string) string {
+	return strings.Replace(strings.TrimSpace(name), "Keychron Keychron", "Keychron", 1)
 }
 
 // device is one open keyboard.

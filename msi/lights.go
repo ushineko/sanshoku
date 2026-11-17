@@ -92,6 +92,36 @@ var effects = []effect{
 	{"Double Flashing", 0x03, one, -1, false, 1, 1},
 }
 
+/*
+family is which of the controller's effect tables a card has, as OpenRGB
+gives them (spec 033): six cards lack Stack and Rhythm, and the RTX 50 cards
+take the coloured Rhythm as mode 0B. OpenRGB also gives the RTX 50 cards four
+effects more (Twisting, Laminating, Marquee, Arrow), whose colours are not
+recorded; they are not offered.
+*/
+type family int
+
+const (
+	familyV2 family = iota
+	familyNoStack
+	familyRTX50
+)
+
+// effectsFor is a family's effects, in the table's order.
+func effectsFor(f family) []effect {
+	out := make([]effect, 0, len(effects))
+	for _, e := range effects {
+		switch {
+		case f == familyNoStack && (e.name == "Stack" || e.name == "Rhythm"):
+			continue
+		case f == familyRTX50 && e.name == "Rhythm":
+			e.mode = 0x0B
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
 // defaults are the colours an effect starts with, OpenRGB's: red, green,
 // blue.
 var defaults = [3]colour{{0xFF, 0, 0}, {0, 0xFF, 0}, {0, 0, 0xFF}}
@@ -166,8 +196,8 @@ func (d *device) Release(context.Context) error {
 
 // Effects names the card's own effects, as OpenRGB names them.
 func (d *device) Effects() []string {
-	out := make([]string, len(effects))
-	for i, e := range effects {
+	out := make([]string, len(d.fx))
+	for i, e := range d.fx {
 		out[i] = e.name
 	}
 	return out
@@ -175,8 +205,8 @@ func (d *device) Effects() []string {
 
 // Catalogue is each effect's number, speeds (slowest first) and colours.
 func (d *device) Catalogue() []lighting.EffectInfo {
-	out := make([]lighting.EffectInfo, len(effects))
-	for i, e := range effects {
+	out := make([]lighting.EffectInfo, len(d.fx))
+	for i, e := range d.fx {
 		out[i] = info(e)
 	}
 	return out
@@ -203,7 +233,7 @@ func (d *device) Effect(context.Context) (lighting.Effect, error) {
 	if d.running < 0 {
 		return lighting.Effect{}, fmt.Errorf("%s: %w", d.id, lighting.ErrUnknownEffect)
 	}
-	e := effects[d.running]
+	e := d.fx[d.running]
 	out := lighting.Effect{Name: e.name, Coloured: e.shape != none}
 	if out.Coloured {
 		cs := d.colours()
@@ -227,7 +257,7 @@ this handle set. The same settings again send nothing.
 */
 func (d *device) SetEffectWith(_ context.Context, name string, s lighting.Settings) (bool, error) {
 	at := -1
-	for i, e := range effects {
+	for i, e := range d.fx {
 		if strings.EqualFold(e.name, name) {
 			at = i
 		}
@@ -235,7 +265,7 @@ func (d *device) SetEffectWith(_ context.Context, name string, s lighting.Settin
 	if at < 0 {
 		return false, fmt.Errorf("%q: %w", name, lighting.ErrNoEffect)
 	}
-	colours, speed, err := lighting.Fit(info(effects[at]), s, true)
+	colours, speed, err := lighting.Fit(info(d.fx[at]), s, true)
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", d.id, err)
 	}
@@ -277,7 +307,7 @@ func (d *device) speedValue() byte {
 // was last given, or OpenRGB's colours. The same effect again sends nothing.
 func (d *device) SetEffect(_ context.Context, name string) (bool, error) {
 	at := -1
-	for i, e := range effects {
+	for i, e := range d.fx {
 		if strings.EqualFold(e.name, name) {
 			at = i
 		}
@@ -304,8 +334,8 @@ func (d *device) SetColour(_ context.Context, c lighting.Colour) (bool, error) {
 	if d.running < 0 {
 		return false, fmt.Errorf("%s: %w", d.id, lighting.ErrUnknownEffect)
 	}
-	if effects[d.running].shape == none {
-		return false, fmt.Errorf("%s: %w", effects[d.running].name, lighting.ErrNoColour)
+	if d.fx[d.running].shape == none {
+		return false, fmt.Errorf("%s: %w", d.fx[d.running].name, lighting.ErrNoColour)
 	}
 	next := colour{c.R, c.G, c.B}
 	if d.colour != nil && *d.colour == next {
@@ -343,7 +373,7 @@ func (d *device) run(at int) error {
 	if d.bus == nil {
 		return fmt.Errorf("%s: %w", d.id.Path, os.ErrClosed)
 	}
-	e, cs := effects[at], d.colours()
+	e, cs := d.fx[at], d.colours()
 	type w struct {
 		reg   byte
 		value byte

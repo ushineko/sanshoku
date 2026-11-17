@@ -70,3 +70,24 @@ keeps the length in its own profile, from 0 to 500 (O).
 with a light mask its colour; modes 0 (off) to 19 (red pulse) (O). Saving to
 the board's memory is `EC 3F 55`, which OpenRGB sends only when asked (O).
 This module sends neither: hotaru draws the board itself (hotaru #212).
+
+## Other products (spec 033)
+
+The driver opens every Aura USB mainboard controller that OpenRGB's mainboard
+detector lists (O). Only `18f3` has been benched; the others are expected:
+
+| Product | What | Notes |
+|---|---|---|
+| `18f3` | the Z790 Hero's controller | tested (spec 027) |
+| `1939`, `1aa6`, `1bed` | other mainboards' controllers | the layout is read from the table |
+| `19af` | another mainboard's controller | it has more than one collection on `FF72`; on Windows the driver reads the one with usage `A1`, as OpenRGB does |
+| `1b29` | the ROG Strix LC III's pump | the same controller and protocol; named for itself, not the mainboard |
+
+Firmware whose version starts `AULA3-AR32` numbers its effect channels the
+other way round: the headers from 0, and the board's own lights after them
+(O). The driver reads the version first and numbers accordingly. Which boards
+carry that firmware is not recorded.
+
+The Aura Addressable controllers (`1867`, `1872`, `18a3`, `18a5`) and the ROG
+Aura Terminal (`1889`) send the same report but number and claim their
+channels differently, and are not opened.

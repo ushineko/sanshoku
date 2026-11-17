@@ -64,7 +64,7 @@ func open(t *testing.T) (*device, *bus) {
 // names the card.
 func TestFindMatchesTheCardByItsPCIIDs(t *testing.T) {
 	other := hero
-	other.SubDevice = 0x5105
+	other.SubDevice = 0x5199 // a subsystem on no list
 	two := hero
 	two.Path, two.Name = "/dev/i2c-test4", "NVIDIA i2c adapter 2 at 1:00.0"
 	plain := i2c.Adapter{Path: "/dev/i2c-test0", Name: "SMBus I801 adapter"}
@@ -223,4 +223,31 @@ func TestBreathingTakesTwoColoursAndASpeed(t *testing.T) {
 	require.ErrorIs(t, err, lighting.ErrTooManyColours)
 	_, err = d.SetEffectWith(ctx, "Rainbow Wave", lighting.Settings{Colours: []lighting.Colour{teal}})
 	require.ErrorIs(t, err, lighting.ErrNoColour)
+}
+
+// Six cards lack Stack and Rhythm, and an RTX 50 card takes the coloured
+// Rhythm as mode 0B (spec 033).
+func TestACardHasItsFamilysEffects(t *testing.T) {
+	names := func(fx []effect) []string {
+		var out []string
+		for _, e := range fx {
+			out = append(out, e.name)
+		}
+		return out
+	}
+	assert.Len(t, effectsFor(familyV2), len(effects))
+	assert.NotContains(t, names(effectsFor(familyNoStack)), "Stack")
+	assert.NotContains(t, names(effectsFor(familyNoStack)), "Rhythm")
+	for _, e := range effectsFor(familyRTX50) {
+		if e.name == "Rhythm" {
+			assert.Equal(t, byte(0x0B), e.mode)
+		}
+	}
+	for _, e := range effects {
+		if e.name == "Rhythm" {
+			assert.Equal(t, byte(0x0C), e.mode, "the shared table was changed")
+		}
+	}
+	assert.Equal(t, familyRTX50, cards[card{0x10DE, 0x2B85, 0x1462, 0x5300}].family, "the 5090 Suprim Liquid")
+	assert.Len(t, cards, 47)
 }

@@ -78,6 +78,7 @@ var accessories = map[byte]int{
 	0x01: 10, 0x02: 8, 0x04: 10, 0x05: 8, 0x06: 6, 0x08: 14, 0x09: 15, 0x0A: 10,
 	0x0B: 8, 0x0C: 8, 0x10: 8, 0x11: 1, 0x13: 18, 0x14: 18, 0x15: 20, 0x16: 20,
 	0x17: 8, 0x18: 8, 0x19: 8, 0x1C: 16, 0x1D: 24, 0x1E: 24, 0x1F: 24,
+	0x2A: 24, // the Kraken 2024 Plus's fans, three of eight (spec 033)
 }
 
 /*
@@ -86,7 +87,7 @@ LEDs: the RGB Core frames, F280 (two of eight) and F360 and F420 (three of
 eight), as OpenRGB's Hue 2 table and NZXT's product pages give them (spec
 032).
 */
-var kits = map[byte][]int{0x1C: {8, 8}, 0x1D: {8, 8, 8}, 0x1F: {8, 8, 8}}
+var kits = map[byte][]int{0x1C: {8, 8}, 0x1D: {8, 8, 8}, 0x1F: {8, 8, 8}, 0x2A: {8, 8, 8}}
 
 // rings are the accessories that are a pump's ring, named "ring n".
 var rings = map[byte]bool{0x10: true, 0x1E: true}
@@ -94,7 +95,7 @@ var rings = map[byte]bool{0x10: true, 0x1E: true}
 // fans are the accessories that are fans, named "fan n".
 var fans = map[byte]bool{
 	0x02: true, 0x0B: true, 0x0C: true, 0x13: true, 0x14: true, 0x15: true, 0x16: true,
-	0x17: true, 0x18: true, 0x19: true, 0x1C: true, 0x1D: true, 0x1F: true,
+	0x17: true, 0x18: true, 0x19: true, 0x1C: true, 0x1D: true, 0x1F: true, 0x2A: true,
 }
 
 // Both the cooler with a panel and the one without are a canvas, with zones.
@@ -303,6 +304,10 @@ func (d *device) knowChannels(ctx context.Context) error {
 		return fmt.Errorf("asking its accessories: %w", err)
 	}
 	d.canvas = channelsFrom(reply)
+	if id := d.model.AssumedFans; id != 0 && len(d.canvas.ch[0].held) == 0 {
+		// The model's own fans, which it does not list (spec 033).
+		d.canvas.ch[0] = channel{name: "fan", parts: append([]int(nil), kits[id]...), held: make([]colour, accessories[id])}
+	}
 	return nil
 }
 

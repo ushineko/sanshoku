@@ -222,3 +222,23 @@ func TestZonesAreTheChannelsWithTheirAccessories(t *testing.T) {
 }
 
 func ptr(n int) *int { return &n }
+
+// The Kraken 2024 Plus lists no accessories on its one channel, and is taken
+// to hold its own fan set, three of eight, as OpenRGB takes it (spec 033).
+func TestThePlusIsTakenToHoldItsFans(t *testing.T) {
+	f := newFake()
+	f.Accessories = [channels][slotsPer]byte{}
+	d := withFake(f)
+	d.model = Known[0x3014]
+	zones := d.Zones()
+	require.Len(t, zones, 1)
+	assert.Equal(t, "Fan", zones[0].Name)
+	assert.Equal(t, 24, zones[0].Count)
+	assert.Equal(t, []int{8, 8, 8}, zones[0].Parts)
+	assert.Len(t, d.Keys(), 24)
+
+	f2 := newFake()
+	f2.Accessories = [channels][slotsPer]byte{}
+	empty := withFake(f2)
+	assert.Empty(t, empty.Zones(), "an Elite with nothing attached assumes nothing")
+}

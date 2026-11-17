@@ -73,3 +73,65 @@ mode (O). OpenRGB starts each with red, green and blue (O).
 two or three into the colour blocks) and its speed into `38`, the nearest of
 `04`, `02` and `01`, slow to fast. The card's zone is a single light.
 
+## Other cards (spec 033)
+
+Every card OpenRGB pairs with this controller at `0x68` is on the driver's
+list, matched on all four PCI IDs, because a subsystem ID repeats across cards
+(O). The static colour is the same on all of them. Six cards lack Stack and
+Rhythm, and the RTX 50 cards take the coloured Rhythm as mode `0B` (O). OpenRGB
+gives the RTX 50 cards four effects more (Twisting `11`, Laminating `1D`,
+Marquee `18`, Arrow `21`), whose colours it does not record; they are not
+offered. Only the RTX 4090 Suprim Liquid X has been benched.
+
+| Card | PCI device | Subsystem | Effects |
+|---|---|---|---|
+| MSI GeForce RTX 4060 Gaming X | `10de:2882` | `1462:5160` |  |
+| MSI GeForce RTX 4060 Gaming X NV Edition | `10de:2882` | `1462:5164` |  |
+| MSI GeForce RTX 4060 Ti Gaming X | `10de:2803` | `1462:5152` |  |
+| MSI GeForce RTX 4060 Ti 16GB Gaming X | `10de:2805` | `1462:5172` |  |
+| MSI GeForce RTX 4060 Ti 16GB Gaming X Slim White | `10de:2805` | `1462:5171` | no Stack or Rhythm |
+| MSI GeForce RTX 4070 Gaming X Trio | `10de:2786` | `1462:5136` |  |
+| MSI GeForce RTX 4070 Gaming X Slim | `10de:2786` | `1462:513f` |  |
+| MSI GeForce RTX 4070 Gaming X Slim White | `10de:2786` | `1462:e131` |  |
+| MSI GeForce RTX 4070 SUPER Gaming X Slim | `10de:2783` | `1462:513f` | no Stack or Rhythm |
+| MSI GeForce RTX 4070 SUPER Gaming X Slim White | `10de:2783` | `1462:e131` |  |
+| MSI GeForce RTX 4070 SUPER Gaming X Slim MLG | `10de:2783` | `1462:e134` |  |
+| MSI GeForce RTX 4070 Ti Gaming X Trio | `10de:2782` | `1462:5132` |  |
+| MSI GeForce RTX 4070 Ti Gaming X Trio White | `10de:2782` | `1462:5139` |  |
+| MSI GeForce RTX 4070 Ti Gaming X Slim White | `10de:2782` | `1462:e132` |  |
+| MSI GeForce RTX 4070 Ti Suprim X Trio | `10de:2782` | `1462:5133` |  |
+| MSI GeForce RTX 4070 Ti SUPER Gaming X Trio White | `10de:2705` | `1462:5139` | no Stack or Rhythm |
+| MSI GeForce RTX 4070 Ti SUPER Gaming Slim | `10de:2705` | `1462:e130` |  |
+| MSI GeForce RTX 4070 Ti SUPER Gaming X Slim | `10de:2705` | `1462:e13d` |  |
+| MSI GeForce RTX 4070 Ti SUPER Gaming White X Slim | `10de:2705` | `1462:e13e` |  |
+| MSI GeForce RTX 4070 Ti SUPER Gaming White X Slim | `10de:2705` | `1462:e132` |  |
+| MSI GeForce RTX 4080 Gaming X Slim White | `10de:2704` | `1462:511a` | no Stack or Rhythm |
+| MSI GeForce RTX 4080 Gaming X Trio | `10de:2704` | `1462:5111` |  |
+| MSI GeForce RTX 4080 Gaming X Trio White | `10de:2704` | `1462:5115` |  |
+| MSI GeForce RTX 4080 Suprim X | `10de:2704` | `1462:5110` |  |
+| MSI GeForce RTX 4080 SUPER Gaming X Slim | `10de:2702` | `1462:5117` |  |
+| MSI GeForce RTX 4080 SUPER Gaming X Slim White | `10de:2702` | `1462:511a` | no Stack or Rhythm |
+| MSI GeForce RTX 4080 SUPER Suprim X | `10de:2702` | `1462:5110` |  |
+| MSI GeForce RTX 4080 SUPER Gaming X Trio | `10de:2702` | `1462:5111` | no Stack or Rhythm |
+| MSI GeForce RTX 4090 Gaming X Trio | `10de:2684` | `1462:5103` |  |
+| MSI GeForce RTX 4090 Gaming X Slim | `10de:2684` | `1462:510b` |  |
+| MSI GeForce RTX 4090 Suprim Liquid X | `10de:2684` | `1462:5104` | tested (spec 029) |
+| MSI GeForce RTX 4090 Suprim X | `10de:2684` | `1462:5102` |  |
+| MSI GeForce RTX 4090 Suprim X Classic | `10de:2684` | `1462:5105` |  |
+| MSI GeForce RTX 5060 Ti Gaming OC | `10de:2d04` | `1462:5354` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5060 8G Gaming Trio OC | `10de:2d05` | `1462:5372` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5060 Ti 16G Gaming Trio OC | `10de:2d04` | `1462:5353` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5070 Gaming Trio | `10de:2f04` | `1462:5322` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5070 Ti Gaming Trio OC Plus | `10de:2c05` | `1462:5315` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5070 Ti VANGUARD SOC | `10de:2c05` | `1462:5314` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5080 Gaming Trio OC | `10de:2c02` | `1462:5315` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5080 VANGUARD OC SOC | `10de:2c02` | `1462:5314` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5080 SUPRIM SOC | `10de:2c02` | `1462:5313` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5080 SUPRIM LIQUID SOC | `10de:2c02` | `1462:5312` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5090 Gaming Trio OC | `10de:2b85` | `1462:5303` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5090 VANGUARD SOC | `10de:2b85` | `1462:5302` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5090 SUPRIM SOC | `10de:2b85` | `1462:5301` | Rhythm in colour is mode `0B` |
+| MSI GeForce RTX 5090 SUPRIM LIQUID SOC | `10de:2b85` | `1462:5300` | Rhythm in colour is mode `0B` |
+
+Cards on MSI's older controller (GTX 10 to RTX 30, Radeon) answer at the same
+address with another register map, and are not on the list.

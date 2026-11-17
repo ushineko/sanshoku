@@ -260,6 +260,14 @@ the buffer.
   (`1F`) three of eight (OpenRGB's Hue 2 table, NZXT's product pages). The
   order of LEDs inside a frame is not recorded.
 
+## The Kraken 2024 Plus (spec 033)
+
+The Kraken 2024 Plus (`1e71:3014`) takes the same `26` commands on one
+lighting channel, in 512-byte reports, as OpenRGB drives it (O). Its fans are
+accessory `2A`, three of eight; where it lists no accessory, the driver takes
+them as attached, as OpenRGB does. Its 240 by 240 panel is liquidctl's figure.
+It is expected: nothing here has run on one.
+
 ## What is out of scope
 
 - **Pump and fan duty.** CAM sends `72 01 01 00` and `72 02 01 01`, each with

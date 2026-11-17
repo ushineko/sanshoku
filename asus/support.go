@@ -9,7 +9,8 @@ import (
 
 /*
 Support is the asus driver's support table: the Aura USB controller on the
-ROG Maximus Z790 Hero, Tested on the bench run spec 027 records.
+ROG Maximus Z790 Hero, Tested on the bench run spec 027 records, and the
+products that share its protocol, Expected (spec 033).
 */
 func Support() []support.Entry {
 	return []support.Entry{{
@@ -31,6 +32,29 @@ func Support() []support.Entry {
 			Tier:  support.Expected,
 			Notes: "the same 65-byte reports over HID; the board's name is not read there",
 		},
+	}, {
+		Driver:       driverName,
+		Device:       "Aura USB mainboard controller, other products",
+		Match:        "vendor 0b05, usage page 0xFF72; allow-list 0b05:1939, 0b05:19af (usage 0xA1), 0b05:1aa6, 0b05:1bed",
+		Vendor:       vendor,
+		Products:     []uint16{0x1939, 0x19AF, 0x1AA6, 0x1BED},
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         33,
+		Notes: "the controllers OpenRGB's Aura mainboard detector lists with 18f3; the layout is read from " +
+			"the controller's table, and firmware AULA3-AR32 numbers its channels headers first",
+		Windows: &support.Port{Tier: support.Expected, Notes: "19af is read on its usage 0xA1 collection"},
+	}, {
+		Driver:       driverName,
+		Device:       "ASUS ROG Strix LC III",
+		Match:        "vendor 0b05, usage page 0xFF72; allow-list 0b05:1b29",
+		Vendor:       vendor,
+		Products:     []uint16{0x1B29},
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         33,
+		Notes:        "a liquid cooler's pump on the same controller and protocol, named for itself",
+		Windows:      &support.Port{Tier: support.Expected},
 	}}
 }
 
