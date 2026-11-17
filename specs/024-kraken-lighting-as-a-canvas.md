@@ -64,8 +64,9 @@ as the device it most wants effects on. hotaru's adoption is a hotaru spec.
 - R1.4 **Frame.** `Frame` keeps what it last showed and merges `px` into it,
   since the interface leaves a light not in `px` as it was. A `Pixel` whose
   `ID` is not in `Keys` is an error and nothing is sent. For each channel whose
-  colours changed, the driver sends `26 14 <ch> 01` and the channel's LEDs in
-  G, R, B order, and waits for the acknowledgement (`FF 01`, then `26 14` at
+  colours changed, the driver sends `26 14 <ch> <bit>` and the channel's LEDs
+  in G, R, B order, where `<bit>` is the channel's bit in the mask of
+  channels to show (`01` the ring, `02` the fans; E11), and waits for the acknowledgement (`FF 01`, then `26 14` at
   bytes 14 and 15) within a deadline of 500 ms. A channel that did not change
   is not sent. The next frame is not sent before the acknowledgement: without
   the wait the firmware drops frames it cannot keep up with (E2).
@@ -110,6 +111,10 @@ as the device it most wants effects on. hotaru's adoption is a hotaru spec.
   re-apply, and the buffer shows until the resend (E10). A handle with no held
   frame sends nothing.
 
+- R1.14 **`screen.Panel.Floor(bytes)` becomes `ImageFloor(bytes)`.** The
+  Kraken is a `screen.Panel` and a `lighting.Canvas`, and `Canvas` has a
+  `Floor()` of its own; one type cannot carry both. A breaking change,
+  recorded in the changelog.
 ### R2. Firmware effects: a separate spec
 
 The cooler runs 16 effects of its own at no cost to the host (`2A 04` and
@@ -129,8 +134,13 @@ not depend on it: per-LED frames work whatever effect is running (R1.10).
 
 - R3.1 `sanshoku-bench light --yes` runs on the Kraken as it does on the Apex
   and the F75: steady, breathe and wave.
-- R3.2 `sanshoku-bench light --keys` lists the Kraken's keys, with each
-  channel's accessory ids.
+- R3.2 `sanshoku-bench light --keys` lists the Kraken's keys. The key names
+  say which accessory a channel holds (`ring`, `fan`); the ids themselves are
+  not part of `lighting.Canvas`, and the bench does not print them.
+- R3.5 `sanshoku-bench light` takes `--driver`, so a run on the Kraken does
+  not stream to every other canvas on the desk (the Apex reboots on release),
+  and `--readout`, which returns a screen to its readout on the same handle
+  before release, to check R1.13.
 - R3.3 `sanshoku-bench read --driver nzxt` reads status on the same handle
   before, during and after a `light` run.
 - R3.4 The bench's screen command runs during a `light` run without either
@@ -203,6 +213,8 @@ stopped or its detector for the cooler off. Results go in Verification.
   of the effect come back? Then the same with `26 06 ... 01` sent before the
   frame. Then, after `Release`, does the effect return? This settles R1.10,
   and tells #72 how its effects and the canvas hand a channel to each other.
+- E11 **The fans' channel byte**, found during the acceptance runs: which
+  `26 14` layout draws the fans.
 - E10 **When the readout re-applies.** A held `26 14` frame, the switch to the
   readout, and the same frame sent again at once: does it stay for 60 s? If
   it does not, the delay after which a resend stays. Then the frame committed
@@ -210,7 +222,7 @@ stopped or its detector for the cooler off. Results go in Verification.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries` and `CGO_ENABLED=0 make build` pass.
 - [ ] `go test ./...` passes on Windows, and `go vet ./...` passes for
       windows, linux and darwin.
@@ -219,18 +231,19 @@ stopped or its detector for the cooler off. Results go in Verification.
       measured.
 - [x] E10 run with the user watching, recorded in Verification, and R1.13
       amended to it.
-- [ ] After `sanshoku-bench screen --yes` during a held frame, the ring shows
-      the held frame, not the buffer (R1.13), with the user watching.
-- [ ] After `Release` and a readout, the ring shows the released frame
+- [x] After the driver's own switch to the readout during a held frame
+      (`sanshoku-bench light --readout`), the lights show the held frame, not
+      the buffer (R1.13), with the user watching.
+- [x] After `Release` and a readout, the ring shows the released frame
       (R1.7), with the user watching.
-- [ ] `sanshoku-bench light --yes` shows steady, breathe and wave on the ring
+- [x] `sanshoku-bench light --yes` shows steady, breathe and wave on the ring
       and the fans, starting from a channel running a firmware effect. This is the integration-boundary criterion: a real cooler,
       not a fake.
-- [ ] `sanshoku-bench read --driver nzxt` reads status during that run, and
+- [x] `sanshoku-bench read --driver nzxt` reads status during that run, and
       the screen command runs during it (R3.3, R3.4).
-- [ ] The accessory read finds the reply behind 25 foreign reports in a test,
+- [x] The accessory read finds the reply behind 25 foreign reports in a test,
       and that test fails with the reply-matching removed; restored.
-- [ ] Docs per R5, including the changelog entry.
+- [x] Docs per R5, including the changelog entry.
 
 ## Out of scope
 
@@ -403,3 +416,60 @@ as white on the ring. After hotaru restored the ring through OpenRGB, a
 readout showed the same white with LED 22 blue, the value of the probe's last
 commit. The probe's own split write of hotaru's colours gave the same result.
 OpenRGB wrote nothing at start, and detected 24 LEDs on each channel.
+
+### E11, the fans' channel byte (2026-11-16)
+
+Found during the acceptance runs below. The driver first sent the fans
+`26 14 02 01`, reading byte 2 as the channel, as in `26 04` and `26 06`. The
+fans did not draw it: over Breathing they froze, and they turned green only
+when the readout's commit (`26 04`, `26 06`) reached them. Single frames,
+one at a time, with the user watching both channels:
+
+| Sent | The ring | The fans |
+|---|---|---|
+| `26 14 02 01` yellow | no change | no change |
+| `26 14 02 02` cyan | no change | cyan at once |
+| `26 14 02 01` white, then `26 14 01 03` red 2 s later | red at the second | white at the second |
+| `26 14 02 01` magenta, then `26 14 01 02` green | green | magenta |
+
+Byte 2 is the channel the colours are for; byte 3 is a mask of the channels
+to show. A channel's frame is held until a report with its bit arrives. A
+first reading of these runs, made while the user watched the fans only, took
+byte 3 for the channel. The driver briefly sent `26 14 01 02`, which drew the
+fans' colours on the ring and showed a stale fan frame. The steady runs looked
+right on the fans only because that stale frame was the same colour.
+
+### The acceptance runs (2026-11-16)
+
+`sanshoku-bench` built from this branch, hotaru and OpenRGB stopped, the
+user watching. Before each run the probe set Breathing (`2A 04`, red) on
+both channels.
+
+- **`light --keys --driver nzxt`**, with hotaru and OpenRGB running on the
+  same node: 48 keys, `ring 1` to `ring 24` and `fan 1` to `fan 24`, floor
+  16 ms.
+- **`light --yes --driver nzxt --pattern steady --color 0080ff --hold 5s`**
+  over Breathing: both channels switched to steady light blue together. The
+  first frame was acknowledged in 7.9 ms; the 312 after it were unchanged
+  and not sent.
+- **`--pattern breathe --hold 10s`**: 625 frames, all acknowledged (median
+  7.9 ms, max 20.9 ms); the fans breathed in step with the ring.
+- **`--pattern wave --hold 8s`**: 500 frames, all acknowledged (median
+  7.9 ms, max 11.5 ms); the wave moved on both in step; `Release` committed it
+  in 681.8 ms and it stayed, frozen.
+- **`--pattern steady --color ff6000 --hold 5s --readout`** over Breathing:
+  both turned orange together; the test card went up (96.8 ms) and the
+  readout, with its commit, took 686.0 ms. The lights did not change through
+  it or in the 10 s after, where an uncommitted frame would have given way to
+  Breathing. `Release` sent nothing (0.0 ms): the frame was already committed.
+- **`Release`, then a readout from another process:** the frozen frame stayed,
+  and Breathing did not come back (with the first driver build, whose fan
+  frames used the wrong layout; the commit is `26 04` and `26 06`, which
+  that build had right).
+- **R3.3 and R3.4**, with the first driver build: during a `light --yes` run,
+  `read --driver nzxt` from another process read status (coolant 43.7 °C) and
+  `screen --yes --hold 3s` uploaded (95.1 ms) and returned to the readout
+  (3.9 ms). The light run's 1,499 frames were all acknowledged.
+
+Not run: `go test ./...` on Windows. `go vet ./...` passes for windows, linux
+and darwin.

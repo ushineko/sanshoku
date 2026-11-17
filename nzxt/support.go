@@ -22,27 +22,28 @@ func Support() []support.Entry {
 		Match:        "1e71:3012, allow-list; vendor-defined usage page tried first",
 		Vendor:       vendor,
 		Products:     []uint16{0x3012},
-		Capabilities: []string{"cooling", "screen"},
+		Capabilities: []string{"cooling", "screen", "lighting"},
 		Tier:         support.Tested,
 		Hardware:     "NZXT Kraken Elite (1e71:3012)",
-		Firmware:     "1.2.0 (USB bcdDevice 01.02)",
+		Firmware:     "1.2.12 (the `11 02` reply; USB bcdDevice reads 01.02 and does not follow it)",
 		Tested:       time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC),
 		Spec:         5,
-		Notes:        "coolant, pump and fan over hidraw; the 640x640 LCD over usbfs, GIF only",
+		Notes:        "coolant, pump and fan over hidraw; the 640x640 LCD over usbfs, GIF only; the ring and fans as a canvas over hidraw",
 		Windows: &support.Port{
 			Tier:  support.Expected,
-			Notes: "coolant, pump and fan over HID; the screen needs usbfs, which Windows does not have",
+			Notes: "coolant, pump, fan and lighting over HID; the screen needs usbfs, which Windows does not have",
 		},
 	}}
 }
 
-// Describe is what the driver reads: the Kraken's status on Linux and Windows,
-// its screen on Linux only, which the support table says (spec 014).
+// Describe is what the driver reads: the Kraken's status and lighting on Linux
+// and Windows, its screen on Linux only, which the support table says (spec
+// 014, spec 024).
 func (Driver) Describe() sanshoku.Description {
 	return sanshoku.Description{
 		Name:         "NZXT",
 		Finds:        "cooler",
-		Capabilities: []string{"cooling", "screen"},
+		Capabilities: []string{"cooling", "screen", "lighting"},
 		Platforms:    []string{"linux", "windows"},
 		Quiet:        false,
 	}

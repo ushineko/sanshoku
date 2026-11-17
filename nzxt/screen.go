@@ -91,7 +91,7 @@ var _ screen.Panel = (*panelDevice)(nil)
 func (p *panelDevice) Size() (w, h int) { return p.model.Screen.W, p.model.Screen.H }
 
 /*
-Floor is the shortest interval at which a frame of a given encoded size
+ImageFloor is the shortest interval at which a frame of a given encoded size
 appears on this panel.
 
 Measured by hotaru on a Kraken Elite by pushing a frame repeatedly and watching
@@ -109,7 +109,7 @@ change. Nothing in the protocol announces any of this. Another cooler will have
 its own floor, and pushing too fast is invisible: every write reports success
 and the panel quietly stops updating.
 */
-func (p *panelDevice) Floor(bytes int) time.Duration {
+func (p *panelDevice) ImageFloor(bytes int) time.Duration {
 	switch {
 	case bytes <= 6*1024:
 		return time.Second
@@ -237,8 +237,16 @@ func (p *panelDevice) panel() error {
 liquid points the screen at the firmware's readout. The caller holds mu.
 
 Nothing of this driver's is on screen afterwards, so every slot is reusable.
+
+The held lighting frame is committed first. The readout re-applies each
+lighting channel's mode 150 to 300 ms after the switch, which replaces a live
+frame with the channel's buffer (spec 024 E5, E10). Committed, the buffer is
+the frame, and the ring does not change. A commit that fails does not stop the
+switch: the screen is what was asked for, and the next frame puts the ring
+right.
 */
 func (d *device) liquid(ctx context.Context) error {
+	_ = d.commit(ctx)
 	if err := d.show(ctx, 0, modeLiquid); err != nil {
 		return err
 	}

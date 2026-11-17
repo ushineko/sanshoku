@@ -950,7 +950,7 @@ type Driver struct {
 
 Driver finds and opens NZXT Kraken coolers.
 
-- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the Kraken's status on Linux and Windows, its screen on Linux only, which the support table says (spec 014).
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: the Kraken's status and lighting on Linux and Windows, its screen on Linux only, which the support table says (spec 014, spec 024).
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per NZXT hidraw node, vendor-defined interfaces first.
 - `func (Driver) Name() string`: Name is "nzxt".
 
@@ -1061,7 +1061,7 @@ type Panel interface {
 
 	Appearance(ctx context.Context, brightness, degrees int) error
 
-	Floor(bytes int) time.Duration
+	ImageFloor(bytes int) time.Duration
 }
 ```
 

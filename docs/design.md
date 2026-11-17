@@ -63,7 +63,7 @@ tool is the exception and its reason is written down.
 - **The one standing exception is lighting.** OpenRGB is a maintained daemon
   that speaks to every lit device on the machine, and reimplementing that
   breadth is not reasonable. It stays in hotaru's `internal/openrgb`. The
-  exception to the exception is below, in "Lighting".
+  exceptions to the exception are below, in "Lighting".
 - **Inherited subprocesses are debts, not decisions.** hayami reads the
   Kraken through `liquidctl --json status` because the Python monitor it
   replaced did; spec 005 is the direct driver and hayami adopts it in phase
@@ -126,10 +126,19 @@ keyboard takes a colour for every key. Both drivers keep the frame they last
 sent, because the keyboard darkens what a frame does not name and the
 interface says an unnamed light is left as it was.
 
+The Kraken's ring and fans are a canvas too (spec 024), for a different
+reason: one owner of the node. This module already holds the cooler's hidraw
+node for status and the screen, and OpenRGB writing lighting to the same node
+cost hotaru specs 068 and 070 and #206. The cooler holds a frame, so it is
+not `Fading`. Its screen's readout re-applies the lighting the firmware
+stores, so the driver commits the held frame to the cooler's buffer before it
+switches the screen to the readout, and on `Release`.
+
 OpenRGB remains the lighting tool for every other device, and for the Apex
 it is a second writer on the same node: two streams alternate frames.
-Choosing between them is the consumer's decision, as it already is for the
-Kraken.
+Choosing between them is the consumer's decision. For the Kraken it is not a
+choice: a consumer of this module's canvas switches OpenRGB's detector for the
+cooler off (see contention.md).
 
 ## The shape of a driver
 

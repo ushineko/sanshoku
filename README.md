@@ -261,6 +261,24 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **New**: the Kraken Elite's ring and fans as a `lighting.Canvas` (spec 024,
+  #70). Frames are `26 14` live writes of 512 bytes, each waiting for the
+  cooler's acknowledgement, at a floor of 16 ms. The accessory list is read
+  by its reply's prefix, so status traffic on the node cannot hide it (hotaru
+  #206). `Release` commits the held frame to the cooler's buffer, and so
+  does every switch to the screen's readout, which re-applies that buffer.
+  OpenRGB's detector for the cooler goes off where this is used
+  (docs/contention.md).
+- **Breaking**: `screen.Panel.Floor(bytes)` is now `ImageFloor(bytes)`. A
+  device with a screen and lights is both a `screen.Panel` and a
+  `lighting.Canvas`, and `Canvas` has a `Floor()` of its own.
+- `sanshoku-bench light` takes `--driver`, and `--readout`, which returns a
+  screen to its readout on the same handle before release.
+- The Kraken's firmware column reads 1.2.12, from the cooler's `11 02`
+  reply. USB bcdDevice reads 01.02 and does not follow the firmware.
+
 ### 0.1.19 (2026-11-10)
 
 - **New API**: the colour of the AULA F75's own effect (spec 023, #56).
