@@ -25,6 +25,9 @@ const (
 	// BusHwmon is a kernel sensor chip under /sys/class/hwmon, which has no
 	// bus of its own a program can talk to.
 	BusHwmon
+	// BusI2C is a device on an I2C adapter, a graphics card's lighting
+	// controller (spec 029).
+	BusI2C
 )
 
 // String names a bus for the testbench and a consumer's diagnostics.
@@ -36,6 +39,8 @@ func (b Bus) String() string {
 		return "bluetooth"
 	case BusHwmon:
 		return "hwmon"
+	case BusI2C:
+		return "i2c"
 	default:
 		return "unknown"
 	}

@@ -36,6 +36,7 @@ Bus is the kind of connection a device is found on.
 - `const BusUSB Bus = iota + 1`: BusUSB is a device on USB, including one behind a USB receiver.
 - `const BusBluetooth Bus`: BusBluetooth is a device on Bluetooth, classic or LE.
 - `const BusHwmon Bus`: BusHwmon is a kernel sensor chip under /sys/class/hwmon, which has no bus of its own a program can talk to.
+- `const BusI2C Bus`: BusI2C is a device on an I2C adapter, a graphics card's lighting controller (spec 029).
 - `func (b Bus) String() string`: String names a bus for the testbench and a consumer's diagnostics.
 
 #### type Candidate
@@ -732,6 +733,49 @@ Sensor is one labelled temperature the kernel already exposes.
 
 - `func Support() []support.Entry`: Support is the hwmon sensor tables as support entries.
 
+## i2c
+
+`import "github.com/ushineko/sanshoku/i2c"`
+
+Package i2c is a device on an I2C (SMBus) adapter: the bus a graphics card's lighting controller sits on (spec 029).
+
+### Variables
+
+- `var ErrBlock = errors.New("an I2C block is at most 32 bytes")`: ErrBlock is a block longer than an I2C block write takes.
+
+### Types
+
+#### type Adapter
+
+```go
+type Adapter struct {
+	Path string
+
+	Name string
+
+	Vendor, Device, SubVendor, SubDevice uint16
+}
+```
+
+Adapter is one I2C adapter, and the PCI device it belongs to where it belongs to one: a graphics card's adapters are its.
+
+- `func Adapters() ([]Adapter, error)`: Adapters lists the i2c-dev adapters, each with its name and, where it belongs to a PCI device, that device's IDs.
+
+#### type Bus
+
+```go
+type Bus interface {
+	WriteByteData(register, value byte) error
+
+	WriteBlockData(register byte, data []byte) error
+	Close() error
+}
+```
+
+Bus is a device at one address on an adapter.
+
+- `func Open(path string, address uint8) (Bus, error)`: Open opens an adapter and addresses it to a device.
+
 ## keychron
 
 `import "github.com/ushineko/sanshoku/keychron"`
@@ -1055,6 +1099,30 @@ Presencer is a device that reports its Presence: sanshoku.Presencer, which a log
 - `func DecodeBatteryStatus(p []byte) (battery.Battery, error)`: DecodeBatteryStatus reads the parameters of a feature 0x1000 (Battery Status) function 0 reply, which is what a device without a fuel gauge has instead of 0x1004.
 - `func DecodeUnifiedBattery(p []byte) (battery.Battery, error)`: DecodeUnifiedBattery reads the parameters of a feature 0x1004 (Unified Battery) function 1 reply: the bytes after the report ID, device index, feature index and function.
 - `func Support() []support.Entry`: Support is the logitech driver's support table.
+
+## msi
+
+`import "github.com/ushineko/sanshoku/msi"`
+
+Package msi is the driver for an MSI graphics card's lighting controller over I2C: the GeForce RTX 4090 Suprim Liquid X first (spec 029).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens MSI graphics cards' lighting controllers.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: an MSI graphics card's light, on Linux.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per NVIDIA adapter 1 on a card the allow-list names.
+- `func (Driver) Name() string`: Name is "msi".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the msi driver's support table: the RTX 4090 Suprim Liquid X, Tested on the bench run spec 029 records.
 
 ## nzxt
 

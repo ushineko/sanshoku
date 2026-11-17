@@ -121,6 +121,8 @@ and the effect a product decision of the program that shows it.
 | [`corsair`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsair) | The Corsair MM700 mousepad's lights as a canvas. |
 | [`asus`](https://pkg.go.dev/github.com/ushineko/sanshoku/asus) | An ASUS Aura USB mainboard's lights as a canvas with zones. |
 | [`keychron`](https://pkg.go.dev/github.com/ushineko/sanshoku/keychron) | The Keychron K4 HE's keys as a canvas, over VIA. |
+| [`msi`](https://pkg.go.dev/github.com/ushineko/sanshoku/msi) | The MSI RTX 4090 Suprim Liquid X's light over I2C: a colour, and the card's own effects. |
+| [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus writes. Linux only. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
@@ -226,6 +228,8 @@ is not there is said and is not a failure.
   protocol, from OpenRGB and a capture of NZXT CAM.
 - [docs/asus-aura.md](docs/asus-aura.md): the ASUS Aura mainboard
   controller's lighting protocol, from OpenRGB and the bench.
+- [docs/msi-gpu.md](docs/msi-gpu.md): the MSI RTX 4090's lighting over
+  I2C, from OpenRGB and hotaru's spike.
 - [docs/keychron.md](docs/keychron.md): the Keychron K4 HE's lighting
   protocol over VIA, from OpenRGB and the bench.
 - [docs/corsair-v2.md](docs/corsair-v2.md): the Corsair MM700's lighting
@@ -272,6 +276,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: the MSI RTX 4090 Suprim Liquid X's light (spec 029, #78), in a new
+  `msi` driver over a new `i2c` package: its colour as a one-light
+  `lighting.Canvas` (the static mode; about four colours a second at most),
+  and its 17 own effects as `lighting.Onboard` and `lighting.Catalogue`,
+  named and written as OpenRGB writes them. `sanshoku.BusI2C` is new. The
+  udev rules give the seat the NVIDIA I2C adapters. Linux only.
 - **New**: the Keychron K4 HE's keys as a `lighting.Canvas` (spec 028, #77),
   in a new `keychron` driver. The firmware takes each key's hue and saturation
   and ignores its value, so the board's one brightness follows the frame's
