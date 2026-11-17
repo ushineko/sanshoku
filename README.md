@@ -263,6 +263,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: the Kraken Elite's 14 firmware effects as `lighting.Onboard`
+  (spec 025, #72), at CAM's speeds and colours. The cooler reports no effect,
+  so `Effect` is the one this handle set, and `lighting.ErrUnknownEffect`
+  before it has set one. `lighting.Catalogue`, a new optional interface,
+  describes each effect's number, speeds and colours. `sanshoku-bench
+  onboard` lists the catalogue, takes `--driver`, and sets the Kraken's
+  effects without the F75's block save.
 - **New**: the Kraken Elite's ring and fans as a `lighting.Canvas` (spec 024,
   #70). Frames are `26 14` live writes of 512 bytes, each waiting for the
   cooler's acknowledgement, at a floor of 16 ms. The accessory list is read

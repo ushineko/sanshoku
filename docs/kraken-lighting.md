@@ -217,6 +217,30 @@ The cooler acknowledges `2A 04` in about 118 ms (C, n=15).
 | `0F` | Water Cooler | 30 | (not in OpenRGB) |
 | `10` | Loading | 10 | (not in OpenRGB) |
 
+What CAM sends for each effect on firmware 1.2.12 (C): the colours it fills
+(byte `0x38`), and bytes `0x37`, `0x39` and `0x3B`. Byte `0x3A` is `18` for
+all of them.
+
+| Mode | Effect | Colours | `0x37` | `0x39` | `0x3B` |
+|---|---|---|---|---|---|
+| `01` | Fading | 3 | 00 | 08 | 03 |
+| `02` | Spectrum Wave | 0 | 00 | 00 | 03 |
+| `04` | Covering Marquee | 2 | 00 | 00 | 03 |
+| `05` | Alternating | 2 | 01 | 00 | 04 |
+| `06` | Pulse | 1 | 00 | 08 | 03 |
+| `07` | Breathing | 1 | 00 | 08 | 03 |
+| `08` | Candle | 1 | 00 | 00 | 03 |
+| `09` | Starry Night | 1 | 01 | 00 | 03 |
+| `0B`, `0C`, `0D` | Rainbow Flow, Super Rainbow, Rainbow Pulse | 0 | 00 | 00 | 03 |
+| `0E`, `0F` | Tai Chi, Water Cooler | 2 | 00 | 05 | 03 |
+| `10` | Loading | 1 | 00 | 04 | 03 |
+
+Sent as CAM sends them, Breathing (and its colour changed), Spectrum Wave,
+Alternating, Tai Chi and Loading ran on the ring and the fans (B, spec 025).
+A `26 14` frame draws over a running effect, and the next readout brings the
+effect back. The cooler reports no effect: nothing asked of it says which one
+runs.
+
 OpenRGB also lists Marquee as mode `03`. CAM draws Marquee and Wave another
 way: a `26 04` buffer, then `26 06 <ch> 00 02 <speed> 00 18 ...`, with byte 4
 `02` and the speed in byte 5 (Marquee `29`, Wave `35`) (C). The cooler moves

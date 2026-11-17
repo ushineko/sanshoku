@@ -234,7 +234,7 @@ func candidate(n hidraw.Node, o Driver, dial func(string) (node, error), claim f
 			if err != nil {
 				return nil, err
 			}
-			d := &device{id: id, model: model, fresh: o.Freshness, hid: nd, showing: -1}
+			d := &device{id: id, model: model, fresh: o.Freshness, hid: nd, showing: -1, fx: firmwareState{running: -1}}
 			probe, cancel := context.WithTimeout(ctx, o.ProbeTimeout)
 			_, err = d.Status(probe)
 			cancel()
@@ -298,6 +298,9 @@ type device struct {
 
 	// canvas is the lighting as this handle has drawn it (spec 024).
 	canvas canvasState
+
+	// fx is the firmware effect this handle set (spec 025).
+	fx firmwareState
 }
 
 // Identity is the node's.

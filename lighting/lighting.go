@@ -79,6 +79,10 @@ var ErrNoColour = errors.New("the effect takes no colour")
 // driver wraps it with the name asked for.
 var ErrNoEffect = errors.New("no such effect")
 
+// ErrUnknownEffect is a device that cannot say which effect it runs: the
+// Kraken reports none, and its driver knows only what it set (spec 025).
+var ErrUnknownEffect = errors.New("the device does not report its running effect")
+
 // Colour is one colour, absolute.
 type Colour struct{ R, G, B uint8 }
 
@@ -119,4 +123,29 @@ type Onboard interface {
 	// writes the device only where the stored colour differs, and says
 	// whether it wrote.
 	SetColour(ctx context.Context, c Colour) (wrote bool, err error)
+}
+
+// EffectInfo is one firmware effect as a Catalogue describes it.
+type EffectInfo struct {
+	// Name is the effect's name, as Effects gives it.
+	Name string
+	// Number is the device's own number for the effect.
+	Number int
+	// Speeds are the speeds the effect is known to run at, slowest first,
+	// in the device's own units, and Speed the one it runs at.
+	Speeds []int
+	Speed  int
+	// MinColours and MaxColours are the fewest and most colours it takes;
+	// zero for an effect that draws its own.
+	MinColours, MaxColours int
+}
+
+/*
+Catalogue is an Onboard device that describes its effects: each one's number,
+speeds and colours. The Kraken is the first (spec 025): it takes an effect's
+speed and colours with every command rather than storing them, so a consumer
+that wants more than a name asks here.
+*/
+type Catalogue interface {
+	Catalogue() []EffectInfo
 }

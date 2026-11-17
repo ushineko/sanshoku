@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/ushineko/sanshoku"
-	"github.com/ushineko/sanshoku/all"
 	"github.com/ushineko/sanshoku/aula"
 	"github.com/ushineko/sanshoku/lighting"
 )
@@ -31,6 +31,7 @@ func onboard(ctx context.Context, args []string, out, errOut io.Writer) int {
 	colour := fs.String("colour", "", "make the running effect this colour, RRGGBB")
 	save := fs.String("save", "", "save the device's blocks to this file")
 	restore := fs.String("restore", "", "write the device's blocks back from this saved file")
+	driver := fs.String("driver", "", "restrict to one driver")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -53,7 +54,12 @@ func onboard(ctx context.Context, args []string, out, errOut io.Writer) int {
 		job.want = lighting.Colour{R: c[0], G: c[1], B: c[2]}
 	}
 
-	found, scanErr := sanshoku.Scan(ctx, all.Drivers()...)
+	ds, err := drivers(*driver)
+	if err != nil {
+		writef(errOut, "--driver: %v\n", err)
+		return 2
+	}
+	found, scanErr := sanshoku.Scan(ctx, ds...)
 	if scanErr != nil {
 		writef(errOut, "scan: %v\n", scanErr)
 	}
@@ -98,16 +104,28 @@ func onboardOne(ctx context.Context, out io.Writer, dev sanshoku.Device, ob ligh
 		return false
 	}
 	if !job.writes() && job.save == "" {
+		if cat, ok := dev.(lighting.Catalogue); ok {
+			for _, e := range cat.Catalogue() {
+				writef(out, "  0x%02x  %-17s speeds %v, runs at %d; colours %d to %d\n",
+					e.Number, e.Name, e.Speeds, e.Speed, e.MinColours, e.MaxColours)
+			}
+			return true
+		}
 		writef(out, "  effects: %s\n", strings.Join(ob.Effects(), ", "))
 		return true
 	}
 	saver, canSave := dev.(aula.Saver)
-	if !canSave {
+	switch {
+	case canSave:
+		if !saveTo(ctx, out, saver, job.save) {
+			return false
+		}
+	case job.save != "" || job.restore != "":
 		writeln(out, "  this device cannot be saved, so nothing is written")
 		return false
-	}
-	if !saveTo(ctx, out, saver, job.save) {
-		return false
+	default:
+		// The Kraken stores nothing: an effect travels with every command,
+		// so there is no block to save first (spec 025).
 	}
 	switch {
 	case job.restore != "":
@@ -182,6 +200,10 @@ func timed(out io.Writer, what string, write func() (bool, error)) bool {
 // printEffect prints the running effect and its colour.
 func printEffect(ctx context.Context, out io.Writer, prefix string, ob lighting.Onboard) bool {
 	e, err := ob.Effect(ctx)
+	if errors.Is(err, lighting.ErrUnknownEffect) {
+		writef(out, "  %seffect: not reported by the device\n", prefix)
+		return true
+	}
 	if err != nil {
 		writef(out, "  %seffect: %v\n", prefix, err)
 		return false
