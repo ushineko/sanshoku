@@ -51,19 +51,26 @@ reason in a comment at that point.
 
 ## What belongs here
 
-This module holds direct device access: a protocol spoken to a kernel
-device node or socket. The rule of thumb is that **if direct access can
-reasonably be supported without an external tool call, it is**. An external
-tool is the exception and its reason is written down.
+This module is a first-class driver set: each driver speaks a protocol to a
+kernel device node or socket itself, and nothing in it depends on another
+program, daemon or library being there. It is meant to hold every driver its
+upstream projects, hayami and hotaru, need. A device either one wants is added
+here, with its spec and its bench run, rather than in the program, so the two
+share one copy and the next consumer gets it too.
+
+The rule of thumb is that **if direct access can reasonably be supported
+without an external tool call, it is**. An external tool is the exception and
+its reason is written down.
 
 - **In**: Logitech HID++ over hidraw, Razer feature reports, SteelSeries
   rivalcfg reports and the Arctis Nova Pro base station's battery report,
   Apple AAP over L2CAP, BlueZ Battery1 over D-Bus, NZXT Kraken over hidraw
   and usbfs, hwmon by chip and label.
-- **The one standing exception is lighting.** OpenRGB is a maintained daemon
-  that speaks to every lit device on the machine, and reimplementing that
-  breadth is not reasonable. It stays in hotaru's `internal/openrgb`. The
-  exceptions to the exception are below, in "Lighting".
+- **Lighting is in.** It was the standing exception, left to OpenRGB, until
+  specs 024 to 031 gave every lit device hotaru drives a driver here; hotaru
+  removed OpenRGB in its spec 076. What stays out is rendering effects, which
+  is the consumer's (see "Lighting"), and breadth for its own sake: a driver
+  is added when an upstream project needs the device.
 - **Inherited subprocesses are debts, not decisions.** hayami reads the
   Kraken through `liquidctl --json status` because the Python monitor it
   replaced did; spec 005 is the direct driver and hayami adopts it in phase
@@ -134,11 +141,17 @@ not `Fading`. Its screen's readout re-applies the lighting the firmware
 stores, so the driver commits the held frame to the cooler's buffer before it
 switches the screen to the readout, and on `Release`.
 
-OpenRGB remains the lighting tool for every other device, and for the Apex
-it is a second writer on the same node: two streams alternate frames.
-Choosing between them is the consumer's decision. For the Kraken it is not a
-choice: a consumer of this module's canvas switches OpenRGB's detector for the
-cooler off (see contention.md).
+The same shape covers every lit device the upstream projects use (specs 024
+to 031): the Kraken, the Apex, the F75, an ASUS Aura mainboard, the Corsair
+MM700, the Keychron K4 HE, the MSI RTX 4090 and the G502 X PLUS. A device
+whose firmware also runs effects of its own offers them (`lighting.Onboard`,
+and `lighting.Catalogue` for their numbers, speeds and colours), and a
+mainboard's addressable headers take their length from the consumer
+(`lighting.Zoned`), because the board cannot read it.
+
+OpenRGB is not a dependency. A machine that also runs it has a second writer
+on the same nodes, and two streams alternate frames: a consumer stops it, or
+switches off its detectors for the devices it draws (see contention.md).
 
 ## The shape of a driver
 

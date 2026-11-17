@@ -15,8 +15,14 @@ The tiers are Linux's, where every driver began. The **Windows** column is
 where the entry stands there (spec 012): the HID drivers run on Windows
 through the HID class driver, with no vendor software and no driver of their
 own, and each entry is promoted there by a bench run there. A dash is a driver
-that does not run on Windows: BlueZ and L2CAP are Linux interfaces, and hwmon
-is a Linux tree.
+that does not run on Windows: BlueZ, L2CAP and I2C (the msi driver) are Linux
+interfaces, and hwmon is a Linux tree.
+
+Capabilities: **battery**, **cooling** and **temperature** are readings;
+**screen** is a display a program draws on; **lighting** is lights a program
+draws, frame by frame; **onboard** is the device's firmware running effects of
+its own, which a program can choose and colour. A row's spec and date are its
+first bench run; a capability added later names its own spec in the notes.
 
 ## Tested
 
@@ -69,9 +75,10 @@ is a Linux tree.
 
 ## Out of scope
 
-Every lit device (OpenRGB, the standing exception), NVIDIA temperature
-(nvidia-smi; NVML is a vendor library), fan and pump duty writes on the
-Kraken (the firmware discards them).
+Rendering lighting effects (the consumer draws them; a driver carries frames
+and the device's own effects), lit devices no upstream project uses yet,
+NVIDIA temperature on Linux (nvidia-smi; NVML is a vendor library), fan and
+pump duty writes on the Kraken (the firmware discards them).
 
 Candidates for a later spec, by the rule that direct access is preferred
 wherever reasonable: the SteelSeries legacy 0xAA protocol once a Rival is on
