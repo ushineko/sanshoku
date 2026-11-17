@@ -96,17 +96,19 @@ as the device it most wants effects on. hotaru's adoption is a hotaru spec.
 - R1.11 **What the driver sends for lighting:** `20 03`, `26 14`, and `26 04`
   each followed by `26 06` (R1.7). It never sends a `26 06` without a `26 04`
   before it: during an effect that freezes the effect's last frame (E9). It
-  never sends the `22` family, whose split write corrupts LED 22 (E8). It
+  never sends the `22` family, whose split write leaves LED 22 unset (E8). It
   never sends duty (`72 xx`), never addresses the bootloader (`1e71:3011`),
   and never logs a reply's bytes 2 to 9, which carry the device serial.
 - R1.12 **Report length.** Every lighting report is 512 bytes, the length the
   report descriptor declares. A 64-byte `26 14` lights only LEDs 1 to 20 (E3).
-- R1.13 **The readout.** The firmware readout re-applies each channel's mode,
-  which replaces a `26 14` frame (E5). After the driver's own switch to the
-  readout, in the panel's `Readout` and in `Close`'s handback, it sends the
-  held frame again by `26 14` for each channel the canvas has drawn. It
-  waits first for as long as E10 finds the re-apply takes. A handle with no
-  held frame sends nothing.
+- R1.13 **The readout.** The firmware readout re-applies each channel's mode
+  150 to 300 ms after the switch, which replaces a `26 14` frame (E5, E10).
+  Before the driver's own switch to the readout, in the panel's `Readout` and
+  in `Close`'s handback, it commits the held frame as `Release` does (R1.7)
+  for each channel the canvas has drawn. The re-apply then shows the same
+  colours. It does not resend after the switch: that depends on timing the
+  re-apply, and the buffer shows until the resend (E10). A handle with no held
+  frame sends nothing.
 
 ### R2. Firmware effects: a separate spec
 
@@ -203,8 +205,8 @@ stopped or its detector for the cooler off. Results go in Verification.
   and tells #72 how its effects and the canvas hand a channel to each other.
 - E10 **When the readout re-applies.** A held `26 14` frame, the switch to the
   readout, and the same frame sent again at once: does it stay for 60 s? If
-  it does not, the delay after which a resend stays. This settles R1.13's
-  wait, and whether spec 070's "some seconds after" was the re-apply.
+  it does not, the delay after which a resend stays. Then the frame committed
+  with `26 04` and `26 06` before the switch. This settles R1.13.
 
 ## Acceptance Criteria
 
@@ -215,8 +217,8 @@ stopped or its detector for the cooler off. Results go in Verification.
 - [x] E1 to E9 run on the Kraken with the user watching, recorded in
       Verification, and R1.4, R1.6, R1.7, R1.8 and R1.10 amended to what was
       measured.
-- [ ] E10 run with the user watching, recorded in Verification, and R1.13's
-      wait set from it.
+- [x] E10 run with the user watching, recorded in Verification, and R1.13
+      amended to it.
 - [ ] After `sanshoku-bench screen --yes` during a held frame, the ring shows
       the held frame, not the buffer (R1.13), with the user watching.
 - [ ] After `Release` and a readout, the ring shows the released frame
@@ -266,7 +268,7 @@ restarts hotaru can see.
 
 Considered OpenRGB's `22` family as the frame command, since it already drives
 the cooler; rejected because it commits to the buffer at 335 to 452 ms a
-frame, and its split 64-byte write corrupts LED 22 (E8).
+frame, and its split 64-byte write leaves LED 22 unset (E8).
 
 Considered committing every frame with `26 04` and `26 06`, so a readout never
 loses one; rejected because the floor would be about 335 ms. Considered a new
@@ -352,10 +354,11 @@ After a readout:
 | one 512-byte `22 10` with 24 LEDs, count `18` | all white | white |
 | `26 04`, 512 bytes (E5) | all magenta | magenta |
 
-The split write shows correctly and leaves LED 22 wrong in what the readout
-re-applies. This is hotaru spec 070's green LED: OpenRGB always splits,
-because it writes 64-byte reports. Why the LED count changes green to off is
-not known. With data, `22 A0` was acknowledged in 452 ms (split) or 335 ms
+The split write shows correctly and does not set LED 22 in the buffer. With
+count `28` the LED keeps its previous value, so the readout re-applies a stale
+LED (shown as green here, and blue after the E10 runs below). With count `18`
+it read off. This is hotaru spec 070's green LED: OpenRGB always splits,
+because it writes 64-byte reports. Why count `18` reads off is not known. With data, `22 A0` was acknowledged in 452 ms (split) or 335 ms
 (one report); with no new data, in 2.1 to 2.3 ms. The slow part is committing
 new data.
 
@@ -373,6 +376,30 @@ it; `2A 04` sets an effect, which draws into the buffer. `26 14` draws over
 whatever the mode shows and changes neither. The firmware readout re-applies
 the mode.
 
-Not explained: before E1, `26 06` showed white with LED 22 green, where hotaru
-had last written browns through OpenRGB at 14:29. Something rewrote the buffer
-in the 77 minutes between; nothing in these runs says what.
+### E10, when the readout re-applies (2026-11-16)
+
+Same setup. A green `26 14` frame was held, `sanshoku-bench screen --yes`
+uploaded and returned to the readout, and the green frame was sent again
+after a delay. The buffer held hotaru's colours with a stale LED 22.
+
+| Resend after the readout | Acknowledgement | The ring |
+|---|---|---|
+| 55 ms | 1.4 ms | the buffer took over and stayed |
+| 150 ms | 1.4 ms | the buffer took over and stayed |
+| 300 ms | 74.2 ms | green, seamless |
+| 1 s | 1.4 ms | the buffer flashed, then green, and stayed |
+| 5 s | 1.8 ms | green, and stayed |
+
+The re-apply starts 150 to 300 ms after the readout command, which returns in
+about 4 ms. A frame sent during it is acknowledged late and shows after it.
+A held blue `26 14` frame was then committed with `26 04` (335.2 ms) and
+`26 06` (119.0 ms; it takes about 2 ms when no live frame is showing) before
+the switch. The ring stayed blue through the upload and the readout, with no
+flicker.
+
+**Before E1, `26 06` showed white with LED 22 green.** That was hotaru's ring
+colours, written through OpenRGB, with a stale LED 22. hotaru's pale tans read
+as white on the ring. After hotaru restored the ring through OpenRGB, a
+readout showed the same white with LED 22 blue, the value of the probe's last
+commit. The probe's own split write of hotaru's colours gave the same result.
+OpenRGB wrote nothing at start, and detected 24 LEDs on each channel.
