@@ -120,6 +120,7 @@ and the effect a product decision of the program that shows it.
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD, its ring and fans as a canvas, and its firmware effects. |
 | [`corsair`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsair) | The Corsair MM700 mousepad's lights as a canvas. |
 | [`asus`](https://pkg.go.dev/github.com/ushineko/sanshoku/asus) | An ASUS Aura USB mainboard's lights as a canvas with zones. |
+| [`keychron`](https://pkg.go.dev/github.com/ushineko/sanshoku/keychron) | The Keychron K4 HE's keys as a canvas, over VIA. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
@@ -225,6 +226,8 @@ is not there is said and is not a failure.
   protocol, from OpenRGB and a capture of NZXT CAM.
 - [docs/asus-aura.md](docs/asus-aura.md): the ASUS Aura mainboard
   controller's lighting protocol, from OpenRGB and the bench.
+- [docs/keychron.md](docs/keychron.md): the Keychron K4 HE's lighting
+  protocol over VIA, from OpenRGB and the bench.
 - [docs/corsair-v2.md](docs/corsair-v2.md): the Corsair MM700's lighting
   protocol, from OpenRGB and the bench.
 - [docs/credits.md](docs/credits.md): the projects each protocol was learned
@@ -269,6 +272,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: the Keychron K4 HE's keys as a `lighting.Canvas` (spec 028, #77),
+  in a new `keychron` driver. The firmware takes each key's hue and saturation
+  and ignores its value, so the board's one brightness follows the frame's
+  brightest key, and a black key among lit ones shows white. The driver
+  claims the per-key effect (23) before a frame where the keyboard runs
+  another, and `Release` puts back the effect and brightness it found.
 - **New**: an ASUS Aura USB mainboard's lights as a `lighting.Canvas` (spec
   027, #76), in a new `asus` driver: the ROG Maximus Z790 Hero's own light and
   its four addressable headers, named as OpenRGB names them.

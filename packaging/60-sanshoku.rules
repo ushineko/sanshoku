@@ -18,6 +18,8 @@ KERNEL=="hidraw*", KERNELS=="0003:1038:*", TAG+="uaccess"
 # NZXT: the status channel as hidraw, the LCD's bulk endpoint as the USB node
 KERNEL=="hidraw*", KERNELS=="0003:1E71:*", TAG+="uaccess"
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="1e71", TAG+="uaccess"
+# Keychron: VIA's raw interface (spec 028)
+KERNEL=="hidraw*", KERNELS=="0003:3434:*", TAG+="uaccess"
 # ASUS: the Aura USB mainboard controller (spec 027)
 KERNEL=="hidraw*", KERNELS=="0003:0B05:*", TAG+="uaccess"
 # Corsair: the MM700's lighting interface (spec 026)
