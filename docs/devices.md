@@ -34,6 +34,7 @@ is a Linux tree.
 | apple | AirPods Pro | connected BlueZ device, Modalias vendor 004c product 2027, audio; L2CAP PSM 0x1001 | battery | Apple AirPods Pro (product 2027) | – | 2026-09-30 | – | 004 |
 | corsair | Corsair MM700 | vendor 1b1c, usage page 0xFF42; allow-list 1b1c:1b9b | lighting | Corsair MM700 RGB mousepad (1b1c:1b9b) | property 0x13 reads 00050001 | 2026-11-17 | expected; the same 64-byte reports over HID | 026 |
 | asus | Aura USB mainboard controller | vendor 0b05, usage page 0xFF72; allow-list 0b05:18f3 | lighting | ASUS ROG Maximus Z790 Hero (0b05:18f3) | AULA3-6K75-0309 | 2026-11-17 | expected; the same 65-byte reports over HID; the board's name is not read there | 027 |
+| keychron | Keychron K4 HE | vendor 3434, usage page 0xFF60; allow-list 3434:0e40 | lighting | Keychron K4 HE (3434:0e40) | v1.1.1 2025-06-17 | 2026-11-17 | expected; the same 32-byte VIA reports over HID | 028 |
 | powersupply | Nintendo Switch Pro Controller | 057e:2009, hid-nintendo's power_supply node | battery | 8BitDo controller in its Switch (Bluetooth) mode | – | 2026-10-28 | – | 022 |
 
 ## Expected

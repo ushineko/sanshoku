@@ -732,6 +732,30 @@ Sensor is one labelled temperature the kernel already exposes.
 
 - `func Support() []support.Entry`: Support is the hwmon sensor tables as support entries.
 
+## keychron
+
+`import "github.com/ushineko/sanshoku/keychron"`
+
+Package keychron is the driver for a Keychron keyboard's lights over VIA and Keychron's own RGB commands: the K4 HE first (spec 028).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens Keychron keyboards.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: a Keychron keyboard's lights.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per Keychron node on VIA's raw page.
+- `func (Driver) Name() string`: Name is "keychron".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the keychron driver's support table: the K4 HE, Tested on the bench run spec 028 records.
+
 ## l2cap
 
 `import "github.com/ushineko/sanshoku/l2cap"`
