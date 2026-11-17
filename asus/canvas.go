@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ushineko/sanshoku/lighting"
@@ -71,25 +72,39 @@ lights first, if it has any, then each addressable header, at no lights until
 a consumer gives it some. A board that reports fewer lights than RGB headers
 is taken to have no RGB headers, as OpenRGB takes it.
 */
-func channelsFrom(table []byte) []channel {
+func channelsFrom(table []byte, version string) []channel {
 	var out []channel
 	board, rgb := int(table[tableBoardLEDs]), int(table[tableRGBHeaders])
 	if board < rgb {
 		rgb = 0
 	}
-	effect := byte(0)
-	if board > 0 {
-		out = append(out, channel{name: boardZone, direct: boardDirect, effect: effect, held: make([]colour, board), rgb: rgb})
-		effect++
+	headers := int(table[tableHeaders])
+	/*
+		Effect channels are numbered board first, then headers; firmware whose
+		version starts AULA3-AR32 numbers the headers first and the board
+		after them, as OpenRGB reads it (spec 033).
+	*/
+	boardEffect, firstHeader := byte(0), byte(0)
+	switch {
+	case strings.HasPrefix(version, ar32):
+		boardEffect = byte(headers) //nolint:gosec // a table byte
+	case board > 0:
+		firstHeader = 1
 	}
-	for i := range int(table[tableHeaders]) {
+	if board > 0 {
+		out = append(out, channel{name: boardZone, direct: boardDirect, effect: boardEffect, held: make([]colour, board), rgb: rgb})
+	}
+	for i := range headers {
 		out = append(out, channel{
-			name: headerZone + strconv.Itoa(i+1), direct: byte(i), effect: effect, resizable: true, //nolint:gosec // a table byte
+			name: headerZone + strconv.Itoa(i+1), direct: byte(i), effect: firstHeader + byte(i), resizable: true, //nolint:gosec // a table byte
 		})
-		effect++
 	}
 	return out
 }
+
+// ar32 starts the version of firmware that numbers its effect channels
+// headers first.
+const ar32 = "AULA3-AR32"
 
 var (
 	_ lighting.Canvas = (*device)(nil)

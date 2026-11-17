@@ -23,11 +23,24 @@ const vendor = 0x0B05
 // controlPage is the vendor page the controller's one collection is on.
 const controlPage = 0xFF72
 
-// products is the allow-list. Found by vendor and page; written to only by
-// product.
-var products = map[uint16]bool{
-	0x18F3: true, // AURA LED Controller, on the ROG Maximus Z790 Hero
+/*
+products is the allow-list: the Aura USB mainboard controllers that share one
+protocol, as OpenRGB's Aura mainboard detector lists them (spec 033). Found by
+vendor and page; written to only by product. A name is the product's own
+where the mainboard's DMI name is not it.
+*/
+var products = map[uint16]string{
+	0x18F3: "",                      // AURA LED Controller, on the ROG Maximus Z790 Hero (tested)
+	0x1939: "",                      // expected
+	0x19AF: "",                      // expected; on Windows, its collection with usage A1
+	0x1AA6: "",                      // expected
+	0x1BED: "",                      // expected
+	0x1B29: "ASUS ROG Strix LC III", // the pump of a liquid cooler, on the same controller; expected
 }
+
+// pickedUsage is the usage a product's control collection has where it has
+// more than one on the page: OpenRGB matches 19af on usage A1 only.
+var pickedUsage = map[uint16]uint16{0x19AF: 0xA1}
 
 const (
 	// reportID is the controller's only report, in both directions.
@@ -74,9 +87,31 @@ func (Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 	}
 	out := make([]sanshoku.Candidate, 0, len(nodes))
 	for _, n := range nodes {
+		if !theCollection(n) {
+			continue
+		}
 		out = append(out, candidate(n, openNode, boardName()))
 	}
 	return out, nil
+}
+
+/*
+theCollection is whether a node is the product's control collection. On
+Windows each collection is a node of its own, and a product with more than one
+on the page is read only on the usage OpenRGB reads it on. On Linux a node is
+the whole interface, and this is always true.
+*/
+func theCollection(n hidraw.Node) bool {
+	want, ok := pickedUsage[n.Product]
+	if !ok || len(n.Descriptor) > 0 {
+		return true
+	}
+	for _, r := range n.Reports {
+		if r.Page == controlPage && r.Usage == want {
+			return true
+		}
+	}
+	return false
 }
 
 /*
@@ -111,7 +146,10 @@ func candidate(n hidraw.Node, open func(string) (node, error), board string) san
 		Vendor: n.Vendor, Product: n.Product, Bus: sanshoku.BusUSB,
 		Name: n.Name, Phys: n.Phys, Path: n.Path,
 	}
-	if board != "" {
+	switch {
+	case products[n.Product] != "":
+		id.Name = products[n.Product]
+	case board != "":
 		id.Name = board
 	}
 	return sanshoku.Candidate{
@@ -119,7 +157,7 @@ func candidate(n hidraw.Node, open func(string) (node, error), board string) san
 		Driver:   driverName,
 		Key:      n.Key,
 		Open: func(ctx context.Context) (sanshoku.Device, error) {
-			if !products[n.Product] {
+			if _, ok := products[n.Product]; !ok {
 				return nil, fmt.Errorf("%s: not a product this driver speaks to: %w", id, sanshoku.ErrUnsupported)
 			}
 			nd, err := open(n.Path)
@@ -182,7 +220,7 @@ func (d *device) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("%s: its configuration: %w", d.id, err)
 	}
-	d.ch = channelsFrom(t[3:63])
+	d.ch = channelsFrom(t[3:63], d.version)
 	return d.write(0x52, 0x53, 0x00, 0x01)
 }
 

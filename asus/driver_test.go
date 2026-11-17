@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ushineko/sanshoku"
+	"github.com/ushineko/sanshoku/hidraw"
 	"github.com/ushineko/sanshoku/lighting"
 )
 
@@ -42,7 +43,7 @@ func TestABoardWithNoAnswerIsNotOpened(t *testing.T) {
 
 func TestAProductOffTheListIsNeverOpened(t *testing.T) {
 	n := heroNode
-	n.Product = 0x1939
+	n.Product = 0x1867 // Aura Addressable: the same report, another protocol
 	c := candidate(n, func(string) (node, error) { t.Fatal("opened"); return nil, nil }, "")
 	_, err := c.Open(context.Background())
 	require.ErrorIs(t, err, sanshoku.ErrUnsupported)
@@ -155,4 +156,43 @@ func TestReleaseAndCloseSendNothing(t *testing.T) {
 	require.NoError(t, d.Close())
 	assert.Empty(t, f.Told)
 	assert.True(t, f.closed)
+}
+
+// AR32 firmware numbers its effect channels headers first, then the board
+// (spec 033); others board first.
+func TestAR32FirmwareNumbersTheHeadersFirst(t *testing.T) {
+	table := make([]byte, 60)
+	table[tableHeaders], table[tableBoardLEDs] = 3, 1
+	effects := func(version string) []byte {
+		var out []byte
+		for _, c := range channelsFrom(table, version) {
+			out = append(out, c.effect)
+		}
+		return out
+	}
+	assert.Equal(t, []byte{0, 1, 2, 3}, effects("AULA3-6K75-0309"), "board, then headers 1 to 3")
+	assert.Equal(t, []byte{3, 0, 1, 2}, effects("AULA3-AR32-0207"), "the board after the headers")
+	table[tableBoardLEDs] = 0
+	assert.Equal(t, []byte{0, 1, 2}, effects("AULA3-6K75-0309"), "no board: headers from 0")
+}
+
+// A product named for itself keeps its name over the mainboard's.
+func TestTheLCIIIIsNamedForItself(t *testing.T) {
+	n := heroNode
+	n.Product = 0x1B29
+	c := candidate(n, openNode, "ASUS ROG MAXIMUS Z790 HERO")
+	assert.Equal(t, "ASUS ROG Strix LC III", c.Name)
+}
+
+// On Windows, 19af is read only on its usage A1 collection.
+func TestNineteenAFIsReadOnItsCollection(t *testing.T) {
+	n := heroNode
+	n.Product, n.Descriptor = 0x19AF, nil
+	n.Reports = []hidraw.Report{{Page: controlPage, Usage: 0xA0}}
+	assert.False(t, theCollection(n))
+	n.Reports = []hidraw.Report{{Page: controlPage, Usage: 0xA1}}
+	assert.True(t, theCollection(n))
+	n.Product = 0x18F3
+	n.Reports = []hidraw.Report{{Page: controlPage, Usage: 0xA0}}
+	assert.True(t, theCollection(n), "a product with one collection is not filtered")
 }

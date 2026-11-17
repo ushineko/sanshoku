@@ -29,6 +29,7 @@ called. Found by vendor and page; written to only by product.
 */
 var products = map[uint16]string{
 	0x1B9B: "Corsair MM700",
+	0x1BC9: "Corsair MM700 3XL", // the MM700's entry in OpenRGB's V2 table (spec 033); expected
 }
 
 const (

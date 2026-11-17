@@ -31,6 +31,17 @@ func Support() []support.Entry {
 			Tier:  support.Expected,
 			Notes: "the same 64-byte reports over HID",
 		},
+	}, {
+		Driver:       driverName,
+		Device:       products[0x1BC9],
+		Match:        "vendor 1b1c, usage page 0xFF42; allow-list 1b1c:1bc9",
+		Vendor:       vendor,
+		Products:     []uint16{0x1BC9},
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         33,
+		Notes:        "OpenRGB's V2 table gives it the MM700's entry: Left, Right and Logo, one light each",
+		Windows:      &support.Port{Tier: support.Expected, Notes: "the same 64-byte reports over HID"},
 	}}
 }
 

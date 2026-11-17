@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/lighting"
 )
 
@@ -33,11 +32,14 @@ func TestOpenAsksWhatTheKeyboardIs(t *testing.T) {
 	require.ErrorIs(t, err, errNoAnswer)
 }
 
-func TestAProductOffTheListIsNeverOpened(t *testing.T) {
+func TestAnyKeychronBoardIsOpenedAndNamedForItself(t *testing.T) {
 	n := k4Node
-	n.Product = 0x0E41
-	_, err := candidate(n, func(string) (node, error) { t.Fatal("opened"); return nil, nil }).Open(context.Background())
-	require.ErrorIs(t, err, sanshoku.ErrUnsupported)
+	n.Product, n.Name = 0x0E41, "Keychron Keychron V1 Max"
+	c := candidate(n, func(string) (node, error) { return newFake(), nil })
+	assert.Equal(t, "Keychron V1 Max", c.Name)
+	dev, err := c.Open(context.Background())
+	require.NoError(t, err, "a board with Keychron RGB off the list was refused")
+	require.NoError(t, dev.Close())
 }
 
 /*

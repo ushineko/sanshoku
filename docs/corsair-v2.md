@@ -62,3 +62,9 @@ lighting. This page is the source for the `corsair` driver (spec 026).
   Software mode otherwise lasts until the next USB enumeration (O).
 - OpenRGB lists firmware effects for this family (Static `207E`, Spectrum
   `7BFF` and others) but does not send them (O). This module does not either.
+
+## Other products (spec 033)
+
+The MM700 3XL (`1bc9`) has the MM700's entry in OpenRGB's V2 table: Left,
+Right and Logo, one light each (O). It is opened as expected. The V2 mice,
+keyboards and receivers need tables and protocol work of their own (#92).

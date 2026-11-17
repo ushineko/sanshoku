@@ -29,6 +29,19 @@ func Support() []support.Entry {
 			Tier:  support.Expected,
 			Notes: "the same 32-byte VIA reports over HID",
 		},
+	}, {
+		Driver:       driverName,
+		Device:       "Any Keychron keyboard with Keychron RGB over VIA",
+		Match:        "vendor 3434, usage page 0xFF60; the Keychron features answer with the RGB bit",
+		Vendor:       vendor,
+		Capabilities: []string{"lighting", "onboard"},
+		Tier:         support.Expected,
+		Spec:         33,
+		Notes: "the LED count and keys are read from the board, as OpenRGB reads its 426 Keychron IDs; " +
+			"the per-key effect is 23 and the own effects are the K4 HE's, which another firmware may " +
+			"number differently; a board without the RGB feature bit is refused, and ZMK firmware and a " +
+			"board behind a wireless dongle are not handled yet",
+		Windows: &support.Port{Tier: support.Expected, Notes: "the same 32-byte VIA reports over HID"},
 	}}
 }
 

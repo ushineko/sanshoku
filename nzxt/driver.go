@@ -49,6 +49,10 @@ zero Size is a model with no panel.
 type Model struct {
 	Name   string
 	Screen Size
+	// AssumedFans is the accessory a lighting channel that reads empty is
+	// taken to hold, where the model's fans are not listed: the Kraken 2024
+	// Plus's own fan set, as OpenRGB assumes it (spec 033). Zero for none.
+	AssumedFans byte
 }
 
 /*
@@ -64,6 +68,10 @@ the protocol reports it, and a GIF of any other size displays blank.
 */
 var Known = map[uint16]Model{
 	0x3012: {Name: "Kraken Elite", Screen: Size{W: 640, H: 640}},
+	// Expected (spec 033): the same 26 commands on one lighting channel, in
+	// 512-byte reports, as OpenRGB drives it; the 240 by 240 panel is
+	// liquidctl's figure, not measured.
+	0x3014: {Name: "Kraken 2024 Plus", Screen: Size{W: 240, H: 240}, AssumedFans: 0x2A},
 }
 
 /*
