@@ -146,7 +146,20 @@ func (d *device) SetEffectWith(ctx context.Context, name string, s lighting.Sett
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", d.id, err)
 	}
-	wrote, err := d.SetEffect(ctx, e.name)
+	var wrote bool
+	if s.Restart {
+		// The effect written again, so it starts from its beginning (spec
+		// 035).
+		d.mu.Lock()
+		_, err = d.ask(ctx, cmdSetValue, matrix, valueEffect, e.number)
+		if err == nil {
+			d.sentHS, d.bright, d.found = nil, -1, nil
+		}
+		d.mu.Unlock()
+		wrote = err == nil
+	} else {
+		wrote, err = d.SetEffect(ctx, e.name)
+	}
 	if err != nil {
 		return false, err
 	}

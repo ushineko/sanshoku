@@ -229,6 +229,12 @@ type Settings struct {
 	Colours []Colour
 	// Speed is in the effect's catalogue units (EffectInfo.Speeds).
 	Speed *int
+	/*
+		Restart sends the effect even where nothing about it differs, so it
+		starts again from its beginning: how a consumer starts several
+		devices' effects in step (spec 035).
+	*/
+	Restart bool
 }
 
 /*

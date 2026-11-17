@@ -251,3 +251,16 @@ func TestACardHasItsFamilysEffects(t *testing.T) {
 	assert.Equal(t, familyRTX50, cards[card{0x10DE, 0x2B85, 0x1462, 0x5300}].family, "the 5090 Suprim Liquid")
 	assert.Len(t, cards, 47)
 }
+
+// Restart writes the effect again with nothing changed (spec 035).
+func TestRestartWritesTheEffectAgain(t *testing.T) {
+	d, b := open(t)
+	ctx := context.Background()
+	_, err := d.SetEffectWith(ctx, "Breathing", lighting.Settings{})
+	require.NoError(t, err)
+	b.writes = nil
+	wrote, err := d.SetEffectWith(ctx, "Breathing", lighting.Settings{Restart: true})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Contains(t, b.writes, "22=04")
+}

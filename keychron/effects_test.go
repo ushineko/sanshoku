@@ -137,3 +137,15 @@ func TestSetEffectWithSetsTheSpeed(t *testing.T) {
 	_, err = d.SetEffectWith(ctx, "Breathing", lighting.Settings{Colours: two})
 	require.ErrorIs(t, err, lighting.ErrTooManyColours)
 }
+
+// Restart writes the effect again with nothing changed (spec 035).
+func TestRestartWritesTheEffectAgain(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	f.reset()
+	wrote, err := d.SetEffectWith(context.Background(), "Solid Reactive Multinexus", lighting.Settings{Restart: true})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Contains(t, f.told(3), "07 03 02")
+}

@@ -226,6 +226,10 @@ func (d *device) Frame(ctx context.Context, px []lighting.Pixel) error {
 			return fmt.Errorf("a frame to %s: %w", d.id, err)
 		}
 		c.sent = append(c.sent[:0], c.held...)
+		// The frame covers the firmware's effect, which no longer runs: the
+		// next SetEffect of it is sent, not skipped (spec 035). The colour it
+		// was last given is kept for the next effect.
+		d.fx.running, d.fx.colours = -1, nil
 	}
 	return nil
 }

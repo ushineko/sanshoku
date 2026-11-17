@@ -178,7 +178,7 @@ func (d *device) SetEffectWith(ctx context.Context, name string, s lighting.Sett
 	case same:
 		period = d.fx.speed
 	}
-	if same && period == d.fx.speed && slices.Equal(colours, d.fx.colours) {
+	if same && !s.Restart && period == d.fx.speed && slices.Equal(colours, d.fx.colours) {
 		return false, nil
 	}
 	first := d.fx.colour

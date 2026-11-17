@@ -292,6 +292,10 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **Fixed**: a frame drawn over the Kraken's firmware effect ends it, so the
+  same effect asked for again is sent rather than skipped (spec 035, #97).
+  **New**: `lighting.Settings.Restart` starts an effect from its beginning
+  with nothing changed, on the Kraken, the MSI card and the K4 HE.
 - **New**: `lighting.Storing`, an onboard device whose effect writes go to
   storage that wears (spec 034, #95). The F75 is one; the Kraken, the MSI card
   and the K4 HE hold their effects in memory.
