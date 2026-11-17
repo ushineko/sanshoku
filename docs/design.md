@@ -156,6 +156,11 @@ or a set of lights in no order) and its parts, where the driver knows them;
 an addressable header's shape is whatever is plugged in, so it is left
 unknown for the consumer to ask.
 
+A device whose effect writes go to storage that wears, the F75's flash, is
+`lighting.Storing` (spec 034), and a consumer writes it only when a person
+asks. Any other onboard device holds its effect in memory, and a consumer may
+write it again to put back what it recorded.
+
 OpenRGB is not a dependency. A machine that also runs it has a second writer
 on the same nodes, and two streams alternate frames: a consumer stops it, or
 switches off its detectors for the devices it draws (see contention.md).
