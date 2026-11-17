@@ -188,8 +188,26 @@ const requestAttempts = 5
 //     on it unasked, and solaar's replies too, so a reply has to be recognised
 //     rather than merely received.
 func request(ctx context.Context, rd hidraw.ReportDevice, timeout time.Duration, device, feature, function byte, params ...byte) ([]byte, error) {
-	req := make([]byte, 7)
-	req[0] = reportShort
+	return send(ctx, rd, timeout, reportShort, device, feature, function, params...)
+}
+
+// requestLong is request in a long report: 16 parameter bytes rather than 3,
+// for the lighting writes (spec 030). Its reply is matched the same way.
+func requestLong(ctx context.Context, rd hidraw.ReportDevice, timeout time.Duration, device, feature, function byte, params ...byte) ([]byte, error) {
+	return send(ctx, rd, timeout, reportLong, device, feature, function, params...)
+}
+
+// longLen is a long report's length: the report ID, the device index, the
+// feature index, the function and 16 parameter bytes.
+const longLen = 20
+
+func send(ctx context.Context, rd hidraw.ReportDevice, timeout time.Duration, kind, device, feature, function byte, params ...byte) ([]byte, error) {
+	size := 7
+	if kind == reportLong {
+		size = longLen
+	}
+	req := make([]byte, size)
+	req[0] = kind
 	req[1] = device
 	req[2] = feature
 	req[3] = function<<4 | softwareID
@@ -266,12 +284,15 @@ func reply(r []byte, device, feature, function byte) (params []byte, matched boo
 		return nil, true, translate10(r[5])
 	}
 
-	// HID++ 2.0 error: feature index 0xFF, the failing function, then the code.
+	// HID++ 2.0 error: feature index 0xFF, then the feature index and the
+	// function byte of the request that failed, then the code. Matched to the
+	// request like a reply, so another client's error is not taken for this
+	// one (spec 030 found the code had been read from the function byte).
 	if r[2] == errorSub20 {
-		if len(r) < 5 {
+		if len(r) < 6 || r[3] != feature || r[4] != function {
 			return nil, false, nil
 		}
-		return nil, true, translate20(r[4])
+		return nil, true, translate20(r[5])
 	}
 
 	if r[2] != feature || r[3] != function {
@@ -313,11 +334,21 @@ func translate10(code byte) error {
 
 // translate20 names the HID++ 2.0 error codes.
 func translate20(code byte) error {
-	if code == err20UnsupportedFeature {
+	switch code {
+	case err20UnsupportedFeature:
 		return errUnknownFeature
+	case err20Busy:
+		return errBusy
 	}
 	return hidppError{code: code}
 }
+
+// err20Busy is HID++ 2.0's busy: the device has not finished the last thing
+// it was asked, and the request is to be sent again (spec 030).
+const err20Busy = 0x08
+
+// errBusy is a device that answered busy.
+var errBusy = errors.New("the device is busy")
 
 // featureIndex asks a device which of its own indices holds a feature.
 //

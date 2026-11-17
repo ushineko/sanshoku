@@ -41,12 +41,12 @@ func Support() []support.Entry {
 			Match:        hidppMatch + "; receiver 046d:c547",
 			Vendor:       logitechVendor,
 			Products:     []uint16{productLightspeed},
-			Capabilities: []string{"battery"},
+			Capabilities: []string{"battery", "lighting"},
 			Tier:         support.Tested,
 			Hardware:     "Logitech G502 X PLUS, Lightspeed receiver",
 			Tested:       benched,
 			Spec:         2,
-			Notes:        "HID++ 2.0, feature 0x1004",
+			Notes:        "HID++ 2.0, feature 0x1004; its eight LEDs as a canvas over 0x8071 and 0x8081 (spec 030)",
 			Windows:      windowsExpected,
 		},
 		{
@@ -110,7 +110,7 @@ func (Driver) Describe() sanshoku.Description {
 	return sanshoku.Description{
 		Name:         "Logitech",
 		Finds:        "receiver",
-		Capabilities: []string{"battery"},
+		Capabilities: []string{"battery", "lighting"},
 		Platforms:    []string{"linux", "windows"},
 		Quiet:        false,
 	}

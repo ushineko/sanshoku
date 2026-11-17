@@ -66,6 +66,15 @@ type fake struct {
 
 	// requests is every request the node was sent, in order.
 	requests [][]byte
+
+	// lights gives the device at index 1 the G502 X PLUS's lighting
+	// features as the bench read them (spec 030): 0x8071 at 9, 0x8081 at 10,
+	// 0x8100 at 11, eight zones, four effects and an effect card of 20 64.
+	// busy FrameEnds are answered busy first; lightsSilent answers no
+	// lighting request.
+	lights       bool
+	busy         int
+	lightsSilent bool
 }
 
 // Write is a request arriving at the node: what the device would say to it is
@@ -122,6 +131,12 @@ func (f *fake) respond(req []byte) [][]byte {
 		switch uint16(req[4])<<8 | uint16(req[5]) {
 		case featureUnifiedBattery:
 			return [][]byte{reportOf(reportShort, device, feature, function, fakeBatteryIdx)}
+		case featureRGB, featurePerKey, featureOnboard:
+			if !f.lights {
+				return [][]byte{reportOf(reportShort, device, feature, function, 0x00)}
+			}
+			idx := map[uint16]byte{featureRGB: 9, featurePerKey: 10, featureOnboard: 11}[uint16(req[4])<<8|uint16(req[5])]
+			return [][]byte{reportOf(reportShort, device, feature, function, idx)}
 		case featureDeviceName:
 			if f.noName {
 				return [][]byte{reportOf(reportShort, device, feature, function, 0x00)}
@@ -141,6 +156,9 @@ func (f *fake) respond(req []byte) [][]byte {
 			out = append(out, reportOf(reportLong, device, feature, function&0xF0|solaarID, 0x51, 0x08, 0x00, 0x00))
 		}
 		return append(out, reportOf(reportLong, device, feature, function, f.level, 0x08, 0x00, 0x00))
+
+	case f.lights && (feature == 9 || feature == 10 || feature == 11):
+		return f.lighting(req)
 
 	case feature == fakeNameIdx && function>>4 == functionDeviceType:
 		if f.typeSilent {
@@ -163,6 +181,33 @@ func (f *fake) respond(req []byte) [][]byte {
 		return [][]byte{reportOf(reportLong, device, feature, function, chunk...)}
 	}
 	return [][]byte{{reportShort, device, errorSub20, feature, function, err20UnsupportedFeature, 0x00}}
+}
+
+// lighting answers a lighting request as the G502 X PLUS did: its info, its
+// card, and an acknowledgement echoing the parameters of everything else.
+func (f *fake) lighting(req []byte) [][]byte {
+	if f.lightsSilent {
+		return nil
+	}
+	device, feature, function := req[1], req[2], req[3]
+	switch {
+	case feature == 10 && function>>4 == keyInfo:
+		info := make([]byte, 16)
+		if req[5] == 0 {
+			info[2], info[3] = 0xFF, 0x01
+		}
+		return [][]byte{reportOf(reportLong, device, feature, function, info...)}
+	case feature == 9 && function>>4 == rgbInfo && req[4] == 0x00 && req[5] == 0xFF:
+		return [][]byte{reportOf(reportLong, device, feature, function, 0x00, 0x00, 0x00, 0x01, 0x04)}
+	case feature == 9 && function>>4 == rgbInfo && req[4] == 0xFF:
+		card := make([]byte, 16)
+		card[10], card[11] = 0x20, 0x64
+		return [][]byte{reportOf(reportLong, device, feature, function, card...)}
+	case feature == 10 && function>>4 == keyFrameEnd && f.busy > 0:
+		f.busy--
+		return [][]byte{{reportShort, device, errorSub20, feature, function, err20Busy, 0x00}}
+	}
+	return [][]byte{reportOf(req[0], device, feature, function, req[4:]...)}
 }
 
 // reportOf builds a reply: the kind, the device, the feature, the function
