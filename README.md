@@ -219,6 +219,8 @@ is not there is said and is not a failure.
 - [docs/udev.md](docs/udev.md): the rules a consumer ships.
 - [docs/contention.md](docs/contention.md): what sharing the Kraken's and
   the Apex's nodes with OpenRGB and a second program measured.
+- [docs/kraken-lighting.md](docs/kraken-lighting.md): the Kraken's lighting
+  protocol, from OpenRGB and a capture of NZXT CAM.
 - [docs/credits.md](docs/credits.md): the projects each protocol was learned
   from, and their licences.
 - [docs/api.md](docs/api.md): every exported identifier with its signature
