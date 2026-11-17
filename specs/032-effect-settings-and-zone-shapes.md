@@ -2,7 +2,7 @@
 
 **Issue**: #89
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Context
 
@@ -84,19 +84,19 @@ sanshoku found. Three of them are this module's:
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries`, and `go vet` for windows, linux and darwin
       pass.
-- [ ] Tests on each driver's fake: colours and speed reach the bytes sent;
+- [x] Tests on each driver's fake: colours and speed reach the bytes sent;
       fewer colours repeat, too many and a speed out of range are refused;
       only what differs is written; `Effect` reports the colours and speed;
       the zones' shapes and parts (the Kraken's from its slots).
-- [ ] Live, with someone watching, through the bench: Tai Chi in two chosen
+- [x] Live, with someone watching, through the bench: Tai Chi in two chosen
       colours and Fading in three on the Kraken's ring and fans; a slower and
       a faster Breathing; the RTX 4090's Breathing in two colours at each of
       its speeds; the K4 HE's Solid Reactive Multinexus at a slow and a fast
       speed.
-- [ ] Docs per R3.2.
+- [x] Docs per R3.2.
 
 ## Risks & Assumptions
 
@@ -108,4 +108,50 @@ sanshoku found. Three of them are this module's:
 
 ## Verification
 
-Not yet run.
+### Tests
+
+`make test`, `make lint` (0 issues), `make check-api`, `make check-support`,
+`make check-no-binaries`, and `go vet` for windows, linux and darwin pass.
+
+- `lighting/fit_test.go`: fewer colours repeat; too many, colours for a
+  colourless effect, and a speed out of range are refused; a speed between
+  listed values is taken, or the nearest where asked.
+- `nzxt`: Tai Chi's two colours in bytes 7 to 12 and `0x38` = 2; the same
+  settings not sent again; Fading's three colours at speed 80, read back by
+  `Effect`; a speed alone keeps the colours; refusals; zones Ring `[24]` and
+  Fan `[8 8 8]` from the fake's accessory slots (`1E`, `1D`).
+- `msi`: Breathing's two colours into blocks `27` and `28` (B G R), speed `01`
+  in `38`; the same again sends nothing; speed 3 is the nearest, `04`; colours
+  kept; `Effect` reads them back; refusals.
+- `keychron`: the speed into `07 03 03` and read back; the same again writes
+  nothing; Solid Color takes no speed; Breathing takes one colour.
+- Shapes: asus mainboard single and headers unknown, corsair single ×3,
+  logitech set, keychron grid, msi single.
+
+### The accessory kits
+
+The Kraken's fan accessory on the desk is `1D`, an F360 RGB Core: three 120 mm
+fans of eight LEDs in one slot (OpenRGB's Hue 2 table; NZXT's product page).
+`1C` (F280) is two of eight and `1F` (F420) three of eight.
+
+### Live (2026-11-17, hotaru stopped, the maintainer watching)
+
+`sanshoku-bench onboard --yes` from this branch:
+
+1. Kraken, `--effect "Tai Chi" --colours ff00ff,00ff00`: wrote in 837 ms,
+   read back `#ff00ff, #00ff00, speed 30`. "yes, magenta and green tai chi on
+   both."
+2. Kraken, `--effect Fading --colours ff0000,00ff00,0000ff`: 808 ms, speed 40.
+   "yes, fading red green blue on both."
+3. Kraken, `--effect Breathing --colours ffffff --speed 40`: "slow white
+   breathing on both"; then `--speed 4`: "fast purple breathing on both". The
+   colour was CAM's again because each bench run is a new handle: a speed
+   alone keeps only what the same handle sent.
+4. RTX 4090, `--effect Breathing --colours ff0000,0000ff` at `--speed 4`,
+   `2` and `1`: 151 to 162 ms each. "yes" (slow), "faster red and blue",
+   "fastest red and blue."
+5. K4 HE, found on Solid Reactive Multinexus `#9dc85f` at speed 127: `--speed
+   30` (17 ms), "slow fade"; `--speed 230`, a quick flash, "yes"; put back to
+   127.
+
+hotaru was started again and restored all six devices: "back to tan".
