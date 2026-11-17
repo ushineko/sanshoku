@@ -33,9 +33,9 @@ shape this spec:
   step with the screen. `26 04`, the write CAM uses for a fixed colour, is
   acknowledged in about 335 ms. A canvas that waits for each frame's
   acknowledgement, as the Apex's does (spec 010), can only run on `26 14`.
-- **Its rate is not known.** CAM never sent `26 14` faster than once a second.
-  The floor, and whether the cooler holds a frame, are measured here first
-  (R6), and the requirements that depend on them are amended to the results.
+- **Its rate was not known.** CAM never sent `26 14` faster than once a
+  second. R6 measured the floor and the hold on the desk, and the requirements
+  below are amended to the results (see Verification).
 
 The consumer is hotaru, whose live-effects spike (hotaru #205) has the Kraken
 as the device it most wants effects on. hotaru's adoption is a hotaru spec.
@@ -66,19 +66,22 @@ as the device it most wants effects on. hotaru's adoption is a hotaru spec.
   `ID` is not in `Keys` is an error and nothing is sent. For each channel whose
   colours changed, the driver sends `26 14 <ch> 01` and the channel's LEDs in
   G, R, B order, and waits for the acknowledgement (`FF 01`, then `26 14` at
-  bytes 14 and 15) within a deadline. A channel that did not change is not
-  sent. *To be amended by E1 and E3:* if `26 14` does not show or does not
-  hold, the frame is `26 04` followed by `26 06`, and R1.6 says so.
+  bytes 14 and 15) within a deadline of 500 ms. A channel that did not change
+  is not sent. The next frame is not sent before the acknowledgement: without
+  the wait the firmware drops frames it cannot keep up with (E2).
 - R1.5 **No acknowledgement** within the deadline is `hidraw.ErrSilent` for
   that frame. The held frame keeps the new colours, so the next `Frame` sends
   them again.
-- R1.6 **Floor** is what E2 measures. Until then it is 100 ms.
-- R1.7 **Release.** *To be decided by E7:* the cooler has no "onboard" state
-  that CAM hands back to. The default is that `Release` sends nothing, forgets
-  the held frame and never fails on an open device. The cooler keeps the last
-  frame.
-- R1.8 **The cooler holds a frame** unless E1 shows otherwise. If it does not,
-  the device also satisfies `lighting.Fading` with the hold E1 measures.
+- R1.6 **Floor** is 16 ms. Every period from 100 to 16 ms ran even with no
+  frame lost, with acknowledgements at a median of 1.9 ms (E2).
+- R1.7 **Release commits the held frame.** For each channel the canvas has
+  drawn, `Release` writes the held colours with `26 04` and shows them with
+  `26 06 <ch> 00 01 ...`, each waiting for its acknowledgement within 1 s
+  (`26 04` takes about 335 ms). The colours become the channel's own, so a
+  later readout shows them (E5, E7). Then it forgets the held frame. A channel
+  never drawn is not sent. This replaces any firmware effect on the channel.
+- R1.8 **The cooler holds a frame** with nothing sent (E1). The device is not
+  `lighting.Fading`.
 - R1.9 **One exchange at a time.** A frame, a status question and a screen
   command never interleave on the node: they share the driver's existing
   exchange path. A frame waits for a screen transfer in progress. This is the
@@ -87,14 +90,23 @@ as the device it most wants effects on. hotaru's adoption is a hotaru spec.
   effect is a mode over the channel's LEDs, not a replacement for them: the
   channel may be running one because the firmware started it, or because
   another program set it. The first frame on a handle takes each channel it
-  names over from any mode. *To be amended by E9:* if `26 14` alone does not
-  take a channel over from a running effect, the driver first sends
-  `26 06 <ch> 00 01 ...`, the fixed mode, once per channel per handle, and
-  R1.11 gains it.
-- R1.11 **What the driver sends for lighting:** `20 03` and `26 14`, and
-  `26 04` and `26 06` only if R1.4 is amended to them. It never sends duty (`72 xx`), never addresses the bootloader
-  (`1e71:3011`), and never logs a reply's bytes 2 to 9, which carry the
-  device serial.
+  names over from any mode. `26 14` alone does this: it draws over a running
+  effect, and the effect stops showing (E9). No `26 06` is sent first. The
+  channel's mode is unchanged, so a readout brings the effect back (R1.13).
+- R1.11 **What the driver sends for lighting:** `20 03`, `26 14`, and `26 04`
+  each followed by `26 06` (R1.7). It never sends a `26 06` without a `26 04`
+  before it: during an effect that freezes the effect's last frame (E9). It
+  never sends the `22` family, whose split write corrupts LED 22 (E8). It
+  never sends duty (`72 xx`), never addresses the bootloader (`1e71:3011`),
+  and never logs a reply's bytes 2 to 9, which carry the device serial.
+- R1.12 **Report length.** Every lighting report is 512 bytes, the length the
+  report descriptor declares. A 64-byte `26 14` lights only LEDs 1 to 20 (E3).
+- R1.13 **The readout.** The firmware readout re-applies each channel's mode,
+  which replaces a `26 14` frame (E5). After the driver's own switch to the
+  readout, in the panel's `Readout` and in `Close`'s handback, it sends the
+  held frame again by `26 14` for each channel the canvas has drawn. It
+  waits first for as long as E10 finds the re-apply takes. A handle with no
+  held frame sends nothing.
 
 ### R2. Firmware effects: a separate spec
 
@@ -124,8 +136,9 @@ not depend on it: per-LED frames work whatever effect is running (R1.10).
 
 ### R4. Tests
 
-- R4.1 Encoding, as pure functions: the `26 14` report for a known frame byte
-  for byte, G, R, B order, the channel byte for each channel.
+- R4.1 Encoding, as pure functions: the `26 14`, `26 04` and `26 06` reports
+  for a known frame byte for byte, 512 bytes long, G, R, B order, the channel
+  byte for each channel.
 - R4.2 The accessory list: the reply's slots per channel; the known ids'
   counts; an unknown id; an empty channel; **a reply that arrives after 25
   other reports is found** (the hotaru #206 case); no reply is
@@ -133,7 +146,9 @@ not depend on it: per-LED frames work whatever effect is running (R1.10).
 - R4.3 On the fake cooler, extended with only measured behaviour: a frame
   merges and sends only changed channels; an unknown `ID` writes nothing; no
   acknowledgement is `ErrSilent` and the next frame resends; a frame waits for
-  a screen transfer in progress.
+  a screen transfer in progress; `Release` sends `26 04` then `26 06` for each
+  drawn channel and nothing for the others; `Readout` and `Close` send the
+  held frame again after the readout, and nothing when no frame is held.
 - R4.4 A guard: across every test in the package, the fake cooler has been
   sent no lighting command outside R1.11.
 - R4.5 `make test` still opens no device.
@@ -186,6 +201,10 @@ stopped or its detector for the cooler off. Results go in Verification.
   of the effect come back? Then the same with `26 06 ... 01` sent before the
   frame. Then, after `Release`, does the effect return? This settles R1.10,
   and tells #72 how its effects and the canvas hand a channel to each other.
+- E10 **When the readout re-applies.** A held `26 14` frame, the switch to the
+  readout, and the same frame sent again at once: does it stay for 60 s? If
+  it does not, the delay after which a resend stays. This settles R1.13's
+  wait, and whether spec 070's "some seconds after" was the re-apply.
 
 ## Acceptance Criteria
 
@@ -193,9 +212,15 @@ stopped or its detector for the cooler off. Results go in Verification.
       `make check-no-binaries` and `CGO_ENABLED=0 make build` pass.
 - [ ] `go test ./...` passes on Windows, and `go vet ./...` passes for
       windows, linux and darwin.
-- [ ] E1 to E9 run on the Kraken with the user watching, recorded in
+- [x] E1 to E9 run on the Kraken with the user watching, recorded in
       Verification, and R1.4, R1.6, R1.7, R1.8 and R1.10 amended to what was
       measured.
+- [ ] E10 run with the user watching, recorded in Verification, and R1.13's
+      wait set from it.
+- [ ] After `sanshoku-bench screen --yes` during a held frame, the ring shows
+      the held frame, not the buffer (R1.13), with the user watching.
+- [ ] After `Release` and a readout, the ring shows the released frame
+      (R1.7), with the user watching.
 - [ ] `sanshoku-bench light --yes` shows steady, breathe and wave on the ring
       and the fans, starting from a channel running a firmware effect. This is the integration-boundary criterion: a real cooler,
       not a fake.
@@ -218,13 +243,15 @@ stopped or its detector for the cooler off. Results go in Verification.
 
 ## Risks & Assumptions
 
-- **Two writers.** If OpenRGB still drives the cooler, its `22` writes and this
-  module's frames compete for the same LEDs. R5.3 documents this, and E8 shows
-  whether it is real on 1.2.12. hotaru's adoption spec turns the detector off.
+- **Two writers.** If OpenRGB still drives the cooler, its `22` writes and
+  this module's frames compete for the same LEDs: E8 showed the `22` family
+  writes the same buffer `Release` commits. R5.3 documents this. hotaru's
+  adoption spec turns the detector off.
 - **One firmware.** Everything is measured on 1.2.12. A cooler on another
   firmware may differ; the support entry names the version tested.
-- **`26 14` is inferred** from CAM's use of it. E1 decides; `26 04` with
-  `26 06` is the fallback, at about 335 ms a frame.
+- **The readout's timing** is assumed to be at the switch, which E10 checks.
+  If the re-apply comes later, R1.13's resend waits for it, and a frame drawn
+  in that window is lost until the resend.
 - **The serial.** Every acknowledgement carries the device serial. It is never
   logged and never in a fixture.
 - **Rollback:** revert. The capability is additive, and with OpenRGB's detector
@@ -238,9 +265,114 @@ one node is the cause of 068, 070 and #206, and a workaround covers only the
 restarts hotaru can see.
 
 Considered OpenRGB's `22` family as the frame command, since it already drives
-the cooler; rejected as the default because its writes are not acknowledged,
-so a stream cannot be paced by the device. E8 keeps it measured.
+the cooler; rejected because it commits to the buffer at 335 to 452 ms a
+frame, and its split 64-byte write corrupts LED 22 (E8).
+
+Considered committing every frame with `26 04` and `26 06`, so a readout never
+loses one; rejected because the floor would be about 335 ms. Considered a new
+optional interface for the consumer to say a frame is still; rejected for
+now because the driver performs every switch to the readout itself (R1.13).
 
 ## Verification
 
-Not yet run.
+### R6, the experiments (2026-11-16, firmware 1.2.12)
+
+Run from a throwaway probe that writes raw reports to the hidraw node, and
+`sanshoku-bench screen --yes` for the screen. hotaru and OpenRGB were
+stopped; hayami's tray and TUI held the node and read status throughout. The
+user watched the ring for every run. Channel 1, the ring, unless said.
+
+**E3, report length (run first, because E1's first frame showed it).** A
+`26 14` frame in a 64-byte report lit LEDs 1 to 20 and left 21 to 24 as they
+were: 4 header bytes and 72 colour bytes do not fit. In a 512-byte report all
+24 LEDs lit. The report descriptor declares every output report (`10`, `20`,
+`22`, `26`, `2A`, `30`, `36`, `70`, `72`, `74` and others) as a report ID and
+511 bytes, and the interrupt endpoint's packet size is 512. A 64-byte report
+is a short report the firmware accepts when the command fits. Every run below
+used 512 bytes.
+
+**E1, `26 14` shows and holds.** Green showed with the acknowledgement in
+2.1 ms, and was still green after 60 s with nothing sent and the handle closed.
+A blue `26 14` followed by `26 06 01 00 01 ...` did not stay blue: the ring
+showed the stored buffer (white, LED 22 green), and `26 06` was acknowledged
+in 119.9 ms.
+
+**E4, `26 04` against `26 14`.** `26 04` (magenta) was acknowledged in
+334.7 ms and the `26 06` after it in 1.8 ms; the ring showed all 24 LEDs
+magenta. `26 14` was acknowledged in 1.4 to 9.0 ms throughout E2. `26 06`
+applies the `26 04` buffer.
+
+**E2, the floor.** Two white dots chasing on dim blue, each frame waiting for
+its acknowledgement, 20 s per period. The user saw every run as smooth.
+
+| Period | Frames | Rate | Acknowledgement (min, median, p95, max) | Unacknowledged |
+|---|---|---|---|---|
+| 100 ms | 200 | 10.0 fps | 1.4, 1.9, 2.8, 2.9 ms | 0 |
+| 50 ms | 400 | 20.0 fps | 1.4, 1.9, 2.9, 3.9 ms | 0 |
+| 33 ms | 607 | 30.3 fps | 1.4, 1.9, 2.3, 3.0 ms | 0 |
+| 20 ms | 1000 | 50.0 fps | 1.4, 1.9, 1.9, 4.3 ms | 0 |
+| 16 ms | 1250 | 62.5 fps | 1.5, 1.9, 2.9, 7.7 ms | 0 |
+| 16 ms, no wait | 1250 | 62.5 fps | (1250 of 1250 acknowledged) | 0 |
+
+Two runs beyond the spec found the edge. With no period and no wait for 10 s,
+the endpoint took 77,554 frames (7,755 a second) and the firmware acknowledged
+2,462 (about 246 a second); the user saw the chase jump. With no period and a
+wait for each acknowledgement, 4,975 frames in 10 s (497.5 fps), all
+acknowledged (median 2.0 ms, max 9.0 ms); the user saw an even blur. The
+firmware drops frames it cannot keep up with and does not acknowledge them.
+Waiting for the acknowledgement paces a stream without loss.
+
+**E5, the screen.** An orange `26 14` frame stayed orange through a bucket
+upload and a 20 s hold. When the screen went back to the firmware readout the
+ring showed the `26 04` buffer (magenta) and stayed so. The readout re-applies
+the channel's mode, which a `26 14` frame does not change. A 33 ms stream
+during an upload and readout: 452 frames, all acknowledged, one in 86.9 ms
+during the 94 ms upload, 105 ms behind schedule in all. The user saw no hitch
+and no flash of the buffer.
+
+**E6, the accessory list under load.** 50 of 50 `20 03` answered by `21 03`
+within 2 s (693 to 762 ms, median 757 ms) while 25 uploads and readouts ran
+from another handle, all of which succeeded. Channel 1 held `1E` and channel 2
+`1D`.
+
+**E7, release.** Closing the handle sends nothing, and the last `26 14` frame
+stays (E1) until the next readout, which replaces it with the channel's mode
+(E5).
+
+**E8, OpenRGB's family on 1.2.12.** `22 10` and `22 11` in 64-byte reports with
+`22 A0` showed all 24 LEDs, with `22 A0` acknowledged in 452 ms. The `22`
+family writes the same buffer as `26 04`: data written by either family shows
+through either apply (`26 04` green, then `22 A0`; `22 10` red, then `26 06`).
+After a readout:
+
+| `22` write | Showed | After the readout, LED 22 |
+|---|---|---|
+| `22 10` + `22 11`, 64 bytes each, `22 A0` count `28` (OpenRGB's) | all cyan | green |
+| the same, `22 A0` count `18` | all yellow | off |
+| one 512-byte `22 10` with 24 LEDs, count `18` | all white | white |
+| `26 04`, 512 bytes (E5) | all magenta | magenta |
+
+The split write shows correctly and leaves LED 22 wrong in what the readout
+re-applies. This is hotaru spec 070's green LED: OpenRGB always splits,
+because it writes 64-byte reports. Why the LED count changes green to off is
+not known. With data, `22 A0` was acknowledged in 452 ms (split) or 335 ms
+(one report); with no new data, in 2.1 to 2.3 ms. The slow part is committing
+new data.
+
+**E9, a frame over a firmware effect.** Breathing (`2A 04`, mode `07`, red,
+acknowledged in 118.0 ms) was replaced by one blue `26 14` frame: solid blue,
+the effect stopped, and it did not come back with the handle closed. The next
+readout brought Breathing back. A bare `26 06` during Breathing turned the ring
+off, twice; during Spectrum Wave (mode `02`) it froze the wave as it was. The
+firmware runs an effect by writing the same buffer, and `26 06` shows the
+buffer as the effect last wrote it.
+
+**The model these give.** Each channel has one LED buffer and a mode. `26 04`
+and `22 1g` write the buffer; `26 06` and `22 A0` set the fixed mode and show
+it; `2A 04` sets an effect, which draws into the buffer. `26 14` draws over
+whatever the mode shows and changes neither. The firmware readout re-applies
+the mode.
+
+Not explained: before E1, `26 06` showed white with LED 22 green, where hotaru
+had last written browns through OpenRGB at 14:29. Something rewrote the buffer
+in the 77 minutes between; nothing in these runs says what.
