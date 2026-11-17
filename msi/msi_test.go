@@ -86,7 +86,7 @@ func TestFindMatchesTheCardByItsPCIIDs(t *testing.T) {
 func TestAFrameIsTheStaticMode(t *testing.T) {
 	d, b := open(t)
 	assert.Equal(t, []lighting.Key{{ID: 0, Name: "Color"}}, d.Keys())
-	assert.Equal(t, []lighting.Zone{{Name: "GPU", Count: 1}}, d.Zones())
+	assert.Equal(t, []lighting.Zone{{Name: "GPU", Count: 1, Shape: lighting.ShapeSingle}}, d.Zones())
 
 	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 0x11, G: 0x22, B: 0x33}}))
 	assert.Equal(t, []string{"2e=00", "22=1c", "30=11", "31=22", "32=33", "36=64", "22=13"}, b.writes)
@@ -187,4 +187,40 @@ func TestTheCatalogue(t *testing.T) {
 	assert.Equal(t, lighting.EffectInfo{Name: "Breathing", Number: 4, Speeds: []int{4, 2, 1}, Speed: 2, MinColours: 1, MaxColours: 2}, cat[14])
 	assert.Equal(t, lighting.EffectInfo{Name: "Off", Number: 1}, cat[0])
 	assert.Equal(t, []string{"lighting", "onboard"}, sanshoku.Capabilities(d))
+}
+
+// Breathing's two colours go into both blocks, and the speed into its
+// register, the nearest of the card's three (spec 032).
+func TestBreathingTakesTwoColoursAndASpeed(t *testing.T) {
+	d, b := open(t)
+	ctx := context.Background()
+	teal, gold := lighting.Colour{G: 0x80, B: 0x80}, lighting.Colour{R: 0xFF, G: 0xC0}
+	fast := 1
+	wrote, err := d.SetEffectWith(ctx, "Breathing", lighting.Settings{Colours: []lighting.Colour{teal, gold}, Speed: &fast})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Equal(t, []string{"2e=00", "22=1c", "27=80 80 00", "28=00 c0 ff", "36=64", "38=01", "22=04"}, b.writes, "blocks are B G R")
+
+	b.writes = nil
+	wrote, err = d.SetEffectWith(ctx, "breathing", lighting.Settings{Colours: []lighting.Colour{teal, gold}, Speed: &fast})
+	require.NoError(t, err)
+	assert.False(t, wrote)
+	assert.Empty(t, b.writes)
+
+	slowish := 3
+	_, err = d.SetEffectWith(ctx, "Breathing", lighting.Settings{Speed: &slowish})
+	require.NoError(t, err)
+	assert.Contains(t, b.writes, "38=04", "3 is nearest 4, the slow setting")
+	assert.Contains(t, b.writes, "27=80 80 00", "the colours were kept")
+
+	running, err := d.Effect(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []lighting.Colour{teal, gold}, running.Colours)
+	require.NotNil(t, running.Speed)
+	assert.Equal(t, 4, *running.Speed)
+
+	_, err = d.SetEffectWith(ctx, "Breathing", lighting.Settings{Colours: []lighting.Colour{teal, gold, teal}})
+	require.ErrorIs(t, err, lighting.ErrTooManyColours)
+	_, err = d.SetEffectWith(ctx, "Rainbow Wave", lighting.Settings{Colours: []lighting.Colour{teal}})
+	require.ErrorIs(t, err, lighting.ErrNoColour)
 }

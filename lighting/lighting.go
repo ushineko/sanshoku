@@ -3,6 +3,7 @@ package lighting
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -94,6 +95,12 @@ type Effect struct {
 	Coloured bool
 	// Colour is the effect's colour, or nil where it shows several.
 	Colour *Colour
+	// Colours are all of the effect's colours, first to last, where the
+	// device or the handle knows them; Colour is then their first (spec
+	// 032).
+	Colours []Colour
+	// Speed is the effect's speed in its catalogue's units, where known.
+	Speed *int
 }
 
 /*
@@ -160,7 +167,25 @@ type Zone struct {
 	// Min and Max are the fewest and most lights a consumer may give a zone
 	// whose length it sets; both zero for a zone the device knows.
 	Min, Max int
+	// Shape is how the zone's lights are laid out, where the device knows
+	// (spec 032). An addressable header's is not known.
+	Shape Shape
+	// Parts are the lights of each thing chained in the zone, first to
+	// last, where the device knows them: the Kraken's fans are 8, 8 and 8.
+	Parts []int
 }
+
+// Shape is how a zone's lights are laid out. The zero value is not known.
+type Shape string
+
+// The shapes a zone can have.
+const (
+	ShapeSingle Shape = "single" // one light
+	ShapeLine   Shape = "line"   // lights in a row: a strip
+	ShapeRing   Shape = "ring"   // lights in a circle: a fan, a pump's ring
+	ShapeGrid   Shape = "grid"   // rows and columns: a keyboard
+	ShapeSet    Shape = "set"    // lights in no order: a mouse's
+)
 
 // Resizable is whether a consumer sets the zone's length.
 func (z Zone) Resizable() bool { return z.Max > 0 }
@@ -177,6 +202,89 @@ type Zoned interface {
 	// name that is no zone, or a length outside Min to Max is an error and
 	// changes nothing. The zone's held colours are kept as far as they go.
 	Resize(zone string, lights int) error
+}
+
+/*
+Settings are an effect's colours and speed, for Tuned (spec 032). A nil field
+keeps what the effect has.
+*/
+type Settings struct {
+	// Colours are the effect's colours, first to last.
+	Colours []Colour
+	// Speed is in the effect's catalogue units (EffectInfo.Speeds).
+	Speed *int
+}
+
+/*
+Tuned is an Onboard device whose effects take their colours and speed, as its
+Catalogue describes them (spec 032).
+
+SetEffectWith runs the named effect with the settings given, and writes only
+what differs from what this handle set or read. Fewer colours than the
+effect's MinColours repeat the last; more than its MaxColours are
+ErrTooManyColours, and any for an effect that takes none ErrNoColour. A speed
+outside the lowest and highest of the effect's Speeds is ErrSpeed; a device
+that takes only the listed values uses the nearest.
+*/
+type Tuned interface {
+	Onboard
+	Catalogue
+	SetEffectWith(ctx context.Context, name string, s Settings) (wrote bool, err error)
+}
+
+// ErrTooManyColours is more colours than an effect takes.
+var ErrTooManyColours = errors.New("more colours than the effect takes")
+
+// ErrSpeed is a speed outside an effect's range.
+var ErrSpeed = errors.New("a speed outside the effect's range")
+
+/*
+Fit checks s against an effect's catalogue entry, and returns its colours with
+fewer than MinColours repeated up to it, and its speed, the nearest listed
+where nearest is set. A driver calls it before it writes.
+*/
+func Fit(info EffectInfo, s Settings, nearest bool) ([]Colour, *int, error) {
+	colours := append([]Colour(nil), s.Colours...)
+	switch {
+	case len(colours) > 0 && info.MaxColours == 0:
+		return nil, nil, fmt.Errorf("%s: %w", info.Name, ErrNoColour)
+	case len(colours) > info.MaxColours:
+		return nil, nil, fmt.Errorf("%s takes %d colours, not %d: %w", info.Name, info.MaxColours, len(colours), ErrTooManyColours)
+	}
+	for len(colours) > 0 && len(colours) < info.MinColours {
+		colours = append(colours, colours[len(colours)-1])
+	}
+	if s.Speed == nil {
+		return colours, nil, nil
+	}
+	if len(info.Speeds) == 0 {
+		return nil, nil, fmt.Errorf("%s has no speed: %w", info.Name, ErrSpeed)
+	}
+	lo, hi := info.Speeds[0], info.Speeds[0]
+	for _, v := range info.Speeds {
+		lo, hi = min(lo, v), max(hi, v)
+	}
+	speed := *s.Speed
+	if speed < lo || speed > hi {
+		return nil, nil, fmt.Errorf("%s takes a speed from %d to %d, not %d: %w", info.Name, lo, hi, speed, ErrSpeed)
+	}
+	if nearest {
+		best := info.Speeds[0]
+		for _, v := range info.Speeds {
+			if abs(v-speed) < abs(best-speed) {
+				best = v
+			}
+		}
+		speed = best
+	}
+	return colours, &speed, nil
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 // ErrNoZone is a zone name a device does not have, or one it does not let a

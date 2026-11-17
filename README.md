@@ -292,6 +292,13 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **New**: an effect's colours and speed, and a zone's shape (spec 032, #89).
+  `lighting.Tuned` sets a firmware effect with all its colours and a speed,
+  checked against the catalogue (`lighting.Fit`); the Kraken, the MSI card
+  and the K4 HE implement it, and the K4 HE's catalogue gains its speed.
+  `lighting.Zone` gains `Shape` and `Parts`, and `lighting.Effect` gains
+  `Colours` and `Speed`. The Kraken is `lighting.Zoned`, Ring and Fan.
+  `sanshoku-bench onboard` takes `--colours` and `--speed`.
 - Docs: sanshoku is a first-class driver set that needs no other program
   running, and the home of every driver hayami and hotaru need; lighting is
   in scope, rendering effects is not (README, `docs/design.md`).

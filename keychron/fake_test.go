@@ -18,6 +18,7 @@ type fake struct {
 	Effect     uint8
 	Brightness uint8
 	Hue, Sat   uint8
+	Speed      uint8
 	Features   uint8
 	LEDs       int
 	Silent     bool
@@ -27,7 +28,7 @@ type fake struct {
 }
 
 func newFake() *fake {
-	return &fake{Effect: 20, Brightness: 200, Hue: 0x3B, Sat: 0x86, Features: 0x8F, LEDs: 100}
+	return &fake{Effect: 20, Brightness: 200, Hue: 0x3B, Sat: 0x86, Speed: 127, Features: 0x8F, LEDs: 100}
 }
 
 func (f *fake) Write(r []byte) error {
@@ -55,6 +56,10 @@ func (f *fake) Write(r []byte) error {
 		f.Effect = cmd[3]
 	case cmd[0] == cmdSetValue && cmd[2] == valueBrightness:
 		f.Brightness = cmd[3]
+	case cmd[0] == cmdGetValue && cmd[2] == valueSpeed:
+		reply[3] = f.Speed
+	case cmd[0] == cmdSetValue && cmd[2] == valueSpeed:
+		f.Speed = cmd[3]
 	case cmd[0] == cmdGetValue && cmd[2] == valueColour:
 		reply[3], reply[4] = f.Hue, f.Sat
 	case cmd[0] == cmdSetValue && cmd[2] == valueColour:

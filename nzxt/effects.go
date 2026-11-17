@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/ushineko/sanshoku/lighting"
@@ -67,19 +68,20 @@ var effects = []effect{
 }
 
 var (
-	_ lighting.Onboard   = (*device)(nil)
-	_ lighting.Catalogue = (*device)(nil)
-	_ lighting.Onboard   = (*panelDevice)(nil)
-	_ lighting.Catalogue = (*panelDevice)(nil)
+	_ lighting.Tuned = (*device)(nil)
+	_ lighting.Tuned = (*panelDevice)(nil)
 )
 
 /*
-firmwareState is the effect this handle set, and the colour it was last
-given. running is -1 before an effect is set.
+firmwareState is the effect this handle set, the colours and speed it sent
+with it, and the colour it was last given, which the next effect starts from.
+running is -1 before an effect is set.
 */
 type firmwareState struct {
 	running int
 	colour  *lighting.Colour
+	colours []lighting.Colour
+	speed   int
 }
 
 // Effects names the cooler's effects in mode order.
@@ -95,12 +97,17 @@ func (d *device) Effects() []string {
 func (d *device) Catalogue() []lighting.EffectInfo {
 	out := make([]lighting.EffectInfo, len(effects))
 	for i, e := range effects {
-		out[i] = lighting.EffectInfo{
-			Name: e.name, Number: int(e.mode), Speeds: append([]int(nil), e.speeds...), Speed: e.speed,
-			MinColours: e.minColours, MaxColours: e.maxColours,
-		}
+		out[i] = info(e)
 	}
 	return out
+}
+
+// info is e as the catalogue describes it.
+func info(e effect) lighting.EffectInfo {
+	return lighting.EffectInfo{
+		Name: e.name, Number: int(e.mode), Speeds: append([]int(nil), e.speeds...), Speed: e.speed,
+		MinColours: e.minColours, MaxColours: e.maxColours,
+	}
 }
 
 /*
@@ -119,11 +126,70 @@ func (d *device) Effect(context.Context) (lighting.Effect, error) {
 	}
 	e := effects[d.fx.running]
 	out := lighting.Effect{Name: e.name, Coloured: len(e.colours) > 0}
-	if cs := d.fx.coloursFor(e); len(cs) > 0 {
+	if cs := d.fx.colours; len(cs) > 0 {
 		c := cs[0]
 		out.Colour = &c
+		out.Colours = append([]lighting.Colour(nil), cs...)
 	}
+	speed := d.fx.speed
+	out.Speed = &speed
 	return out, nil
+}
+
+/*
+SetEffectWith runs the named effect on every channel with keys, with the
+colours and speed given (spec 032). A nil field keeps what this handle sent
+for the same effect, and otherwise is what SetEffect would send. The speed is
+the period sent, any value within the effect's listed range. Nothing is sent
+when this handle already sent exactly that.
+*/
+func (d *device) SetEffectWith(ctx context.Context, name string, s lighting.Settings) (bool, error) {
+	at := -1
+	for i, e := range effects {
+		if strings.EqualFold(e.name, name) {
+			at = i
+		}
+	}
+	if at < 0 {
+		return false, fmt.Errorf("%q: %w", name, lighting.ErrNoEffect)
+	}
+	e := effects[at]
+	colours, speed, err := lighting.Fit(info(e), s, false)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", d.id, err)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.hid == nil {
+		return false, fmt.Errorf("setting %s's effect: %w", d.id.Path, os.ErrClosed)
+	}
+	same := d.fx.running == at
+	switch {
+	case len(colours) > 0:
+	case same:
+		colours = d.fx.colours
+	default:
+		colours = d.fx.coloursFor(e)
+	}
+	period := e.speed
+	switch {
+	case speed != nil:
+		period = *speed
+	case same:
+		period = d.fx.speed
+	}
+	if same && period == d.fx.speed && slices.Equal(colours, d.fx.colours) {
+		return false, nil
+	}
+	first := d.fx.colour
+	if len(colours) > 0 && len(s.Colours) > 0 {
+		c := colours[0]
+		first = &c
+	}
+	if err := d.sendEffect(ctx, at, colours, period, first); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 /*
@@ -188,17 +254,27 @@ runEffect sends effect at to every channel with keys, and records it. The
 caller holds mu.
 */
 func (d *device) runEffect(ctx context.Context, at int, colour *lighting.Colour) error {
+	e := effects[at]
+	return d.sendEffect(ctx, at, firmwareState{colour: colour}.coloursFor(e), e.speed, colour)
+}
+
+/*
+sendEffect sends effect at, with its colours and speed, to every channel with keys,
+and records it, keeping first as the colour the next effect starts from. The
+caller holds mu.
+*/
+func (d *device) sendEffect(ctx context.Context, at int, colours []lighting.Colour, speed int, first *lighting.Colour) error {
 	if err := d.knowChannels(ctx); err != nil {
 		return fmt.Errorf("setting %s's effect: %w", d.id, err)
 	}
-	next := firmwareState{running: at, colour: colour}
+	next := firmwareState{running: at, colour: first, colours: append([]lighting.Colour(nil), colours...), speed: speed}
 	e := effects[at]
 	for i := range d.canvas.ch {
 		c := &d.canvas.ch[i]
 		if len(c.held) == 0 {
 			continue
 		}
-		if err := d.acked(ctx, commitWait, effectReport(i, e, next.coloursFor(e), len(c.held))); err != nil {
+		if err := d.acked(ctx, commitWait, effectReport(i, e, colours, speed, len(c.held))); err != nil {
 			return fmt.Errorf("setting %s's effect: %w", d.id, err)
 		}
 		clear(c.held)
@@ -229,9 +305,9 @@ effectReport is the `2A 04` that runs effect e on channel i of n LEDs: the
 channel twice, the mode, the speed in 16 bits little-endian, up to eight
 colours in G, R, B, and bytes 0x37 to 0x3B as CAM sends them.
 */
-func effectReport(i int, e effect, colours []lighting.Colour, n int) []byte {
+func effectReport(i int, e effect, colours []lighting.Colour, speed, n int) []byte {
 	ch := channelByte(i)
-	r := lightReport(0x2A, 0x04, ch, ch, e.mode, byte(e.speed), byte(e.speed>>8)) //nolint:gosec // speeds fit 16 bits
+	r := lightReport(0x2A, 0x04, ch, ch, e.mode, byte(speed), byte(speed>>8)) //nolint:gosec // speeds fit 16 bits
 	for k, c := range colours {
 		if k == 8 {
 			break

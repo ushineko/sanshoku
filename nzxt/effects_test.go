@@ -28,17 +28,17 @@ effect with colours, one with none, and Alternating, whose bytes 0x37 and
 0x3B differ from the rest.
 */
 func TestEffectReportsAreCAMs(t *testing.T) {
-	b := effectReport(0, effectNamed(t, "Breathing"), effectNamed(t, "Breathing").colours, 24)
+	b := effectReport(0, effectNamed(t, "Breathing"), effectNamed(t, "Breathing").colours, 20, 24)
 	require.Len(t, b, lightReportLen)
 	assert.Equal(t, []byte{0x2A, 0x04, 0x01, 0x01, 0x07, 20, 0x00, 0x00, 0x39, 0x58, 0x00}, b[:11], "G, R, B")
 	assert.Equal(t, []byte{0x00, 0x01, 0x08, 0x18, 0x03}, b[0x37:0x3C])
 
-	w := effectReport(1, effectNamed(t, "Spectrum Wave"), nil, 24)
+	w := effectReport(1, effectNamed(t, "Spectrum Wave"), nil, 250, 24)
 	assert.Equal(t, []byte{0x2A, 0x04, 0x02, 0x02, 0x02, 0xFA, 0x00, 0x00}, w[:8], "speed 250, no colours")
 	assert.Equal(t, []byte{0x00, 0x00, 0x00, 0x18, 0x03}, w[0x37:0x3C])
 
 	alt := effectNamed(t, "Alternating")
-	a := effectReport(0, alt, alt.colours, 24)
+	a := effectReport(0, alt, alt.colours, alt.speed, 24)
 	assert.Equal(t, []byte{0xF4, 0x01}, a[5:7], "speed 500")
 	assert.Equal(t, []byte{0x00, 0x39, 0x58, 0xBC, 0x00, 0x83}, a[7:13])
 	assert.Equal(t, []byte{0x01, 0x02, 0x00, 0x18, 0x04}, a[0x37:0x3C])
@@ -145,3 +145,76 @@ func effectCommands(f *fake) []string {
 	}
 	return out
 }
+
+// An effect's colours and speed reach the bytes sent, are refused out of
+// range, and are not sent twice (spec 032).
+func TestSetEffectWithSendsTheColoursAndSpeed(t *testing.T) {
+	f := newFake()
+	d := withFake(f)
+	ctx := context.Background()
+	gold := lighting.Colour{R: 0xFF, G: 0xC0}
+	teal := lighting.Colour{G: 0x80, B: 0x80}
+
+	wrote, err := d.SetEffectWith(ctx, "Tai Chi", lighting.Settings{Colours: []lighting.Colour{gold, teal}})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	last := f.Told[len(f.Told)-1]
+	assert.Equal(t, []byte{0xC0, 0xFF, 0x00, 0x80, 0x00, 0x80}, last[7:13], "gold then teal, G R B")
+	assert.Equal(t, byte(2), last[0x38])
+	assert.Equal(t, []byte{30, 0}, last[5:7], "Tai Chi's one speed")
+
+	sent := len(f.Told)
+	wrote, err = d.SetEffectWith(ctx, "tai chi", lighting.Settings{Colours: []lighting.Colour{gold, teal}})
+	require.NoError(t, err)
+	assert.False(t, wrote)
+	assert.Len(t, f.Told, sent, "the same settings were sent again")
+
+	speed := 600
+	wrote, err = d.SetEffectWith(ctx, "Fading", lighting.Settings{
+		Colours: []lighting.Colour{gold, teal, camRed}, Speed: ptr(80),
+	})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	last = f.Told[len(f.Told)-1]
+	assert.Equal(t, byte(3), last[0x38], "three colours")
+	assert.Equal(t, []byte{80, 0}, last[5:7])
+
+	running, err := d.Effect(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []lighting.Colour{gold, teal, camRed}, running.Colours)
+	require.NotNil(t, running.Speed)
+	assert.Equal(t, 80, *running.Speed)
+
+	_, err = d.SetEffectWith(ctx, "Fading", lighting.Settings{Speed: &speed})
+	require.ErrorIs(t, err, lighting.ErrSpeed)
+	_, err = d.SetEffectWith(ctx, "Tai Chi", lighting.Settings{Colours: []lighting.Colour{gold, teal, gold}})
+	require.ErrorIs(t, err, lighting.ErrTooManyColours)
+	_, err = d.SetEffectWith(ctx, "Spectrum Wave", lighting.Settings{Colours: []lighting.Colour{gold}})
+	require.ErrorIs(t, err, lighting.ErrNoColour)
+
+	// A speed alone keeps the colours the effect was given.
+	_, err = d.SetEffectWith(ctx, "Fading", lighting.Settings{Speed: ptr(20)})
+	require.NoError(t, err)
+	last = f.Told[len(f.Told)-1]
+	assert.Equal(t, []byte{20, 0}, last[5:7])
+	assert.Equal(t, byte(3), last[0x38])
+}
+
+// The cooler's zones are its channels, rings, with a part per accessory.
+func TestZonesAreTheChannelsWithTheirAccessories(t *testing.T) {
+	d := withFake(newFake())
+	zones := d.Zones()
+	require.NotEmpty(t, zones)
+	for _, z := range zones {
+		assert.Equal(t, lighting.ShapeRing, z.Shape)
+		total := 0
+		for _, n := range z.Parts {
+			total += n
+		}
+		assert.Equal(t, z.Count, total, "%s: parts do not add up", z.Name)
+	}
+	t.Logf("zones: %+v", zones)
+	require.ErrorIs(t, d.Resize(zones[0].Name, 3), lighting.ErrNoZone)
+}
+
+func ptr(n int) *int { return &n }

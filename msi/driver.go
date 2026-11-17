@@ -105,6 +105,10 @@ type device struct {
 	// it was last given.
 	running int
 	colour  *colour
+	// given are the colours SetEffectWith was given, first to last, and
+	// speed the speed register's value; nil and 0 are OpenRGB's (spec 032).
+	given []colour
+	speed byte
 }
 
 func (d *device) Identity() sanshoku.Identity { return d.id }

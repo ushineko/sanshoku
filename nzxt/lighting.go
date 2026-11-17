@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ushineko/sanshoku/hidraw"
@@ -88,11 +89,49 @@ var fans = map[byte]bool{
 	0x17: true, 0x18: true, 0x19: true, 0x1C: true, 0x1D: true, 0x1F: true,
 }
 
-// Both the cooler with a panel and the one without are a canvas.
+// Both the cooler with a panel and the one without are a canvas, with zones.
 var (
 	_ lighting.Canvas = (*device)(nil)
 	_ lighting.Canvas = (*panelDevice)(nil)
+	_ lighting.Zoned  = (*device)(nil)
+	_ lighting.Zoned  = (*panelDevice)(nil)
 )
+
+/*
+Zones is one zone per channel with keys, named as consumers name them (hotaru
+spec 073): "Ring" for the pump's ring, "Fan" for the fans, "Channel n" for
+anything else. Each is a ring, and its parts are the accessories in its slots:
+three fans of eight are parts 8, 8 and 8 (spec 032).
+*/
+func (d *device) Zones() []lighting.Zone {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.hid == nil || d.knowChannels(context.Background()) != nil {
+		return nil
+	}
+	var out []lighting.Zone
+	first := 0
+	for i, c := range d.canvas.ch {
+		if len(c.held) == 0 {
+			continue
+		}
+		name := fmt.Sprintf("Channel %d", i+1)
+		if c.name != "" {
+			name = strings.ToUpper(c.name[:1]) + c.name[1:]
+		}
+		out = append(out, lighting.Zone{
+			Name: name, First: first, Count: len(c.held),
+			Shape: lighting.ShapeRing, Parts: append([]int(nil), c.parts...),
+		})
+		first += len(c.held)
+	}
+	return out
+}
+
+// Resize refuses: the cooler counts its accessories' lights itself.
+func (d *device) Resize(zone string, _ int) error {
+	return fmt.Errorf("%q on %s: %w", zone, d.id, lighting.ErrNoZone)
+}
 
 // colour is one LED's colour.
 type colour struct{ r, g, b uint8 }
@@ -106,7 +145,9 @@ frame has named the channel since the last Release: a channel never drawn is
 never sent, so a consumer drawing on the ring leaves the fans alone.
 */
 type channel struct {
-	name      string
+	name string
+	// parts are the LEDs of each accessory in the channel's slots, in order.
+	parts     []int
 	held      []colour
 	sent      []colour
 	committed []colour
@@ -268,16 +309,18 @@ func channelsFrom(reply []byte) canvasState {
 	s := canvasState{known: true}
 	for i := range s.ch {
 		count, name := 0, ""
+		var parts []int
 		for _, id := range reply[slotsAt+slotsPer*i : slotsAt+slotsPer*(i+1)] {
 			if id == 0 {
 				continue
 			}
 			n, ok := accessories[id]
 			if !ok {
-				count = 0
+				count, parts = 0, nil
 				break
 			}
 			count += n
+			parts = append(parts, n)
 			switch {
 			case rings[id] && name == "":
 				name = "ring"
@@ -285,7 +328,7 @@ func channelsFrom(reply []byte) canvasState {
 				name = "fan"
 			}
 		}
-		s.ch[i] = channel{name: name, held: make([]colour, count)}
+		s.ch[i] = channel{name: name, parts: parts, held: make([]colour, count)}
 	}
 	return s
 }

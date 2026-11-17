@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -96,17 +97,18 @@ var effects = []effect{
 var defaults = [3]colour{{0xFF, 0, 0}, {0, 0xFF, 0}, {0, 0, 0xFF}}
 
 var (
-	_ lighting.Canvas    = (*device)(nil)
-	_ lighting.Zoned     = (*device)(nil)
-	_ lighting.Onboard   = (*device)(nil)
-	_ lighting.Catalogue = (*device)(nil)
+	_ lighting.Canvas = (*device)(nil)
+	_ lighting.Zoned  = (*device)(nil)
+	_ lighting.Tuned  = (*device)(nil)
 )
 
 // Keys is the card's one light, "Color", as OpenRGB names it.
 func (d *device) Keys() []lighting.Key { return []lighting.Key{{ID: 0, Name: "Color"}} }
 
-// Zones is the one zone, "GPU".
-func (d *device) Zones() []lighting.Zone { return []lighting.Zone{{Name: "GPU", Count: 1}} }
+// Zones is the one zone, "GPU", a single light.
+func (d *device) Zones() []lighting.Zone {
+	return []lighting.Zone{{Name: "GPU", Count: 1, Shape: lighting.ShapeSingle}}
+}
 
 // Resize refuses: the card has one light.
 func (d *device) Resize(zone string, _ int) error {
@@ -175,11 +177,17 @@ func (d *device) Effects() []string {
 func (d *device) Catalogue() []lighting.EffectInfo {
 	out := make([]lighting.EffectInfo, len(effects))
 	for i, e := range effects {
-		info := lighting.EffectInfo{Name: e.name, Number: int(e.mode), MinColours: e.min, MaxColours: e.max}
-		if e.mode != modeOff {
-			info.Speeds, info.Speed = []int{0x04, 0x02, 0x01}, mediumSpeed
-		}
-		out[i] = info
+		out[i] = info(e)
+	}
+	return out
+}
+
+// info is e as the catalogue describes it. The speed register is a period:
+// 04 slow, 02 medium, 01 fast.
+func info(e effect) lighting.EffectInfo {
+	out := lighting.EffectInfo{Name: e.name, Number: int(e.mode), MinColours: e.min, MaxColours: e.max}
+	if e.mode != modeOff {
+		out.Speeds, out.Speed = []int{0x04, 0x02, 0x01}, mediumSpeed
 	}
 	return out
 }
@@ -198,10 +206,71 @@ func (d *device) Effect(context.Context) (lighting.Effect, error) {
 	e := effects[d.running]
 	out := lighting.Effect{Name: e.name, Coloured: e.shape != none}
 	if out.Coloured {
-		c := d.colours()[0]
-		out.Colour = &lighting.Colour{R: c.r, G: c.g, B: c.b}
+		cs := d.colours()
+		for _, c := range cs[:e.max] {
+			out.Colours = append(out.Colours, lighting.Colour{R: c.r, G: c.g, B: c.b})
+		}
+		out.Colour = &out.Colours[0]
+	}
+	if e.mode != modeOff {
+		speed := int(d.speedValue())
+		out.Speed = &speed
 	}
 	return out, nil
+}
+
+/*
+SetEffectWith runs the named effect with the colours and speed given (spec
+032): one colour into registers 30 to 32, two or three into the colour
+blocks; the speed is the nearest of the card's three. A nil field keeps what
+this handle set. The same settings again send nothing.
+*/
+func (d *device) SetEffectWith(_ context.Context, name string, s lighting.Settings) (bool, error) {
+	at := -1
+	for i, e := range effects {
+		if strings.EqualFold(e.name, name) {
+			at = i
+		}
+	}
+	if at < 0 {
+		return false, fmt.Errorf("%q: %w", name, lighting.ErrNoEffect)
+	}
+	colours, speed, err := lighting.Fit(info(effects[at]), s, true)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", d.id, err)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	given, sp := d.given, d.speed
+	if len(colours) > 0 {
+		given = given[:0:0]
+		for _, c := range colours {
+			given = append(given, colour{c.R, c.G, c.B})
+		}
+	}
+	if speed != nil {
+		sp = byte(*speed) //nolint:gosec // 1, 2 or 4
+	}
+	if d.running == at && slices.Equal(given, d.given) && sp == d.speed {
+		return false, nil
+	}
+	d.given, d.speed = given, sp
+	if len(given) > 0 {
+		d.colour = &given[0]
+	}
+	if err := d.run(at); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// speedValue is the speed register's value: what SetEffectWith was given,
+// or medium. The caller holds mu.
+func (d *device) speedValue() byte {
+	if d.speed != 0 {
+		return d.speed
+	}
+	return mediumSpeed
 }
 
 // SetEffect runs a named effect at medium speed, in the colour this handle
@@ -243,19 +312,24 @@ func (d *device) SetColour(_ context.Context, c lighting.Colour) (bool, error) {
 		return false, nil
 	}
 	d.colour = &next
+	if len(d.given) > 0 {
+		d.given[0] = next
+	}
 	if err := d.run(d.running); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-// colours is an effect's colours: OpenRGB's, the first replaced by the
-// colour this handle was given. The caller holds mu.
+// colours is an effect's colours: OpenRGB's, replaced by those this handle
+// was given, or the first by the colour it was last given. The caller holds
+// mu.
 func (d *device) colours() [3]colour {
 	cs := defaults
 	if d.colour != nil {
 		cs[0] = *d.colour
 	}
+	copy(cs[:], d.given)
 	return cs
 }
 
@@ -301,7 +375,7 @@ func (d *device) run(at int) error {
 			w{reg: regBlock3, block: true, c: cs[2]})
 	}
 	if e.mode != modeOff {
-		ws = append(ws, w{reg: regBrightness, value: fullBrightness}, w{reg: regSpeed, value: mediumSpeed})
+		ws = append(ws, w{reg: regBrightness, value: fullBrightness}, w{reg: regSpeed, value: d.speedValue()})
 	}
 	ws = append(ws, w{reg: regMode, value: e.mode})
 	for _, x := range ws {

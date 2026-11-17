@@ -79,6 +79,14 @@ OpenRGB finds them (spec 031):
   driver does not set it.
 - Nothing is saved: the keyboard keeps the effect until it is replugged (B).
 
+## Speed (spec 032)
+
+The keyboard keeps one speed for every effect (`07 03 03`, read with
+`08 03 03`), 0 to 255, at 127 as it came. The catalogue gives each effect that
+moves that range; Solid Color, Jellybean Raindrops, Pixel Rain and Typing
+Heatmap do not move at a speed. Setting it for one effect sets it for all. The
+keyboard's zone is a grid.
+
 ## Order and names
 
 OpenRGB orders the keys by the firmware's LED index, in one zone named

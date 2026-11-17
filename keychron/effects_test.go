@@ -19,8 +19,8 @@ func TestTheEffectsAreOpenRGBs(t *testing.T) {
 	assert.Equal(t, "Solid Color", names[0])
 	assert.Equal(t, "Solid Splash", names[21])
 	cat := d.Catalogue()
-	assert.Equal(t, lighting.EffectInfo{Name: "Solid Reactive Multinexus", Number: 20, MinColours: 1, MaxColours: 1}, cat[19])
-	assert.Equal(t, lighting.EffectInfo{Name: "Cycle All", Number: 4}, cat[3])
+	assert.Equal(t, lighting.EffectInfo{Name: "Solid Reactive Multinexus", Number: 20, Speeds: []int{0, 255}, Speed: 127, MinColours: 1, MaxColours: 1}, cat[19])
+	assert.Equal(t, lighting.EffectInfo{Name: "Cycle All", Number: 4, Speeds: []int{0, 255}, Speed: 127}, cat[3])
 }
 
 // The running effect is read with its stored colour at the board's brightness;
@@ -105,4 +105,35 @@ func TestRGBUndoesHSV(t *testing.T) {
 			assert.InDelta(t, int(pair[1]), int(pair[0]), 3, "%v channel %d", c, i)
 		}
 	}
+}
+
+// The keyboard's one speed is read and set with the effect and its colour,
+// each only where it differs (spec 032).
+func TestSetEffectWithSetsTheSpeed(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	ctx := context.Background()
+	slow := 40
+	f.reset()
+	wrote, err := d.SetEffectWith(ctx, "Solid Reactive Multinexus", lighting.Settings{Speed: &slow})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Equal(t, uint8(40), f.Speed)
+	assert.Equal(t, uint8(20), f.Effect, "the effect it already ran")
+
+	e, err := d.Effect(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, e.Speed)
+	assert.Equal(t, 40, *e.Speed)
+
+	wrote, err = d.SetEffectWith(ctx, "Solid Reactive Multinexus", lighting.Settings{Speed: &slow})
+	require.NoError(t, err)
+	assert.False(t, wrote)
+
+	_, err = d.SetEffectWith(ctx, "Solid Color", lighting.Settings{Speed: &slow})
+	require.ErrorIs(t, err, lighting.ErrSpeed, "Solid Color does not move")
+	two := []lighting.Colour{{R: 1}, {G: 1}}
+	_, err = d.SetEffectWith(ctx, "Breathing", lighting.Settings{Colours: two})
+	require.ErrorIs(t, err, lighting.ErrTooManyColours)
 }

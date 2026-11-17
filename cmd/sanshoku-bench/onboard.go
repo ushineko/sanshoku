@@ -22,6 +22,8 @@ onboard reads the firmware effect of every device that runs one, and with
 blocks first, to a file it names, so the write can be undone with --restore.
 --effect and --colour together set the effect first and then its colour,
 which is how a consumer puts both back after a power cycle. Spec 021 R3.
+--colours and --speed set the effect with all its colours and a speed, on a
+device whose effects take them (lighting.Tuned, spec 032).
 */
 func onboard(ctx context.Context, args []string, out, errOut io.Writer) int {
 	fs := flag.NewFlagSet("onboard", flag.ContinueOnError)
@@ -29,6 +31,8 @@ func onboard(ctx context.Context, args []string, out, errOut io.Writer) int {
 	yes := fs.Bool("yes", false, "allow writing to the device's storage")
 	effect := fs.String("effect", "", "run this firmware effect, by name")
 	colour := fs.String("colour", "", "make the running effect this colour, RRGGBB")
+	colours := fs.String("colours", "", "with --effect: all of its colours, RRGGBB,RRGGBB,...")
+	speed := fs.Int("speed", -1, "with --effect: its speed, in the catalogue's units")
 	save := fs.String("save", "", "save the device's blocks to this file")
 	restore := fs.String("restore", "", "write the device's blocks back from this saved file")
 	driver := fs.String("driver", "", "restrict to one driver")
@@ -45,6 +49,23 @@ func onboard(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return 2
 	}
 	job := onboardJob{save: *save, restore: *restore, effect: *effect, colour: *colour != ""}
+	if (*colours != "" || *speed >= 0) && *effect == "" {
+		writeln(errOut, "onboard: --colours and --speed go with --effect")
+		return 2
+	}
+	if *colours != "" {
+		for _, one := range strings.Split(*colours, ",") {
+			c, err := parseColour(strings.TrimSpace(one))
+			if err != nil {
+				writef(errOut, "--colours: %v\n", err)
+				return 2
+			}
+			job.settings.Colours = append(job.settings.Colours, lighting.Colour{R: c[0], G: c[1], B: c[2]})
+		}
+	}
+	if *speed >= 0 {
+		job.settings.Speed = speed
+	}
 	if job.colour {
 		c, err := parseColour(*colour)
 		if err != nil {
@@ -92,7 +113,11 @@ type onboardJob struct {
 	save, restore, effect string
 	colour                bool
 	want                  lighting.Colour
+	settings              lighting.Settings
 }
+
+// tuned is whether the job sets an effect's colours or speed.
+func (j onboardJob) tuned() bool { return len(j.settings.Colours) > 0 || j.settings.Speed != nil }
 
 // writes reports whether the job writes the device.
 func (j onboardJob) writes() bool { return j.colour || j.effect != "" || j.restore != "" }
@@ -133,7 +158,19 @@ func onboardOne(ctx context.Context, out io.Writer, dev sanshoku.Device, ob ligh
 			return false
 		}
 	case job.writes():
-		if job.effect != "" && !timed(out, "set effect "+fmt.Sprintf("%q", job.effect), func() (bool, error) {
+		if job.tuned() {
+			tuned, ok := dev.(lighting.Tuned)
+			if !ok {
+				writeln(out, "  this device's effects take no colours or speed of their own")
+				return false
+			}
+			if !timed(out, fmt.Sprintf("set effect %q with %d colours, speed %v", job.effect,
+				len(job.settings.Colours), speedWords(job.settings.Speed)), func() (bool, error) {
+				return tuned.SetEffectWith(ctx, job.effect, job.settings)
+			}) {
+				return false
+			}
+		} else if job.effect != "" && !timed(out, "set effect "+fmt.Sprintf("%q", job.effect), func() (bool, error) {
 			return ob.SetEffect(ctx, job.effect)
 		}) {
 			return false
@@ -219,7 +256,29 @@ func colourWords(e lighting.Effect) string {
 		return "no colour"
 	case e.Colour == nil:
 		return "colourful"
+	case len(e.Colours) > 1:
+		words := make([]string, len(e.Colours))
+		for i, c := range e.Colours {
+			words[i] = fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+		}
+		return "colours " + strings.Join(words, ", ") + paceWords(e.Speed)
 	default:
-		return fmt.Sprintf("colour #%02x%02x%02x", e.Colour.R, e.Colour.G, e.Colour.B)
+		return fmt.Sprintf("colour #%02x%02x%02x", e.Colour.R, e.Colour.G, e.Colour.B) + paceWords(e.Speed)
 	}
+}
+
+// paceWords is an effect's speed after its colours, where it is known.
+func paceWords(s *int) string {
+	if s == nil {
+		return ""
+	}
+	return fmt.Sprintf(", speed %d", *s)
+}
+
+// speedWords is a speed for a line of output, "as it is" for none.
+func speedWords(s *int) string {
+	if s == nil {
+		return "as it is"
+	}
+	return fmt.Sprint(*s)
 }

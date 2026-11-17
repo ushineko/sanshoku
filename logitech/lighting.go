@@ -164,7 +164,7 @@ func (d *device) Zones() []lighting.Zone {
 	if d.rd == nil {
 		return nil
 	}
-	return []lighting.Zone{{Name: mouseZone, Count: len(d.findLights(context.Background()).zones)}}
+	return []lighting.Zone{{Name: mouseZone, Count: len(d.findLights(context.Background()).zones), Shape: lighting.ShapeSet}}
 }
 
 // Resize refuses: the mouse's zones are its own.

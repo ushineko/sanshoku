@@ -45,6 +45,7 @@ const (
 	matrix          = 0x03
 	valueBrightness = 0x01
 	valueEffect     = 0x02
+	valueSpeed      = 0x03
 	valueColour     = 0x04
 
 	// perKeyEffect is the per-key RGB effect's number on the K4 HE's

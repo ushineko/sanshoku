@@ -46,7 +46,7 @@ func (d *device) Keys() []lighting.Key {
 func (d *device) Zones() []lighting.Zone {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return []lighting.Zone{{Name: zoneName, First: 0, Count: len(d.held)}}
+	return []lighting.Zone{{Name: zoneName, First: 0, Count: len(d.held), Shape: lighting.ShapeGrid}}
 }
 
 // Resize refuses: the keyboard's one zone is the keyboard.
