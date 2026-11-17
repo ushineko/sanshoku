@@ -36,9 +36,10 @@ const (
 	apply   = 0x80
 	past255 = 0x10
 
-	// frameFloor is the shortest interval at which frames are sent. To be
-	// measured (spec 027 E5).
-	frameFloor = 20 * time.Millisecond
+	// frameFloor is the shortest interval at which frames are sent. A
+	// breathe on the board's light and three headers was smooth at 33 ms
+	// and at 16 ms, writing a frame in about 8.4 ms (spec 027 E5).
+	frameFloor = 16 * time.Millisecond
 
 	boardZone  = "Aura Mainboard"
 	headerZone = "Addressable RGB Header "
