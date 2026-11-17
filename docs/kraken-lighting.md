@@ -19,23 +19,29 @@ Each fact below carries its source.
   this device's traffic only. It stays private, because every acknowledgement
   carries the device's serial number.
 - **O+C**: both sources agree.
+- **B**: the bench, 2026-11-16, firmware 1.2.12. Raw reports written to the
+  hidraw node by a probe, with someone watching the ring. The runs are recorded
+  in spec 024's Verification.
 
 The capture is of firmware 1.2.12, after CAM updated the cooler from 1.2.8.
 `bcdDevice` reads 01.02 on both, so it does not report the firmware (see
 "Firmware version").
 
-**Nothing on this page is verified through this module yet.** A fact is
-verified when `sanshoku-bench` has sent it to the hardware and the spec
+**Nothing on this page is verified through this module's driver yet.** Facts
+marked B were sent to the hardware from a probe, not from the driver. A fact
+is verified when `sanshoku-bench` has sent it through the driver and the spec
 records the result.
 
 ## Transport
 
 - Interface 1 of the device is HID, on a vendor usage page (`0xFF00`, C). The
   driver already uses it for status, through hidraw.
-- The driver writes 64-byte reports today, and OpenRGB does the same (O). The
-  capture shows 512-byte transfers whose bytes past 64 are zero. That may be
-  how QEMU records the endpoint. Which length the firmware needs is not
-  settled.
+- **Reports are 512 bytes** (B). The report descriptor declares every output
+  report as a report ID and 511 bytes, and the interrupt endpoint's packet
+  size is 512. Each command's first byte is its report ID.
+- A shorter report is accepted when the command fits. The driver's status and
+  screen commands use 64 bytes, and so does OpenRGB (O). A `26 14` frame does
+  not fit: in 64 bytes it lights LEDs 1 to 20 only (B).
 - Every open handle receives every input report ([contention.md](contention.md)).
   A reply is found by its first two bytes and a deadline, never by counting
   reports (see "The accessory list").
@@ -104,6 +110,21 @@ the capture.
 An id that is not in the table has an unknown LED count. The driver reports
 it and does not guess a count.
 
+## The buffer and the mode
+
+Each channel has one LED buffer and a mode (B).
+
+- `26 04` and `22 1g` write the buffer. Data written by either family shows
+  through either apply.
+- `26 06` and `22 A0` set the fixed mode, which shows the buffer.
+- `2A 04` sets a firmware effect, which runs by drawing into the same buffer.
+  A `26 06` during an effect stops it and shows the effect's last frame.
+- `26 14` draws over whatever the mode shows and changes neither the buffer
+  nor the mode.
+- **The screen's switch to the firmware readout re-applies the mode.** A
+  `26 14` frame is replaced by the buffer, or a stopped effect starts again.
+  A bucket upload does not re-apply it.
+
 ## Setting the LEDs
 
 Two command families set every LED of a channel. Both use G, R, B order.
@@ -112,13 +133,18 @@ Two command families set every LED of a channel. Both use G, R, B order.
 |---|---|---|
 | LED data | `22 1g <ch> 00` + up to 20 LEDs. `g` is 0 for LEDs 1 to 20 and 1 for 21 to 40 | `26 04 <ch> 00` + all 24 LEDs in one report |
 | Apply | `22 A0 <ch> 00 01 00 00 28 00 00 80 00 32 00 00 01` | `26 06 <ch> 00 01 00 00 18 00 00 80 00 32 00 00 01` |
-| Acknowledged | not read by OpenRGB | `26 04` in 102 to 335 ms (median 334, n=16); `26 06` in about 2 ms |
+| Acknowledged | not read by OpenRGB. `22 A0` in 452 ms after a split write, 335 ms after one 512-byte `22 10`, 2 ms with no new data (B) | `26 04` in 102 to 335 ms (median 334, n=16); `26 06` in about 2 ms (C, B) |
 
 - The two apply commands differ in byte 7 only: `28` (40, the channel's
   maximum) from OpenRGB, `18` (24, the channel's LED count) from CAM.
 - CAM uses the `26` family for a fixed colour, for per-LED colours and after
   a change of brightness (C). hotaru drives this cooler through OpenRGB's `22`
   family today, so that family works on firmware 1.2.8 and 1.2.12.
+- **OpenRGB's split write corrupts LED 22** (B). Written as `22 10` and `22 11`
+  in 64-byte reports, the colours show correctly. After the next readout LED 22
+  is green with `22 A0` count `28`, and off with count `18`. One 512-byte
+  `22 10` carrying all 24 LEDs does not do this, nor does `26 04`. This is
+  hotaru spec 070's green LED.
 - **Brightness is a multiply on the host** (C). At about three quarters of
   CAM's slider, blue `00 00 FF` was sent as `00 00 BC`. No command carries a
   brightness.
@@ -133,8 +159,18 @@ Two command families set every LED of a channel. Both use G, R, B order.
   `26 04`. This is the command for frames drawn on the host.
 - `26 14 01 01` with no colours was sent when an audio effect was chosen. What
   it does is not known.
-- CAM never sent it faster than once a second, so the fastest rate the cooler
-  takes is not known. That is the first thing to measure.
+- CAM never sent it faster than once a second (C).
+- **Waiting for each acknowledgement paces a stream without loss** (B). Every
+  period from 100 ms down to 16 ms ran even, acknowledged at a median of
+  1.9 ms. With no period, 497 frames a second, all acknowledged.
+- **Without the wait, the firmware drops frames** (B). The endpoint took about
+  7,750 frames a second, the firmware acknowledged about 246 a second, and the
+  ring jumped.
+- A frame stays with nothing sent and the handle closed (B, 60 s). The next
+  readout replaces it (see "The buffer and the mode").
+- During a bucket upload, one acknowledgement took 87 ms (B).
+- It draws over a running firmware effect, which stops showing until the next
+  readout (B).
 
 ## Firmware effects
 
@@ -193,13 +229,13 @@ the buffer.
 
 ## Not known yet
 
-1. The fastest rate `26 14` takes, and whether the next frame must wait for
-   the acknowledgement.
-2. Whether the `22` and `26` families are the same on the device, and whether
-   either needs the other's apply.
-3. Whether the cooler holds the last colours with nothing sent. hotaru's
-   static scenes suggest that it does, because hotaru writes once and the
-   colours stay.
-4. The report length the firmware needs: 64 bytes or 512 bytes.
-5. The meanings of `2A 04` bytes `0x37`, `0x39`, `0x3A` and `0x3B` beyond what
+1. Whether the readout re-applies the mode at the switch or some seconds
+   later. hotaru spec 070 saw its green "some seconds after".
+2. Why the `22 A0` LED count turns LED 22 green or off after a split write.
+3. What rewrote the ring's buffer between hotaru's last write and the bench
+   runs: it held white with LED 22 green, not hotaru's colours.
+4. The meanings of `2A 04` bytes `0x37`, `0x39`, `0x3A` and `0x3B` beyond what
    the two sources wrote.
+
+Answered on the bench (B): the rate `26 14` takes, the shared buffer, the
+hold, and the report length.
