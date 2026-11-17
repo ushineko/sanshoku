@@ -255,8 +255,10 @@ the buffer.
   speed.
 - The cooler is `lighting.Zoned`: one zone per channel with keys, "Ring" and
   "Fan" as consumers name them, each a ring. A zone's parts are the
-  accessories in its slots. A kit of fans that the cooler lists as one
-  accessory is one part.
+  accessories in its slots. An RGB Core frame is several fans in one slot,
+  and is that many parts: F280 (`1C`) two of eight, F360 (`1D`) and F420
+  (`1F`) three of eight (OpenRGB's Hue 2 table, NZXT's product pages). The
+  order of LEDs inside a frame is not recorded.
 
 ## What is out of scope
 

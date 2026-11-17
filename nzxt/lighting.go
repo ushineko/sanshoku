@@ -80,6 +80,14 @@ var accessories = map[byte]int{
 	0x17: 8, 0x18: 8, 0x19: 8, 0x1C: 16, 0x1D: 24, 0x1E: 24, 0x1F: 24,
 }
 
+/*
+kits are the accessories that are several fans in one slot, and each fan's
+LEDs: the RGB Core frames, F280 (two of eight) and F360 and F420 (three of
+eight), as OpenRGB's Hue 2 table and NZXT's product pages give them (spec
+032).
+*/
+var kits = map[byte][]int{0x1C: {8, 8}, 0x1D: {8, 8, 8}, 0x1F: {8, 8, 8}}
+
 // rings are the accessories that are a pump's ring, named "ring n".
 var rings = map[byte]bool{0x10: true, 0x1E: true}
 
@@ -320,7 +328,11 @@ func channelsFrom(reply []byte) canvasState {
 				break
 			}
 			count += n
-			parts = append(parts, n)
+			if kit, ok := kits[id]; ok {
+				parts = append(parts, kit...)
+			} else {
+				parts = append(parts, n)
+			}
 			switch {
 			case rings[id] && name == "":
 				name = "ring"

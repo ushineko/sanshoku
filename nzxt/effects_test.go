@@ -213,7 +213,11 @@ func TestZonesAreTheChannelsWithTheirAccessories(t *testing.T) {
 		}
 		assert.Equal(t, z.Count, total, "%s: parts do not add up", z.Name)
 	}
-	t.Logf("zones: %+v", zones)
+	require.Len(t, zones, 2)
+	assert.Equal(t, "Ring", zones[0].Name)
+	assert.Equal(t, []int{24}, zones[0].Parts)
+	assert.Equal(t, "Fan", zones[1].Name)
+	assert.Equal(t, []int{8, 8, 8}, zones[1].Parts, "an F360 RGB Core is three fans in one slot")
 	require.ErrorIs(t, d.Resize(zones[0].Name, 3), lighting.ErrNoZone)
 }
 
