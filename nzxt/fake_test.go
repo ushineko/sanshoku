@@ -99,7 +99,7 @@ func (f *fake) Write(report []byte) error {
 	reply := make([]byte, reportLen)
 	reply[0], reply[1] = report[0]+1, report[1]
 	switch {
-	case report[0] == 0x26:
+	case report[0] == 0x26, report[0] == 0x2A:
 		reply[0], reply[1], reply[14], reply[15] = 0xFF, 0x01, report[0], report[1]
 	case reply[0] == 0x75:
 		f.fill(reply)
@@ -208,8 +208,9 @@ func (f *fake) fill(r []byte) {
 
 /*
 misuse is every lighting command any fake in the package was sent outside
-spec 024 R1.11, which TestMain fails the run on (R4.4): the `22` family, a
-firmware effect (`2A`), a `26` command other than `14`, `04` and `06`, and a
+spec 024 R1.11 and spec 025 R1.7, which TestMain fails the run on: the `22`
+family, a `2A` command other than `04`, a `26` command other than `14`, `04`
+and `06`, and a
 `26 06` whose channel's last `26` command was not a `26 04`.
 */
 var misuse struct {
@@ -220,8 +221,12 @@ var misuse struct {
 func (f *fake) guard(report []byte) {
 	bad := ""
 	switch {
-	case report[0] == 0x22 || report[0] == 0x2A:
+	case report[0] == 0x22:
 		bad = "a command the driver never sends"
+	case report[0] == 0x2A:
+		if report[1] != 0x04 {
+			bad = "a 2A command the driver never sends"
+		}
 	case report[0] != 0x26:
 		return
 	case report[1] == 0x04:
@@ -252,5 +257,5 @@ func low(v int) byte { return byte(v & 0xFF) }
 
 // withFake is an open device over a fake, with the default freshness.
 func withFake(f *fake) *device {
-	return &device{id: sanshoku.Identity{Vendor: vendor, Product: 0x3012, Name: krakenNode.Name, Path: krakenNode.Path}, model: Known[0x3012], fresh: defaultFreshness, hid: f, showing: -1}
+	return &device{id: sanshoku.Identity{Vendor: vendor, Product: 0x3012, Name: krakenNode.Name, Path: krakenNode.Path}, model: Known[0x3012], fresh: defaultFreshness, hid: f, showing: -1, fx: firmwareState{running: -1}}
 }

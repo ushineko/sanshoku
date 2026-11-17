@@ -103,7 +103,7 @@ func TestLightingReportsAreTheCoolers(t *testing.T) {
 // share a method of one name and two signatures.
 func TestTheCoolerIsAScreenAndACanvas(t *testing.T) {
 	p := withPanel(newFake(), &recorder{})
-	assert.Equal(t, []string{"cooling", "screen", "lighting"}, sanshoku.Capabilities(p))
+	assert.Equal(t, []string{"cooling", "screen", "lighting", "onboard"}, sanshoku.Capabilities(p))
 }
 
 // This desk: the ring's 24 LEDs, then the F360's 24. The list is read once per

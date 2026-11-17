@@ -22,7 +22,7 @@ func Support() []support.Entry {
 		Match:        "1e71:3012, allow-list; vendor-defined usage page tried first",
 		Vendor:       vendor,
 		Products:     []uint16{0x3012},
-		Capabilities: []string{"cooling", "screen", "lighting"},
+		Capabilities: []string{"cooling", "screen", "lighting", "onboard"},
 		Tier:         support.Tested,
 		Hardware:     "NZXT Kraken Elite (1e71:3012)",
 		Firmware:     "1.2.12 (the `11 02` reply; USB bcdDevice reads 01.02 and does not follow it)",
@@ -43,7 +43,7 @@ func (Driver) Describe() sanshoku.Description {
 	return sanshoku.Description{
 		Name:         "NZXT",
 		Finds:        "cooler",
-		Capabilities: []string{"cooling", "screen", "lighting"},
+		Capabilities: []string{"cooling", "screen", "lighting", "onboard"},
 		Platforms:    []string{"linux", "windows"},
 		Quiet:        false,
 	}

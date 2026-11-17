@@ -793,6 +793,7 @@ Package lighting holds the Canvas capability for a device whose lights a program
 - `var ErrNoCanvas = errors.New("no canvas on this device")`: ErrNoCanvas is a device that is here and whose lights cannot be drawn on.
 - `var ErrNoColour = errors.New("the effect takes no colour")`: ErrNoColour is a firmware effect that takes no colour, such as off.
 - `var ErrNoEffect = errors.New("no such effect")`: ErrNoEffect is an effect name the device's firmware does not have.
+- `var ErrUnknownEffect = errors.New("the device does not report its running effect")`: ErrUnknownEffect is a device that cannot say which effect it runs: the Kraken reports none, and its driver knows only what it set (spec 025).
 
 ### Types
 
@@ -811,6 +812,16 @@ type Canvas interface {
 ```
 
 Canvas is a device whose lights a program draws by streaming frames.
+
+#### type Catalogue
+
+```go
+type Catalogue interface {
+	Catalogue() []EffectInfo
+}
+```
+
+Catalogue is an Onboard device that describes its effects: each one's number, speeds and colours.
 
 #### type Colour
 
@@ -833,6 +844,23 @@ type Effect struct {
 ```
 
 Effect is a firmware effect as the device reports it.
+
+#### type EffectInfo
+
+```go
+type EffectInfo struct {
+	Name string
+
+	Number int
+
+	Speeds []int
+	Speed  int
+
+	MinColours, MaxColours int
+}
+```
+
+EffectInfo is one firmware effect as a Catalogue describes it.
 
 #### type Fading
 
