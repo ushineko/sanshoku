@@ -278,6 +278,10 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- The Keychron K4 HE's 22 own effects, as `lighting.Onboard` and
+  `lighting.Catalogue` (spec 031, #86), named and numbered as OpenRGB names
+  them, with the stored colour and the board's brightness. A keyboard recorded
+  in one of them through OpenRGB comes back in it (hotaru spec 075).
 - The Corsair MM700 is a `lighting.Zoned` canvas: Left, Right and Logo, one
   light each, as OpenRGB names its zones, so scenes written against them find
   them (hotaru spec 075).

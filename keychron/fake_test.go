@@ -17,6 +17,7 @@ type fake struct {
 	mu         sync.Mutex
 	Effect     uint8
 	Brightness uint8
+	Hue, Sat   uint8
 	Features   uint8
 	LEDs       int
 	Silent     bool
@@ -25,7 +26,9 @@ type fake struct {
 	closed     bool
 }
 
-func newFake() *fake { return &fake{Effect: 20, Brightness: 200, Features: 0x8F, LEDs: 100} }
+func newFake() *fake {
+	return &fake{Effect: 20, Brightness: 200, Hue: 0x3B, Sat: 0x86, Features: 0x8F, LEDs: 100}
+}
 
 func (f *fake) Write(r []byte) error {
 	f.mu.Lock()
@@ -52,6 +55,10 @@ func (f *fake) Write(r []byte) error {
 		f.Effect = cmd[3]
 	case cmd[0] == cmdSetValue && cmd[2] == valueBrightness:
 		f.Brightness = cmd[3]
+	case cmd[0] == cmdGetValue && cmd[2] == valueColour:
+		reply[3], reply[4] = f.Hue, f.Sat
+	case cmd[0] == cmdSetValue && cmd[2] == valueColour:
+		f.Hue, f.Sat = cmd[3], cmd[4]
 	}
 	f.pending = append(f.pending, reply)
 	return nil
