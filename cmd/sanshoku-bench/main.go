@@ -25,6 +25,8 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   verify               cross-check readings against liquidctl, solaar and headsetcontrol when on PATH
   support              print the support table; --markdown prints docs/devices.md
   screen --yes         push a test image to a screen and return it to its readout
+  stream --yes         probe (#27): stream a raw frame to the Kraken, hold, hand back
+                       --open  --animate D  --hold D  --poll D
   light --yes          stream steady, breathe and wave to every lighting canvas and release it
                        (--driver restricts it to one driver; --readout returns a
                        screen to its readout on the same handle before release;
@@ -64,6 +66,8 @@ func run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return supportTable(rest, out, errOut)
 	case "screen":
 		return screenPush(ctx, rest, out, errOut)
+	case "stream":
+		return streamPush(ctx, rest, out, errOut)
 	case "light":
 		return light(ctx, rest, out, errOut)
 	case "onboard":
