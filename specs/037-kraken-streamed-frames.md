@@ -2,7 +2,7 @@
 
 **Issue**: #27
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
@@ -138,7 +138,9 @@ needs more than 10 fps today.
         Kraken Elite stopped being a canvas, so hotaru could not draw its
         ring. The interface is `Streamer` with `Stream` and `StreamHold`, and
         a test checks both models are still canvases.
-- [ ] Live: a light blue picture streamed to the panel shows light blue. (`docs/devices.md` prints only the Windows notes for
+- [x] Live: a light blue picture streamed to the panel shows light blue.
+      (hotaru spec 080 dev build on 71e0f45: the `ice1` dashboard, light
+      text on blue, looked right to the maintainer; the ring was drawn.) (`docs/devices.md` prints only the Windows notes for
       this entry, so the Linux note is in `support` output, not the page.)
 
 ## Risks & Assumptions
