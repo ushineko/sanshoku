@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A device in hotaru is not lit, or not lit right
+    url: https://github.com/ushineko/hotaru/issues/new/choose
+    about: For how hotaru uses a device. A report here is for the device itself, through sanshoku-bench.
