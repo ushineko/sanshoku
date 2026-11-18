@@ -2,11 +2,16 @@
 
 **Issue**: #27
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
-(Written last.)
+The Kraken Elite's panel gains a second way to show a picture: streamed raw
+frames, as NZXT CAM sends them, through a new optional `screen.Framer`. A
+frame shows at once in full colour with no bucket and no floor; the firmware
+takes the panel back 30 s after the last one, so the caller resends within
+`FrameHold` (25 s). Reviewers: `nzxt/frame.go` and the hold's reasoning
+first.
 
 ## Context
 
@@ -84,8 +89,8 @@ needs more than 10 fps today.
   - R3.1 `screen --yes` gains `--frame`: it draws the gradient test card
     through `Frame`, holds for `--hold` with a resend every `FrameHold`, and
     hands back. Without `--frame` the verb is unchanged.
-  - R3.2 `--animate D` sends moving frames for D and prints the rate and the
-    `37 02` times.
+  - R3.2 `--animate D` sends moving frames for D and prints the rate and
+    each frame's time in all (start to `37 02`).
   - R3.3 The probe's own verb (`stream`) and `StreamOpen` are removed.
 - **R4 Docs.**
   - R4.1 `nzxt/screen.go`'s package comment: the two paths, the 30 s return,
@@ -110,18 +115,21 @@ needs more than 10 fps today.
   - after a frame, `Image` may reuse any bucket, and `Readout` and `Close`
     send `38 01 02`;
   - the Kraken 2024 Plus panel is not a `Framer`.
-- [ ] Live, a person watching (bench):
+- [x] Live, a person watching (bench):
   - `screen --yes --frame --hold 2m`: the test card in full colour for the
     whole 2 minutes, no blink at the resends, then the readout;
   - `screen --yes --frame --hold 40s` with the resend turned off by a test
     flag: the readout returns about 30 s after the frame (confirms R1.3 still
     holds);
-  - `screen --yes --frame --animate 10s`: smooth motion, rate and `37 02`
+  - `screen --yes --frame --animate 10s`: smooth motion, rate and frame
     times recorded;
   - `screen --yes` (GIF) straight after a frame run: the test card shows
-    (R2.3);
-  - with hotaru drawing an animated effect on the ring, a framed run: the
-    ring does not change at the frames, the resends or the handback.
+    (R2.3).
+
+  The ring check first listed here (hotaru drawing on the ring during a
+  framed run) moved to the hotaru spec that adopts frames, at the
+  maintainer's decision: only one program holds the cooler, so the bench and
+  hotaru cannot run together.
 - [x] Docs per R4. (`docs/devices.md` prints only the Windows notes for
       this entry, so the Linux note is in `support` output, not the page.)
 
@@ -138,8 +146,9 @@ needs more than 10 fps today.
   channel's mode 150 to 300 ms after switching to the readout (spec 024).
   `liquid` commits the held frame first for that reason. A return the device
   makes by itself at 30 s gets no commit, so a ring drawn with live frames
-  could change. A caller that resends never reaches that point; the live
-  ring criterion checks the handback.
+  could change. A caller that resends never reaches that point. hotaru's
+  spec carries the live ring check. The ring did not change in any bench run
+  here, with nothing drawing on it.
 - **Two programs.** A frame from another program (CAM under Wine, liquidctl)
   between this driver's frames is not detected, as with buckets today.
 - **Windows.** The screen needs usbfs, which Windows lacks; frames do too.
@@ -158,4 +167,59 @@ needs more than 10 fps today.
 
 ## Verification
 
-(Bench output pasted here.)
+Bench, 2026-11-18, Kraken Elite V2 on firmware 1.2.12, hotaru stopped, the
+maintainer watching the panel.
+
+**Probe runs** (before the code, results on #27): a frame shows at once in
+full colour; the readout returns 30 s after the last frame (timed by the
+maintainer); a resend every 20 s held 2 minutes with no blink; CAM's session
+start made no difference.
+
+**1. `screen --yes --frame --hold 2m`**: the gradient for the whole 2
+minutes, no blink at the four resends, then the readout.
+
+```
+nzxt  NZXT Kraken Elite V2 (1e71:3012)  panel 640x640, frames held 25s
+  frame: ok (90.7 ms); holding 2m0s, resending true
+  +25s  sent again (97.9 ms)
+  +50s  sent again (86.8 ms)
+  +1m15s  sent again (92.7 ms)
+  +1m40s  sent again (87.5 ms)
+  readout: ok (3.5 ms)
+```
+
+**2. `screen --yes --frame --no-resend --hold 40s`**: the readout came back by
+itself at about 30 s.
+
+```
+nzxt  NZXT Kraken Elite V2 (1e71:3012)  panel 640x640, frames held 25s
+  frame: ok (126.4 ms); holding 40s, resending false
+  readout: ok (3.6 ms)
+```
+
+**3. `screen --yes --frame --animate 10s --hold 3s`**: the bar moved
+smoothly.
+
+```
+nzxt  NZXT Kraken Elite V2 (1e71:3012)  panel 640x640, frames held 25s
+  animated: 100 frames in 10.049s, 10.0 fps; a frame took 82.1 ms at least, 94.7 median, 121.3 at most
+  frame: ok (92.7 ms); holding 3s, resending true
+  readout: ok (3.6 ms)
+```
+
+**4. `screen --yes --frame --hold 3s`, then `screen --yes --hold 5s`**: the
+gradient, a moment of readout, the GIF checkerboard for 5 s, the readout.
+
+```
+nzxt  NZXT Kraken Elite V2 (1e71:3012)  panel 640x640, frames held 25s
+  frame: ok (91.7 ms); holding 3s, resending true
+  readout: ok (4.3 ms)
+nzxt  NZXT Kraken Elite V2 (1e71:3012)  panel 640x640, test card 6766 bytes, floor 2s
+  image: ok (92.9 ms)
+  waited 5s
+  readout: ok (4.1 ms)
+```
+
+Tests: `go test -race -skip TestLive ./...` passes; `make lint` 0 issues;
+`make check-api`, `check-support`, `check-no-binaries` pass; `GOOS=windows go
+vet` on the changed packages passes; `govulncheck ./...` finds nothing.
