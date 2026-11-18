@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.1.19
+**Version**: 0.2.0
 
 Device drivers for Linux, and for HID devices on Windows, in Go, without cgo:
 peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -290,7 +290,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.2.0 (2026-11-17)
 
 - **Fixed**: the MM700's lighting endpoint is never left locked (spec 036,
   #99). A frame cut off between its open and its close, or another program
