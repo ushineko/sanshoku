@@ -26,9 +26,7 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   support              print the support table; --markdown prints docs/devices.md
   screen --yes         push a test image to a screen and return it to its readout
                        --hold D; --frame draws streamed frames instead, held by
-                       resending (--animate D, --no-resend)
-  q565 --yes           probe: Q565 (format 08) frames to the Kraken's panel
-                       --swap  --animate D  --hold D
+                       resending (--animate D, --no-resend, --q565 for motion frames)
   light --yes          stream steady, breathe and wave to every lighting canvas and release it
                        (--driver restricts it to one driver; --readout returns a
                        screen to its readout on the same handle before release;
@@ -68,8 +66,6 @@ func run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return supportTable(rest, out, errOut)
 	case "screen":
 		return screenPush(ctx, rest, out, errOut)
-	case "q565":
-		return q565Probe(ctx, rest, out, errOut)
 	case "light":
 		return light(ctx, rest, out, errOut)
 	case "onboard":

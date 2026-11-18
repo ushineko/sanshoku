@@ -13,56 +13,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// rgb is RGB565 with red in the high bits, the order Encode is tested in.
-func rgb(r, g, b uint8) uint16 { return RGB565(r, g, b) }
+// rgb is RGB565 with red in the high bits, the order Encode writes.
+func rgb(r, g, b uint8) uint16 { return rgb565(r, g, b) }
 
-// decode is a reader of the format written from the same description, for
-// round trips. It is not the reference: see TestTheReferenceDecodes.
+// decode is Decode, failing the test on a malformed stream. It is written
+// from the same description as Encode, so it is not the reference: the
+// reference's reading is checked by hand (TestTheReferenceDecodes).
 func decode(t *testing.T, data []byte) (w, h int, px []uint16) {
 	t.Helper()
-	require.Equal(t, "q565", string(data[:4]))
-	w, h = int(binary.LittleEndian.Uint16(data[4:])), int(binary.LittleEndian.Uint16(data[6:]))
-	var arr [64]uint16
-	prev := uint16(0)
-	apply := func(p uint16, dr, dg, db int) uint16 {
-		r, g, b := channels(p)
-		return uint16((r+dr)&31)<<11 | uint16((g+dg)&63)<<5 | uint16((b+db)&31) //nolint:gosec // masked
-	}
-	for i := 8; ; {
-		require.Less(t, i, len(data), "no END")
-		op := data[i]
-		i++
-		switch {
-		case op == opEnd:
-			require.Equal(t, len(data), i, "bytes after END")
-			return w, h, px
-		case op == opRGB565:
-			prev = binary.LittleEndian.Uint16(data[i:])
-			i += 2
-			arr[slot(prev)] = prev
-		case op>>6 == 3:
-			for range int(op&63) + 1 {
-				px = append(px, prev)
-			}
-			continue
-		case op>>6 == 0:
-			prev = arr[op]
-		case op>>6 == 1:
-			prev = apply(prev, int(op>>4&3)-2, int(op>>2&3)-2, int(op&3)-2)
-		case op&0xE0 == opLuma:
-			dg := int(op&31) - 16
-			c := data[i]
-			i++
-			prev = apply(prev, int(c>>4)-8+dg, dg, int(c&15)-8+dg)
-			arr[slot(prev)] = prev
-		default: // DIFF_INDEXED
-			c := data[i]
-			i++
-			prev = apply(arr[c&63], int(op&3)-2, int(op>>2&7)-4, int(c>>6)-2)
-			arr[slot(prev)] = prev
-		}
-		px = append(px, prev)
-	}
+	w, h, px, err := Decode(data)
+	require.NoError(t, err)
+	return w, h, px
+}
+
+// The decoder reads DIFF_INDEXED, which the encoder never writes: an entry
+// of the array, plus a difference. Here a red pixel through RGB565 fills
+// slot of red, and the op reads it back one step greener.
+func TestDecodeReadsDiffIndexed(t *testing.T) {
+	red := rgb565(248, 0, 0)
+	data := []byte("q565\x02\x00\x01\x00")
+	data = append(data, opRGB565, byte(red), byte(red>>8))
+	// green +1 (bias 4 -> 5), red 0 (bias 2), blue 0 (bias 2), index slot(red)
+	data = append(data, 0xA0|5<<2|2, 2<<6|slot(red), opEnd)
+	_, _, px, err := Decode(data)
+	require.NoError(t, err)
+	require.Equal(t, []uint16{red, red + 1<<5}, px)
+}
+
+// A stream cut short is an error, not a picture.
+func TestDecodeRefusesATruncatedStream(t *testing.T) {
+	data := Encode(pictures()["gradient"])
+	_, _, _, err := Decode(data[:len(data)/2])
+	require.Error(t, err)
 }
 
 // want is what an image should decode to.
@@ -109,7 +91,7 @@ func pictures() map[string]*image.RGBA {
 func TestEveryPictureComesBackAsItWent(t *testing.T) {
 	for name, img := range pictures() {
 		t.Run(name, func(t *testing.T) {
-			data := Encode(img, rgb)
+			data := Encode(img)
 			w, h, px := decode(t, data)
 			assert.Equal(t, 640, w)
 			assert.Equal(t, 640, h)
@@ -122,7 +104,7 @@ func TestEveryPictureComesBackAsItWent(t *testing.T) {
 // CAM's all-black frame was 6616 bytes: the header, 6607 runs, END. The same
 // frame from this encoder is the same size.
 func TestABlackFrameIsTheSizeCAMSent(t *testing.T) {
-	data := Encode(pictures()["black"], rgb)
+	data := Encode(pictures()["black"])
 	assert.Len(t, data, 6616)
 	assert.Equal(t, byte(opRun|61), data[8], "a run of 62")
 }
@@ -140,7 +122,7 @@ func TestTheReferenceDecodes(t *testing.T) {
 		t.Skip("Q565_OUT is not set")
 	}
 	for name, img := range pictures() {
-		require.NoError(t, os.WriteFile(filepath.Join(dir, name+".q565"), Encode(img, rgb), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name+".q565"), Encode(img), 0o600))
 		// The pixels it should decode to, RGB565 little-endian, row by row.
 		px := want(img)
 		raw := make([]byte, 2*len(px))
@@ -155,7 +137,7 @@ func BenchmarkEncode(b *testing.B) {
 	for name, img := range pictures() {
 		b.Run(name, func(b *testing.B) {
 			for range b.N {
-				_ = Encode(img, rgb)
+				_ = Encode(img)
 			}
 		})
 	}

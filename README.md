@@ -122,7 +122,7 @@ Every lit device since has followed it.
 | [`bluez`](https://pkg.go.dev/github.com/ushineko/sanshoku/bluez) | Connected Bluetooth devices, from the BlueZ system bus on Linux and the Bluetooth stack's device properties on Windows; the generic battery driver. |
 | [`battery`](https://pkg.go.dev/github.com/ushineko/sanshoku/battery) | The battery reading and the `Source` capability. |
 | [`cooling`](https://pkg.go.dev/github.com/ushineko/sanshoku/cooling) | The cooler reading and the `Source` capability. |
-| [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display. |
+| [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display, `Streamer` for one that takes streamed frames, and `Mover` for one that takes frames made for motion. |
 | [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to, and `Onboard` for a device whose firmware effect has a colour of its own. |
 | [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw, and the G502 X PLUS's lights as a canvas. |
 | [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
@@ -143,6 +143,7 @@ Every lit device since has followed it.
 | [`cmd/sanshoku-apidoc`](https://pkg.go.dev/github.com/ushineko/sanshoku/cmd/sanshoku-apidoc) | Writes [docs/api.md](docs/api.md), the signature index of the public packages. |
 | [`internal/apidoc`](https://pkg.go.dev/github.com/ushineko/sanshoku/internal/apidoc) | The generator behind `sanshoku-apidoc` and `api_test.go`; not importable outside the module. |
 | [`internal/hiddev`](https://pkg.go.dev/github.com/ushineko/sanshoku/internal/hiddev) | A kernel HID device as sysfs describes it: uevent fields, HID ID, and the key that says which physical device it is; shared by `hidraw` and `powersupply`. |
+| [`internal/q565`](https://pkg.go.dev/github.com/ushineko/sanshoku/internal/q565) | The Q565 image encoder (QOI for RGB565, seritools' format) behind the Kraken Elite's motion frames, and a decoder for its tests; not importable outside the module. |
 
 ## What it does not do
 
@@ -219,6 +220,8 @@ the floor), so a person can look at it. `screen --yes --frame` draws a
 gradient as streamed frames on a panel that takes them, sending it again
 before the firmware takes the panel back; `--animate D` sends moving frames
 first and prints the rate, and `--no-resend` shows the firmware's return.
+`--q565` sends motion frames instead, and the card is red, green and blue
+bands, top to bottom, which shows the channel order.
 
 `sanshoku-bench light --yes` streams three patterns (steady, breathe, wave)
 to every lighting canvas for `--hold` each, releases it, and prints frames
@@ -292,6 +295,15 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- **Added**: the Kraken Elite's panel takes Q565 frames, `screen.Mover`
+  (spec 038, #103). Format `08`, which NZXT CAM streams, is seritools' public
+  Q565 codec: QOI for RGB565. `Move` sends a picture as one, at the device's
+  20 frames a second for a fraction of a raw frame's bytes, in 16-bit colour;
+  `Stream` keeps 24-bit colour for still pictures. The bench's
+  `screen --yes --frame --q565` draws them.
 
 ### 0.3.0 (2026-11-18)
 
