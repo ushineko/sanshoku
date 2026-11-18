@@ -136,3 +136,76 @@ func TestZonesAreLeftRightLogo(t *testing.T) {
 	}, d.Zones())
 	require.ErrorIs(t, d.Resize("Left", 2), lighting.ErrNoZone)
 }
+
+/*
+The lighting endpoint is never left open (spec 036): a frame cut off after
+its open still closes it; one left open by another is closed and opened
+again; one that stays refused is the frame's error until it is free; and
+Close shuts one a frame could not.
+*/
+func TestAFrameCutOffAfterItsOpenStillCloses(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	f.After = func(cmd []byte) {
+		if cmd[1] == cmdOpen {
+			cancel()
+		}
+	}
+	require.Error(t, d.Frame(ctx, []lighting.Pixel{{ID: 0, R: 1}}))
+	assert.False(t, f.Held, "the endpoint was left open")
+	assert.Equal(t, "08 05", f.told(2)[len(f.Told)-1], "the last command was not a close")
+}
+
+func TestAnEndpointLeftOpenIsClosedAndOpenedAgain(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	f.Held = true // as a stopped service or another program left it
+	f.reset()
+	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 1}}))
+	assert.Equal(t, []string{"08 02", "08 01", "08 0d", "08 05", "08 0d", "08 06", "08 05"}, f.told(2))
+	assert.False(t, f.Held)
+}
+
+func TestAnEndpointThatStaysRefusedIsAnErrorUntilItIsFree(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	f.Busy = 2
+	require.ErrorIs(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 1}}), errStatus)
+	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 1}}), "the next frame was not sent")
+	assert.False(t, f.Held)
+}
+
+func TestCloseShutsAnEndpointAFrameCouldNot(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 1}}))
+	f.Refuse = map[byte]byte{cmdClose: 0x09}
+	require.Error(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 2}}))
+	require.True(t, f.Held, "the fake did not keep the endpoint open")
+	f.Refuse = nil
+	f.reset()
+	require.NoError(t, d.Close())
+	assert.Equal(t, []string{"08 05"}, f.told(2))
+	assert.False(t, f.Held)
+}
+
+// Cut off while its colours are on their way, the frame still closes what
+// it opened.
+func TestAFrameCutOffInItsColoursStillCloses(t *testing.T) {
+	f := newFake()
+	d, err := opened(f)
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	f.After = func(cmd []byte) {
+		if cmd[1] == cmdBlock {
+			cancel()
+		}
+	}
+	require.Error(t, d.Frame(ctx, []lighting.Pixel{{ID: 0, R: 1}}))
+	assert.False(t, f.Held, "the endpoint was left open")
+}

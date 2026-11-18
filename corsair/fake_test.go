@@ -17,6 +17,11 @@ the mode property reads and sets; a frame is accepted in either mode.
   - Silent: this many questions go unanswered, as a freshly enumerated pad's.
   - Refuse: a command answered with this status instead of 00.
   - Product: what property 0x12 reads.
+  - Held: the lighting endpoint is open. An open while it is is answered
+    03, and a close ends it, as the pad did on 2026-11-17 (spec 036).
+  - Busy: this many opens are answered 03 whatever Held says, as a pad
+    another program keeps opening.
+  - After: called with each command once it is answered, outside the lock.
 */
 type fake struct {
 	mu      sync.Mutex
@@ -24,6 +29,9 @@ type fake struct {
 	Product uint32
 	Silent  int
 	Refuse  map[byte]byte
+	Held    bool
+	Busy    int
+	After   func(cmd []byte)
 	Told    [][]byte
 	pending [][]byte
 	closed  bool
@@ -33,24 +41,42 @@ func newFake() *fake { return &fake{Mode: modeHardware, Product: 0x1B9B} }
 
 func (f *fake) Write(r []byte) error {
 	f.mu.Lock()
-	defer f.mu.Unlock()
+	after := f.After
+	cmd, err := f.write(r)
+	f.mu.Unlock()
+	if err == nil && after != nil {
+		after(cmd)
+	}
+	return err
+}
+
+func (f *fake) write(r []byte) ([]byte, error) {
 	if r[0] != 0 || len(r) != 1+reportLen {
-		return fmt.Errorf("a report of %d bytes starting %02x", len(r), r[0])
+		return nil, fmt.Errorf("a report of %d bytes starting %02x", len(r), r[0])
 	}
 	cmd := append([]byte(nil), r[1:]...)
 	f.Told = append(f.Told, cmd)
 	if f.Silent > 0 {
 		f.Silent--
-		return nil
+		return cmd, nil
 	}
 	reply := make([]byte, reportLen)
 	reply[1] = cmd[1]
 	if status, ok := f.Refuse[cmd[1]]; ok {
 		reply[2] = status
 		f.pending = append(f.pending, reply)
-		return nil
+		return cmd, nil
 	}
 	switch {
+	case cmd[1] == cmdOpen && (f.Held || f.Busy > 0):
+		if f.Busy > 0 {
+			f.Busy--
+		}
+		reply[2] = statusInUse
+	case cmd[1] == cmdOpen:
+		f.Held = true
+	case cmd[1] == cmdClose:
+		f.Held = false
 	case cmd[1] == cmdGet && cmd[2] == propMode:
 		binary.LittleEndian.PutUint32(reply[3:], f.Mode)
 	case cmd[1] == cmdGet && cmd[2] == propProduct:
@@ -59,10 +85,13 @@ func (f *fake) Write(r []byte) error {
 		f.Mode = uint32(cmd[4])
 	}
 	f.pending = append(f.pending, reply)
-	return nil
+	return cmd, nil
 }
 
-func (f *fake) Read(_ context.Context, buf []byte) (int, error) {
+func (f *fake) Read(ctx context.Context, buf []byte) (int, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err //nolint:wrapcheck // the caller's own context
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if len(f.pending) == 0 {

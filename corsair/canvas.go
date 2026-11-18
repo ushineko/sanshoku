@@ -2,6 +2,7 @@ package corsair
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -119,16 +120,70 @@ func (d *device) claim(ctx context.Context) error {
 /*
 send writes the held frame: open the lighting endpoint, one block of the
 lights' reds, then greens, then blues, close. The caller holds mu.
+
+Once the open is answered the endpoint is closed whatever happens to the
+block, on a time of its own if the frame's context has ended: a frame cut off
+between the two, as a stopping service's is, left the pad refusing every
+open until something closed it (spec 036 R1).
 */
 func (d *device) send(ctx context.Context) error {
-	if _, err := d.exchange(ctx, wired, cmdOpen, 0x00, lightingEndpoint); err != nil {
+	if err := d.openEndpoint(ctx); err != nil {
+		// Written and not answered, as when the frame is cut off while the
+		// reply is on its way: the pad may have opened it, so it is closed.
+		// A refusal opened nothing.
+		if !errors.Is(err, errStatus) {
+			_ = d.shut(ctx)
+		}
 		return err
 	}
-	if _, err := d.exchange(ctx, block(d.held)...); err != nil {
+	_, sent := d.exchange(ctx, block(d.held)...)
+	shut := d.shut(ctx)
+	if sent != nil {
+		return sent
+	}
+	return shut
+}
+
+// statusInUse is the status an open is answered with while the endpoint is
+// already open, by another program or a handle that never closed it.
+const statusInUse = 0x03
+
+/*
+openEndpoint opens the lighting endpoint. Refused as in use, it closes it and
+opens it once more: the pad stayed refusing after a frame cut off between its
+open and close, and after a program under Wine held it, and one close freed it
+each time (spec 036 R2). The caller holds mu.
+*/
+func (d *device) openEndpoint(ctx context.Context) error {
+	_, err := d.exchange(ctx, wired, cmdOpen, 0x00, lightingEndpoint)
+	var status *refused
+	if errors.As(err, &status) && status.status == statusInUse {
+		if _, closeErr := d.exchange(ctx, wired, cmdClose, 0x01, 0x00); closeErr == nil {
+			_, err = d.exchange(ctx, wired, cmdOpen, 0x00, lightingEndpoint)
+		}
+	}
+	if err != nil {
 		return err
 	}
-	_, err := d.exchange(ctx, wired, cmdClose, 0x01, 0x00)
-	return err
+	d.open = true
+	return nil
+}
+
+/*
+shut closes the lighting endpoint, on a time of its own where ctx has ended,
+so a cancelled frame still closes what it opened. The caller holds mu.
+*/
+func (d *device) shut(ctx context.Context) error {
+	if ctx.Err() != nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.WithoutCancel(ctx), replyWait)
+		defer cancel()
+	}
+	if _, err := d.exchange(ctx, wired, cmdClose, 0x01, 0x00); err != nil {
+		return err
+	}
+	d.open = false
+	return nil
 }
 
 // block is the first (and, for three lights, only) block of a frame: its

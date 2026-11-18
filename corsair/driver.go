@@ -148,17 +148,28 @@ type device struct {
 	// has been since it changed.
 	held [lights]colour
 	sent bool
+	// open is whether this handle opened the lighting endpoint and has not
+	// closed it (spec 036).
+	open bool
 }
 
 // Identity is the node's, named after the product.
 func (d *device) Identity() sanshoku.Identity { return d.id }
 
-// Close closes the node and sends nothing: the pad keeps its last frame.
+/*
+Close closes the node and sends nothing: the pad keeps its last frame. An
+endpoint this handle left open is closed first, best effort, so the next to
+open the pad is not refused (spec 036 R3); a frame closes its own, so that is
+only after a frame that could not.
+*/
 func (d *device) Close() error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.rd == nil {
 		return nil
+	}
+	if d.open {
+		_ = d.shut(context.Background())
 	}
 	err := d.rd.Close()
 	d.rd = nil
@@ -196,6 +207,12 @@ func (d *device) checkProduct(ctx context.Context, gap time.Duration) error {
 // errStatus is a reply whose status is not 00.
 var errStatus = errors.New("the device refused the command")
 
+// refused is a reply's status, as an error that is errStatus.
+type refused struct{ status byte }
+
+func (e *refused) Error() string { return fmt.Sprintf("status %02x: %v", e.status, errStatus) }
+func (e *refused) Unwrap() error { return errStatus }
+
 /*
 exchange writes one command and returns the reply to it: the report carrying
 the command at byte 1. A status other than 00 at byte 2 is an error naming
@@ -217,7 +234,7 @@ func (d *device) exchange(ctx context.Context, data ...byte) ([]byte, error) {
 		return nil, fmt.Errorf("%s, command %02x: %w", d.id, cmd, err)
 	}
 	if reply[2] != 0 {
-		return nil, fmt.Errorf("%s, command %02x: status %02x: %w", d.id, cmd, reply[2], errStatus)
+		return nil, fmt.Errorf("%s, command %02x: %w", d.id, cmd, &refused{status: reply[2]})
 	}
 	return reply, nil
 }

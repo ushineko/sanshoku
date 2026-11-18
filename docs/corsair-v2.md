@@ -53,6 +53,13 @@ lighting. This page is the source for the `corsair` driver (spec 026).
 - **A frame** is open, one `06` block, close. Its data is planar: every
   light's red, then every green, then every blue (O). Three lights, nine bytes.
   Each step is answered in about 1 to 2 ms, and a frame takes about 17 ms (B).
+- **An endpoint left open locks the pad.** While endpoint `01` is open, every
+  open is refused with status `03`, across restarts of the program drawing,
+  until something closes it (B, 2026-11-17). It happened after a stop that
+  cut a frame off between its open and its close, and while a game under
+  Wine held the pad. So a frame closes the endpoint once the open is
+  answered, whatever happens next, and an open refused with `03` is followed
+  by one close and one more open (spec 036).
 - **The lights** are Left, Right and Logo, in that order (O+B).
 - **A frame holds.** The pad kept one for 28 minutes in software mode with
   nothing sent and the handle closed (B). OpenRGB resends a frame every 30 s
