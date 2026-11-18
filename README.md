@@ -292,6 +292,11 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
+- **Fixed**: the MM700's lighting endpoint is never left locked (spec 036,
+  #99). A frame cut off between its open and its close, or another program
+  holding the pad, left every later open refused until something closed it;
+  a frame now always closes what it opened, and an open refused as in use is
+  closed and opened again once.
 - **Fixed**: a frame drawn over the Kraken's firmware effect ends it, so the
   same effect asked for again is sent rather than skipped (spec 035, #97).
   **New**: `lighting.Settings.Restart` starts an effect from its beginning
