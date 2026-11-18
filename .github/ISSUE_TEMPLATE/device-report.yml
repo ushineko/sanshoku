@@ -1,0 +1,97 @@
+name: Device report
+description: Run the testbench on a device you own, so it can move from expected to tested, or be added.
+title: "device report: <product name>"
+labels: ["device report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing a device. A report like this is how an **expected** entry in
+        [docs/devices.md](https://github.com/ushineko/sanshoku/blob/main/docs/devices.md)
+        becomes **tested**, and how a device that is not listed gets a start.
+
+        `sanshoku-bench` prints a device by its kernel name, its vendor:product and its node
+        path. It never prints a serial number or a Bluetooth address. Please check what you
+        paste anyway, and leave out anything personal.
+
+        Install it with Go 1.26 or later:
+
+        ```
+        go install github.com/ushineko/sanshoku/cmd/sanshoku-bench@latest
+        ```
+
+        On Linux it needs read and write access to the device's node. The udev rules that
+        hotaru installs give it that; without them, run it once with `sudo`.
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      description: The device's name as sold, and its model or part number if you know it.
+      placeholder: Corsair iCUE H150i Elite LCD
+    validations:
+      required: true
+  - type: input
+    id: usb
+    attributes:
+      label: USB ID
+      description: The line `lsusb` prints for it, or the hardware ID from Windows' Device Manager.
+      placeholder: "Bus 001 Device 007: ID 1b1c:0c39 Corsair ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: listed
+    attributes:
+      label: Is it in docs/devices.md?
+      options:
+        - Yes, as expected
+        - Yes, as tested, and something is wrong
+        - No, it is not listed
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: Operating system and kernel, and the sanshoku-bench version or commit.
+      placeholder: "CachyOS, kernel 6.18, sanshoku-bench v0.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: scan
+    attributes:
+      label: sanshoku-bench scan
+      description: Read-only. It lists every device the drivers find. Paste all of it.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: read
+    attributes:
+      label: sanshoku-bench read
+      description: Read-only. It opens each device found and takes its readings. Paste all of it.
+      render: text
+  - type: textarea
+    id: light
+    attributes:
+      label: sanshoku-bench light --yes (optional)
+      description: |
+        This one writes. It draws three patterns, steady, breathe and wave, on every lit device it
+        finds, then gives the lights back. Stop anything else that drives the lights first, such as
+        hotaru (`systemctl --user stop hotaru`) or the vendor's app. Paste what it prints.
+      render: text
+  - type: textarea
+    id: seen
+    attributes:
+      label: What you saw
+      description: |
+        If you ran the light test: did the lights show each pattern, in the right places? Anything
+        missing, wrong colours, flicker? If the device has a screen, did `screen --yes` show the test
+        card?
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: |
+        For a device that is not listed, a USB capture from the vendor's own app helps the most: what
+        it sends when you change a colour. Wireshark with usbmon on Linux, or the app in a Windows VM
+        with the device passed through, both work. Attach the file, or say you have one.
