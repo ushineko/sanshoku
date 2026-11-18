@@ -75,3 +75,24 @@ type Streamer interface {
 	// again, if the picture is to stay up.
 	StreamHold() time.Duration
 }
+
+/*
+Mover is a Streamer that also takes frames made for motion: fewer colours,
+far fewer bytes, and the device's full rate (spec 038).
+
+On the Kraken Elite a Move is a Q565 frame, 16-bit colour, at about 20 a
+second; a Stream is 24-bit colour at about 10. A caller drawing something that
+moves calls Move; one drawing a still picture where every colour counts calls
+Stream. Frames of the two may follow each other in any order, and StreamHold
+applies to both.
+
+Not called Frame or Floor, for the reason Streamer is not: those names are
+lighting.Canvas's, and a device with a screen and lights is both.
+*/
+type Mover interface {
+	Streamer
+
+	// Move draws one picture as a motion frame and returns when the device
+	// has taken it. A picture of another size is scaled to the panel.
+	Move(ctx context.Context, img image.Image) error
+}

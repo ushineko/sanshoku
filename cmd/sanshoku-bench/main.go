@@ -26,7 +26,7 @@ const usage = `usage: sanshoku-bench <verb> [flags]
   support              print the support table; --markdown prints docs/devices.md
   screen --yes         push a test image to a screen and return it to its readout
                        --hold D; --frame draws streamed frames instead, held by
-                       resending (--animate D, --no-resend)
+                       resending (--animate D, --no-resend, --q565 for motion frames)
   light --yes          stream steady, breathe and wave to every lighting canvas and release it
                        (--driver restricts it to one driver; --readout returns a
                        screen to its readout on the same handle before release;

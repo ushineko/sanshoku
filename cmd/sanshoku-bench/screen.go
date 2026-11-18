@@ -35,6 +35,7 @@ func screenPush(ctx context.Context, args []string, out, errOut io.Writer) int {
 	frame := fs.Bool("frame", false, "draw the card as streamed frames rather than a GIF, on a panel that takes them")
 	animate := fs.Duration("animate", 0, "with --frame: send moving frames for this long first, as fast as the panel answers")
 	noResend := fs.Bool("no-resend", false, "with --frame: never send the card again while holding, to see the firmware take the panel back")
+	motion := fs.Bool("q565", false, "with --frame: send motion frames (Q565, spec 038), on a panel that takes them; the card is red, green and blue bands")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -56,7 +57,7 @@ func screenPush(ctx context.Context, args []string, out, errOut io.Writer) int {
 		if p, ok := dev.(screen.Panel); ok {
 			screens++
 			if *frame {
-				if !frames(ctx, out, c, p, framing{hold: *hold, animate: *animate, resend: !*noResend}) {
+				if !frames(ctx, out, c, p, framing{hold: *hold, animate: *animate, resend: !*noResend, motion: *motion}) {
 					code = 1
 				}
 			} else if !push(ctx, out, c, p, *hold) {
@@ -117,8 +118,8 @@ func step(ctx context.Context, out io.Writer, what string, call func(context.Con
 
 // framing is how screen --frame runs.
 type framing struct {
-	hold, animate time.Duration
-	resend        bool
+	hold, animate  time.Duration
+	resend, motion bool
 }
 
 /*
@@ -133,13 +134,22 @@ func frames(ctx context.Context, out io.Writer, c sanshoku.Candidate, p screen.P
 		writef(out, "%s  %s  does not take frames\n", c.Driver, c.Identity)
 		return true
 	}
+	draw := fr.Stream
+	if f.motion {
+		mv, ok := p.(screen.Mover)
+		if !ok {
+			writef(out, "%s  %s  does not take motion frames\n", c.Driver, c.Identity)
+			return true
+		}
+		draw = mv.Move
+	}
 	w, h := p.Size()
-	writef(out, "%s  %s  panel %dx%d, frames held %s\n", c.Driver, c.Identity, w, h, fr.StreamHold())
+	writef(out, "%s  %s  panel %dx%d, frames held %s, motion frames %v\n", c.Driver, c.Identity, w, h, fr.StreamHold(), f.motion)
 	send := func(img image.Image) (time.Duration, bool) {
 		ctx, cancel := context.WithTimeout(ctx, screenTimeout)
 		defer cancel()
 		start := time.Now()
-		if err := fr.Stream(ctx, img); err != nil {
+		if err := draw(ctx, img); err != nil {
 			writef(out, "  frame: error after %.1f ms: %v\n", ms(time.Since(start)), err)
 			return 0, false
 		}
@@ -170,7 +180,11 @@ func holdFrames(ctx context.Context, out io.Writer, f framing, w, h int, every t
 				ms(took[0]), ms(took[n/2]), ms(took[n-1]))
 		}
 	}
+	// Motion frames show the bands, whose order names the channel order.
 	card := gradient(w, h, -1)
+	if f.motion {
+		card = bands(w, h)
+	}
 	d, ok := send(card)
 	if !ok {
 		return false
@@ -264,4 +278,21 @@ func testCard(w, h int) *gif.GIF {
 		Image: []*image.Paletted{img}, Delay: []int{10},
 		Config: image.Config{ColorModel: pal, Width: w, Height: h},
 	}
+}
+
+// bands is a card that names its channel order: red, green and blue bands,
+// top to bottom, on black, so a swap shows as blue on top (spec 038).
+func bands(w, h int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	cols := []color.RGBA{{255, 0, 0, 255}, {0, 255, 0, 255}, {0, 0, 255, 255}}
+	for y := range h {
+		for x := range w {
+			c := color.RGBA{A: 255}
+			if band := (y - h/8) * 3 / (h * 3 / 4); y >= h/8 && band < 3 {
+				c = cols[band]
+			}
+			img.SetRGBA(x, y, c)
+		}
+	}
+	return img
 }

@@ -8,6 +8,7 @@ import (
 	"image"
 	"time"
 
+	"github.com/ushineko/sanshoku/internal/q565"
 	"github.com/ushineko/sanshoku/screen"
 )
 
@@ -28,9 +29,11 @@ colour, and about ten a second go through back to back. CAM also sends `36 04`
 and `36 03` once when it starts; the bench measured no difference without
 them, so they are not sent.
 
-CAM also sends format `08`, compressed RGB565 behind a "q565" header, at about
-twenty frames a second. Its encoding is not written down yet, and raw frames
-cover everything drawn so far, so it is not offered.
+Format `08` is the same exchange with a Q565 payload: QOI for RGB565 (spec
+038, see internal/q565). CAM sends it at about twenty frames a second, and so
+does Move: a smooth gradient is about 180 KB a frame and takes the device 44 ms.
+It is 16-bit colour, so a still picture where every colour counts is still a
+raw frame, and Stream sends those.
 */
 
 /*
@@ -43,6 +46,13 @@ blue dashboard showed as yellow on brown (2026-11-18). The bench's hue sweep
 did not show it, because a sweep with red and blue swapped is still a sweep.
 */
 const frameBGR888 = 0x09
+
+/*
+frameQ565 is the format byte for a Q565 frame, red in the high bits: a card of
+red, green and blue bands read in that order on the bench (2026-11-18), unlike
+frameBGR888.
+*/
+const frameQ565 = 0x08
 
 /*
 frameHold is how long a caller may wait before sending a frame again.
@@ -59,7 +69,7 @@ type framePanel struct {
 	*panelDevice
 }
 
-var _ screen.Streamer = (*framePanel)(nil)
+var _ screen.Mover = (*framePanel)(nil)
 
 // StreamHold is the longest a caller may wait between frames for a still
 // picture to stay up.
@@ -75,14 +85,28 @@ func (p *framePanel) Stream(ctx context.Context, img image.Image) error {
 	if img == nil || img.Bounds().Empty() {
 		return errors.New("a frame with no pixels")
 	}
-	payload := bgr888(img, p.model.Screen)
+	return p.send(ctx, frameBGR888, bgr888(img, p.model.Screen))
+}
 
+/*
+Move draws one picture as a Q565 frame and returns when the device answers
+`36 02`. Scaled to the panel as Stream scales, then encoded.
+*/
+func (p *framePanel) Move(ctx context.Context, img image.Image) error {
+	if img == nil || img.Bounds().Empty() {
+		return errors.New("a frame with no pixels")
+	}
+	return p.send(ctx, frameQ565, q565.Encode(toPanel(img, p.model.Screen)))
+}
+
+// send is one frame of any format: start, header, payload, end.
+func (p *framePanel) send(ctx context.Context, format byte, payload []byte) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if err := p.panel(); err != nil {
 		return err
 	}
-	reply, err := p.exchange(ctx, 0x36, 0x01, 0x00, 0x01, frameBGR888)
+	reply, err := p.exchange(ctx, 0x36, 0x01, 0x00, 0x01, format)
 	if err != nil {
 		return fmt.Errorf("start the frame: %w", err)
 	}
@@ -90,7 +114,7 @@ func (p *framePanel) Stream(ctx context.Context, img image.Image) error {
 		return fmt.Errorf("the cooler refused the frame: reply %#02x", reply[resultByte])
 	}
 	info := make([]byte, 8)
-	info[0] = frameBGR888
+	info[0] = format
 	binary.LittleEndian.PutUint32(info[4:], uint32(len(payload))) //nolint:gosec // the panel's size, a few MB at most
 	if err := p.usb.Bulk(ctx, bulkEndpoint, append(append([]byte(nil), header...), info...)); err != nil {
 		return err
@@ -135,6 +159,23 @@ func bgr888(img image.Image, panel Size) []byte {
 			sx := b.Min.X + x*b.Dx()/panel.W
 			r, g, bl, _ := img.At(sx, sy).RGBA()
 			out = append(out, byte(bl>>8), byte(g>>8), byte(r>>8)) //nolint:gosec // RGBA is 16-bit, so the high byte fits
+		}
+	}
+	return out
+}
+
+// toPanel is img at the panel's size, by nearest neighbour as bgr888 scales;
+// a picture already that size is returned as it is.
+func toPanel(img image.Image, panel Size) image.Image {
+	b := img.Bounds()
+	if b.Dx() == panel.W && b.Dy() == panel.H {
+		return img
+	}
+	out := image.NewRGBA(image.Rect(0, 0, panel.W, panel.H))
+	for y := range panel.H {
+		sy := b.Min.Y + y*b.Dy()/panel.H
+		for x := range panel.W {
+			out.Set(x, y, img.At(b.Min.X+x*b.Dx()/panel.W, sy))
 		}
 	}
 	return out

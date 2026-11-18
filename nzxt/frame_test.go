@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ushineko/sanshoku/internal/q565"
 	"github.com/ushineko/sanshoku/lighting"
 	"github.com/ushineko/sanshoku/screen"
 )
@@ -143,7 +144,74 @@ func TestOnlyAMeasuredModelTakesFrames(t *testing.T) {
 		_, isCanvas := dev.(lighting.Canvas)
 		assert.True(t, isCanvas, "%04x: taking frames hid the lights", product)
 		_, isStreamer := dev.(screen.Streamer)
+		_, isMover := dev.(screen.Mover)
 		assert.True(t, isPanel, "%04x", product)
 		assert.Equal(t, frames, isStreamer, "%04x", product)
+		assert.Equal(t, frames, isMover, "%04x", product)
 	}
+}
+
+/*
+A Move is CAM's Q565 frame (spec 038): `36 01 00 01 08`, the 20-byte header
+naming format 08 and the payload's length, a Q565 payload of the panel's size
+that decodes to the picture, then `36 02`. Red stays in the high bits.
+*/
+func TestAMoveIsAQ565Frame(t *testing.T) {
+	f := newFake()
+	r := &recorder{}
+	p := withFrames(f, r)
+
+	require.NoError(t, p.Move(context.Background(), solid(640, 640, color.RGBA{255, 0, 0, 255})))
+
+	assert.Equal(t, []string{"36 01 00", "36 02"}, commands(f))
+	assert.Equal(t, []byte{0x36, 0x01, 0x00, 0x01, frameQ565}, f.Told[0][:5])
+	require.Len(t, r.first, 20)
+	assert.Equal(t, header, r.first[:12])
+	assert.Equal(t, byte(frameQ565), r.first[12])
+	assert.Equal(t, uint32(len(r.last)), binary.LittleEndian.Uint32(r.first[16:])) //nolint:gosec // a frame's size
+
+	w, h, px, err := q565.Decode(r.last)
+	require.NoError(t, err)
+	assert.Equal(t, [2]int{640, 640}, [2]int{w, h})
+	require.Len(t, px, 640*640)
+	assert.Equal(t, uint16(0xF800), px[0], "red, in the high bits")
+	assert.Equal(t, uint16(0xF800), px[len(px)-1])
+}
+
+// A smaller picture is scaled to the panel before it is encoded.
+func TestAMoveOfAnotherSizeIsFitted(t *testing.T) {
+	r := &recorder{}
+	p := withFrames(newFake(), r)
+	require.NoError(t, p.Move(context.Background(), solid(320, 320, color.RGBA{0, 0, 255, 255})))
+
+	w, h, px, err := q565.Decode(r.last)
+	require.NoError(t, err)
+	assert.Equal(t, [2]int{640, 640}, [2]int{w, h})
+	assert.Equal(t, uint16(0x001F), px[len(px)-1], "blue, in the low bits")
+}
+
+// Raw and Q565 frames follow each other in any order, each its own complete
+// exchange, and a refused Q565 frame is an error like a raw one.
+func TestRawAndQ565FramesAlternate(t *testing.T) {
+	f := newFake()
+	r := &recorder{}
+	p := withFrames(f, r)
+	ctx := context.Background()
+	require.NoError(t, p.Stream(ctx, solid(640, 640, color.RGBA{A: 255})))
+	require.NoError(t, p.Move(ctx, solid(640, 640, color.RGBA{A: 255})))
+	require.NoError(t, p.Stream(ctx, solid(640, 640, color.RGBA{A: 255})))
+
+	var formats []byte
+	for _, t := range f.Told {
+		if t[0] == 0x36 && t[1] == 0x01 {
+			formats = append(formats, t[4])
+		}
+	}
+	assert.Equal(t, []byte{frameBGR888, frameQ565, frameBGR888}, formats)
+	assert.Equal(t, []string{"36 01 00", "36 02", "36 01 00", "36 02", "36 01 00", "36 02"}, commands(f))
+
+	refused := newFake()
+	refused.Refuse = []byte{0x36, 0x02}
+	require.Error(t, withFrames(refused, &recorder{}).Move(ctx, solid(640, 640, color.RGBA{A: 255})))
+	require.Error(t, p.Move(ctx, image.NewRGBA(image.Rectangle{})))
 }
