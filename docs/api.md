@@ -1223,6 +1223,8 @@ type Model struct {
 	Screen Size
 
 	AssumedFans byte
+
+	Frames bool
 }
 ```
 
@@ -1304,7 +1306,7 @@ Driver reads Razer batteries through feature reports.
 
 `import "github.com/ushineko/sanshoku/screen"`
 
-Package screen holds the Panel capability for a device with a display: size, image, readout, appearance and the push floor.
+Package screen holds the Panel capability for a device with a display: size, image, readout, appearance and the push floor, and Streamer for a panel that also takes streamed frames.
 
 ### Variables
 
@@ -1329,6 +1331,18 @@ type Panel interface {
 ```
 
 Panel is a device with a display a program can draw on.
+
+#### type Streamer
+
+```go
+type Streamer interface {
+	Stream(ctx context.Context, img image.Image) error
+
+	StreamHold() time.Duration
+}
+```
+
+Streamer is a panel that also takes pictures one frame at a time, without storing them on the device (spec 037).
 
 ## sony
 

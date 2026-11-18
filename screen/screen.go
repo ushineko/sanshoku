@@ -3,6 +3,7 @@ package screen
 import (
 	"context"
 	"errors"
+	"image"
 	"image/gif"
 	"time"
 )
@@ -47,4 +48,30 @@ type Panel interface {
 	// because lighting.Canvas has a Floor of its own, and a device with a
 	// screen and lights (the Kraken) is both (spec 024).
 	ImageFloor(bytes int) time.Duration
+}
+
+/*
+Streamer is a panel that also takes pictures one frame at a time, without
+storing them on the device (spec 037).
+
+A frame is not kept. The firmware shows it until StreamHold has passed with
+nothing newer, then takes the panel back for its own readout, unasked. A
+caller that wants a still picture to stay sends it again within StreamHold;
+the driver keeps no timer of its own. Image is still the way to show a picture
+that plays by itself.
+
+Not called Frame, for the reason ImageFloor is not called Floor: a device with
+a screen and lights is both a Streamer and a lighting.Canvas, whose Frame takes
+pixels. A method of each name hid the canvas's, and the Kraken Elite stopped
+being a canvas (found on hotaru's spec 080 live run).
+*/
+type Streamer interface {
+	// Stream draws one picture and returns when the device has taken it. A
+	// picture of another size is scaled to the panel. The device's answer
+	// paces a caller that sends frame after frame; there is no floor.
+	Stream(ctx context.Context, img image.Image) error
+
+	// StreamHold is the longest a caller may wait before sending a frame
+	// again, if the picture is to stay up.
+	StreamHold() time.Duration
 }

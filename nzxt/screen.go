@@ -26,11 +26,13 @@ success and the screen keeps whatever it was showing, because a freshly written
 bucket is not displayed until it is selected. That is the ordinary shape of
 this protocol, and the reason showing is a separate step.
 
-Static images are not offered: the firmware drops one after five to ten
-seconds (measured by peripheral-battery-monitor with nothing else touching the
-device), while a GIF plays indefinitely. The RGB565 framebuffer path is left
-out as well; hotaru's prototype of it flickered. So are fan and pump duty
-writes, which the firmware discards.
+A GIF in a bucket stays up indefinitely. A still image sent any other way does
+not: the firmware takes the panel back for its readout after a while.
+peripheral-battery-monitor saw a static image dropped after five to ten
+seconds, and hotaru's RGB565 prototype "flickered". The bench measured the
+same return on the frame path, 30 s after the last frame (spec 037). The frame
+path, in frame.go, is for a caller that sends again within that time. Fan and
+pump duty writes are left out, because the firmware discards them.
 */
 const (
 	// bulkEndpoint carries image data. The HID interface carries control.

@@ -65,6 +65,10 @@ type fake struct {
 	Memory bool
 	memory map[byte][2]int
 
+	// Refuse is a command, by its first two bytes, answered with result
+	// `04`, as the cooler answers one out of sequence.
+	Refuse []byte
+
 	pending [][]byte
 	closed  bool
 }
@@ -107,6 +111,8 @@ func (f *fake) Write(report []byte) error {
 		for i, slots := range f.Accessories {
 			copy(reply[slotsAt+slotsPer*i:], slots[:])
 		}
+	case len(f.Refuse) == 2 && report[0] == f.Refuse[0] && report[1] == f.Refuse[1]:
+		reply[resultByte] = resultRefused
 	default:
 		reply[resultByte] = resultOK
 	}

@@ -53,6 +53,9 @@ type Model struct {
 	// taken to hold, where the model's fans are not listed: the Kraken 2024
 	// Plus's own fan set, as OpenRGB assumes it (spec 033). Zero for none.
 	AssumedFans byte
+	// Frames is a panel that takes streamed frames (spec 037), measured on
+	// the Kraken Elite V2 on firmware 1.2.12.
+	Frames bool
 }
 
 /*
@@ -67,7 +70,7 @@ found and refused with sanshoku.ErrUnsupported, never written to.
 the protocol reports it, and a GIF of any other size displays blank.
 */
 var Known = map[uint16]Model{
-	0x3012: {Name: "Kraken Elite", Screen: Size{W: 640, H: 640}},
+	0x3012: {Name: "Kraken Elite", Screen: Size{W: 640, H: 640}, Frames: true},
 	// Expected (spec 033): the same 26 commands on one lighting channel, in
 	// 512-byte reports, as OpenRGB drives it; the 240 by 240 panel is
 	// liquidctl's figure, not measured.
@@ -254,6 +257,9 @@ func candidate(n hidraw.Node, o Driver, dial func(string) (node, error), claim f
 				return d, nil
 			}
 			d.usbPath, d.claim = n.USBPath, claim
+			if model.Frames {
+				return &framePanel{&panelDevice{d}}, nil
+			}
 			return &panelDevice{d}, nil
 		},
 	}

@@ -1,6 +1,7 @@
 /*
 Package screen holds the Panel capability for a device with a display:
-size, image, readout, appearance and the push floor. It imports nothing from
+size, image, readout, appearance and the push floor, and Streamer for a
+panel that also takes streamed frames. It imports nothing from
 this module and touches no kernel interface.
 */
 package screen

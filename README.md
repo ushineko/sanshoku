@@ -215,7 +215,10 @@ writes it.
 `sanshoku-bench screen --yes` is the one write: it pushes a test card to a
 device's display, waits the panel's floor, and returns the display to its
 readout. `screen --yes --hold D` keeps the card up for D instead (at least
-the floor), so a person can look at it.
+the floor), so a person can look at it. `screen --yes --frame` draws a
+gradient as streamed frames on a panel that takes them, sending it again
+before the firmware takes the panel back; `--animate D` sends moving frames
+first and prints the rate, and `--no-resend` shows the firmware's return.
 
 `sanshoku-bench light --yes` streams three patterns (steady, breathe, wave)
 to every lighting canvas for `--hold` each, releases it, and prints frames
@@ -289,6 +292,14 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- **Added**: the Kraken Elite's panel takes streamed frames, `screen.Streamer`
+  (spec 037, #27). A frame shows at once in full colour, with no bucket and
+  no settling floor. The firmware takes the panel back 30 s after the last
+  frame, so a caller sends a still picture again within `StreamHold`. The
+  bench's `screen --yes --frame` draws them.
 
 ### 0.2.0 (2026-11-17)
 
