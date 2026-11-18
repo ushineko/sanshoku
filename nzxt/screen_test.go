@@ -95,6 +95,7 @@ type recorder struct {
 	endpoints []byte
 	lengths   []int
 	first     []byte
+	last      []byte
 	closed    bool
 }
 
@@ -106,6 +107,7 @@ func (r *recorder) Bulk(_ context.Context, endpoint byte, data []byte) error {
 	if r.first == nil {
 		r.first = append([]byte(nil), data...)
 	}
+	r.last = append([]byte(nil), data...)
 	return nil
 }
 

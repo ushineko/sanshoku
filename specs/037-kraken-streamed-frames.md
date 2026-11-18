@@ -97,9 +97,11 @@ needs more than 10 fps today.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
-      `make check-no-binaries` pass.
-- [ ] Tests against the nzxt fake, extended to answer `36 01` and `36 02`
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
+      `make check-no-binaries` pass. (`make test` with `-skip TestLive`: the
+      live liquidctl comparison fails while hotaru holds the desk's cooler,
+      as it did before this branch.)
+- [x] Tests against the nzxt fake, extended to answer `36 01` and `36 02`
       and record bulk writes:
   - a frame sends `36 01 00 01 09`, the 20-byte header with the payload's
     length, 1228800 bytes of RGB, then `36 02`, in that order;
@@ -120,7 +122,8 @@ needs more than 10 fps today.
     (R2.3);
   - with hotaru drawing an animated effect on the ring, a framed run: the
     ring does not change at the frames, the resends or the handback.
-- [ ] Docs per R4.
+- [x] Docs per R4. (`docs/devices.md` prints only the Windows notes for
+      this entry, so the Linux note is in `support` output, not the page.)
 
 ## Risks & Assumptions
 

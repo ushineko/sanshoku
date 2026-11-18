@@ -28,7 +28,7 @@ func Support() []support.Entry {
 		Firmware:     "1.2.12 (the `11 02` reply; USB bcdDevice reads 01.02 and does not follow it)",
 		Tested:       time.Date(2026, time.September, 29, 0, 0, 0, 0, time.UTC),
 		Spec:         5,
-		Notes:        "coolant, pump and fan over hidraw; the 640x640 LCD over usbfs, GIF only; the ring and fans as a canvas over hidraw, and the firmware's own effects (specs 024, 025)",
+		Notes:        "coolant, pump and fan over hidraw; the 640x640 LCD over usbfs, as a GIF or as streamed frames (spec 037); the ring and fans as a canvas over hidraw, and the firmware's own effects (specs 024, 025)",
 		Windows: &support.Port{
 			Tier:  support.Expected,
 			Notes: "coolant, pump, fan and lighting over HID; the screen needs usbfs, which Windows does not have",
