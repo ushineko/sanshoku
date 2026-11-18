@@ -75,14 +75,26 @@ func (p *framePanel) Stream(ctx context.Context, img image.Image) error {
 	if img == nil || img.Bounds().Empty() {
 		return errors.New("a frame with no pixels")
 	}
-	payload := bgr888(img, p.model.Screen)
+	return p.send(ctx, frameBGR888, bgr888(img, p.model.Screen))
+}
 
+/*
+StreamEncoded sends a payload already in the given format. A PROBE for format
+08 (Q565, see internal/q565), not API: it exists so sanshoku-bench can show
+whether the device takes it, before anything is designed around it.
+*/
+func (p *framePanel) StreamEncoded(ctx context.Context, format byte, payload []byte) error {
+	return p.send(ctx, format, payload)
+}
+
+// send is one frame of any format: start, header, payload, end.
+func (p *framePanel) send(ctx context.Context, format byte, payload []byte) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if err := p.panel(); err != nil {
 		return err
 	}
-	reply, err := p.exchange(ctx, 0x36, 0x01, 0x00, 0x01, frameBGR888)
+	reply, err := p.exchange(ctx, 0x36, 0x01, 0x00, 0x01, format)
 	if err != nil {
 		return fmt.Errorf("start the frame: %w", err)
 	}
@@ -90,7 +102,7 @@ func (p *framePanel) Stream(ctx context.Context, img image.Image) error {
 		return fmt.Errorf("the cooler refused the frame: reply %#02x", reply[resultByte])
 	}
 	info := make([]byte, 8)
-	info[0] = frameBGR888
+	info[0] = format
 	binary.LittleEndian.PutUint32(info[4:], uint32(len(payload))) //nolint:gosec // the panel's size, a few MB at most
 	if err := p.usb.Bulk(ctx, bulkEndpoint, append(append([]byte(nil), header...), info...)); err != nil {
 		return err
