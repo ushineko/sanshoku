@@ -295,10 +295,10 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ### Unreleased
 
-- **Added**: the Kraken Elite's panel takes streamed frames, `screen.Framer`
+- **Added**: the Kraken Elite's panel takes streamed frames, `screen.Streamer`
   (spec 037, #27). A frame shows at once in full colour, with no bucket and
   no settling floor. The firmware takes the panel back 30 s after the last
-  frame, so a caller sends a still picture again within `FrameHold`. The
+  frame, so a caller sends a still picture again within `StreamHold`. The
   bench's `screen --yes --frame` draws them.
 
 ### 0.2.0 (2026-11-17)

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ushineko/sanshoku/lighting"
 	"github.com/ushineko/sanshoku/screen"
 )
 
@@ -31,7 +32,7 @@ func solid(w, h int, c color.RGBA) *image.RGBA {
 
 /*
 A frame is CAM's sequence: `36 01 00 01 09`, the 20-byte header naming format
-09 and the payload's length, the payload as raw RGB, then `36 02`. No bucket
+09 and the payload's length, the payload as raw pixels blue first, then `36 02`. No bucket
 is asked about, reserved or shown.
 */
 func TestAFrameIsSentAsCAMSendsIt(t *testing.T) {
@@ -39,22 +40,22 @@ func TestAFrameIsSentAsCAMSendsIt(t *testing.T) {
 	r := &recorder{}
 	p := withFrames(f, r)
 
-	require.NoError(t, p.Frame(context.Background(), solid(640, 640, color.RGBA{200, 100, 50, 255})))
+	require.NoError(t, p.Stream(context.Background(), solid(640, 640, color.RGBA{200, 100, 50, 255})))
 
 	assert.Equal(t, []string{"36 01 00", "36 02"}, commands(f))
-	assert.Equal(t, []byte{0x36, 0x01, 0x00, 0x01, frameRGB888}, f.Told[0][:5])
+	assert.Equal(t, []byte{0x36, 0x01, 0x00, 0x01, frameBGR888}, f.Told[0][:5])
 
 	require.Equal(t, []byte{bulkEndpoint, bulkEndpoint}, r.endpoints)
 	require.Len(t, r.first, 20)
 	assert.Equal(t, header, r.first[:12])
-	assert.Equal(t, byte(frameRGB888), r.first[12])
+	assert.Equal(t, byte(frameBGR888), r.first[12])
 	assert.Equal(t, uint32(640*640*3), binary.LittleEndian.Uint32(r.first[16:]))
 	require.Len(t, r.last, 640*640*3)
-	assert.Equal(t, []byte{200, 100, 50, 200, 100, 50}, r.last[:6], "red, green, blue, with no alpha")
-	assert.Equal(t, []byte{200, 100, 50}, r.last[len(r.last)-3:])
+	assert.Equal(t, []byte{50, 100, 200, 50, 100, 200}, r.last[:6], "blue, green, red, with no alpha")
+	assert.Equal(t, []byte{50, 100, 200}, r.last[len(r.last)-3:])
 }
 
-// A picture of another size, or not RGBA, arrives at the panel's size as RGB,
+// A picture of another size, or not RGBA, arrives at the panel's size, blue first,
 // in its place: the top-left of a half-size picture is the top-left quarter.
 func TestAFrameOfAnotherSizeOrKindIsFitted(t *testing.T) {
 	f := newFake()
@@ -70,14 +71,14 @@ func TestAFrameOfAnotherSizeOrKindIsFitted(t *testing.T) {
 			}
 		}
 	}
-	require.NoError(t, p.Frame(context.Background(), img))
+	require.NoError(t, p.Stream(context.Background(), img))
 
 	require.Len(t, r.last, 640*640*3)
 	at := func(x, y int) []byte { i := (y*640 + x) * 3; return r.last[i : i+3] }
-	assert.Equal(t, []byte{255, 0, 0}, at(0, 0))
-	assert.Equal(t, []byte{255, 0, 0}, at(319, 639))
-	assert.Equal(t, []byte{0, 0, 255}, at(320, 0))
-	assert.Equal(t, []byte{0, 0, 255}, at(639, 639))
+	assert.Equal(t, []byte{0, 0, 255}, at(0, 0), "red, blue first")
+	assert.Equal(t, []byte{0, 0, 255}, at(319, 639))
+	assert.Equal(t, []byte{255, 0, 0}, at(320, 0), "blue, blue first")
+	assert.Equal(t, []byte{255, 0, 0}, at(639, 639))
 }
 
 // A refused start or end is the frame's error, and an empty picture is
@@ -87,12 +88,12 @@ func TestARefusedFrameIsAnError(t *testing.T) {
 		f := newFake()
 		f.Refuse = refuse
 		p := withFrames(f, &recorder{})
-		require.Error(t, p.Frame(context.Background(), solid(640, 640, color.RGBA{A: 255})), "% x", refuse)
+		require.Error(t, p.Stream(context.Background(), solid(640, 640, color.RGBA{A: 255})), "% x", refuse)
 	}
 
 	f := newFake()
 	p := withFrames(f, &recorder{})
-	require.Error(t, p.Frame(context.Background(), image.NewRGBA(image.Rectangle{})))
+	require.Error(t, p.Stream(context.Background(), image.NewRGBA(image.Rectangle{})))
 	assert.Empty(t, f.Told)
 }
 
@@ -107,7 +108,7 @@ func TestAfterAFrameEveryBucketIsFreeAndClosingHandsBack(t *testing.T) {
 	require.NoError(t, p.Image(context.Background(), card(640, 640)))
 	require.Equal(t, 0, p.showing)
 
-	require.NoError(t, p.Frame(context.Background(), solid(640, 640, color.RGBA{A: 255})))
+	require.NoError(t, p.Stream(context.Background(), solid(640, 640, color.RGBA{A: 255})))
 	assert.Equal(t, -1, p.showing)
 
 	f.mu.Lock()
@@ -124,12 +125,13 @@ func TestAfterAFrameEveryBucketIsFreeAndClosingHandsBack(t *testing.T) {
 // The hold is the measured 30 s less a margin.
 func TestFrameHoldIsUnderTheFirmwaresReturn(t *testing.T) {
 	p := withFrames(newFake(), &recorder{})
-	assert.Less(t, p.FrameHold().Seconds(), 30.0)
-	assert.Positive(t, p.FrameHold())
+	assert.Less(t, p.StreamHold().Seconds(), 30.0)
+	assert.Positive(t, p.StreamHold())
 }
 
 // The Kraken Elite's panel takes frames; the Kraken 2024 Plus's is a panel
-// that does not, until a bench run on one says otherwise.
+// that does not, until a bench run on one says otherwise. Both are still
+// lighting canvases: a Frame method on the screen once hid the canvas's.
 func TestOnlyAMeasuredModelTakesFrames(t *testing.T) {
 	for product, frames := range map[uint16]bool{0x3012: true, 0x3014: false} {
 		n := krakenNode
@@ -138,8 +140,10 @@ func TestOnlyAMeasuredModelTakesFrames(t *testing.T) {
 		dev, err := cand.Open(context.Background())
 		require.NoError(t, err)
 		_, isPanel := dev.(screen.Panel)
-		_, isFramer := dev.(screen.Framer)
+		_, isCanvas := dev.(lighting.Canvas)
+		assert.True(t, isCanvas, "%04x: taking frames hid the lights", product)
+		_, isStreamer := dev.(screen.Streamer)
 		assert.True(t, isPanel, "%04x", product)
-		assert.Equal(t, frames, isFramer, "%04x", product)
+		assert.Equal(t, frames, isStreamer, "%04x", product)
 	}
 }

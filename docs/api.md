@@ -1306,25 +1306,13 @@ Driver reads Razer batteries through feature reports.
 
 `import "github.com/ushineko/sanshoku/screen"`
 
-Package screen holds the Panel capability for a device with a display: size, image, readout, appearance and the push floor, and Framer for a panel that also takes streamed frames.
+Package screen holds the Panel capability for a device with a display: size, image, readout, appearance and the push floor, and Streamer for a panel that also takes streamed frames.
 
 ### Variables
 
 - `var ErrNoPanel = errors.New("no panel on this device")`: ErrNoPanel is a device that is here and whose panel cannot be drawn on.
 
 ### Types
-
-#### type Framer
-
-```go
-type Framer interface {
-	Frame(ctx context.Context, img image.Image) error
-
-	FrameHold() time.Duration
-}
-```
-
-Framer is a panel that also takes pictures one frame at a time, without storing them on the device (spec 037).
 
 #### type Panel
 
@@ -1343,6 +1331,18 @@ type Panel interface {
 ```
 
 Panel is a device with a display a program can draw on.
+
+#### type Streamer
+
+```go
+type Streamer interface {
+	Stream(ctx context.Context, img image.Image) error
+
+	StreamHold() time.Duration
+}
+```
+
+Streamer is a panel that also takes pictures one frame at a time, without storing them on the device (spec 037).
 
 ## sony
 

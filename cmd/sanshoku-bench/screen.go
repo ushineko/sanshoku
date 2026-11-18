@@ -124,28 +124,28 @@ type framing struct {
 /*
 frames draws the gradient card as streamed frames (spec 037): optionally a
 run of moving frames first, with the rate and each frame's time, then the
-still card for the hold, sent again every FrameHold unless resend is off. The
+still card for the hold, sent again every StreamHold unless resend is off. The
 readout goes back at the end, as after an image.
 */
 func frames(ctx context.Context, out io.Writer, c sanshoku.Candidate, p screen.Panel, f framing) bool {
-	fr, ok := p.(screen.Framer)
+	fr, ok := p.(screen.Streamer)
 	if !ok {
 		writef(out, "%s  %s  does not take frames\n", c.Driver, c.Identity)
 		return true
 	}
 	w, h := p.Size()
-	writef(out, "%s  %s  panel %dx%d, frames held %s\n", c.Driver, c.Identity, w, h, fr.FrameHold())
+	writef(out, "%s  %s  panel %dx%d, frames held %s\n", c.Driver, c.Identity, w, h, fr.StreamHold())
 	send := func(img image.Image) (time.Duration, bool) {
 		ctx, cancel := context.WithTimeout(ctx, screenTimeout)
 		defer cancel()
 		start := time.Now()
-		if err := fr.Frame(ctx, img); err != nil {
+		if err := fr.Stream(ctx, img); err != nil {
 			writef(out, "  frame: error after %.1f ms: %v\n", ms(time.Since(start)), err)
 			return 0, false
 		}
 		return time.Since(start), true
 	}
-	ok = holdFrames(ctx, out, f, w, h, fr.FrameHold(), send)
+	ok = holdFrames(ctx, out, f, w, h, fr.StreamHold(), send)
 	return step(context.WithoutCancel(ctx), out, "readout", p.Readout) && ok
 }
 

@@ -2,15 +2,15 @@
 
 **Issue**: #27
 
-## Status: COMPLETE
+## Status: INCOMPLETE
 
 ## Executive Summary
 
 The Kraken Elite's panel gains a second way to show a picture: streamed raw
-frames, as NZXT CAM sends them, through a new optional `screen.Framer`. A
+frames, as NZXT CAM sends them, through a new optional `screen.Streamer`. A
 frame shows at once in full colour with no bucket and no floor; the firmware
 takes the panel back 30 s after the last one, so the caller resends within
-`FrameHold` (25 s). Reviewers: `nzxt/frame.go` and the hold's reasoning
+`StreamHold` (25 s). Reviewers: `nzxt/frame.go` and the hold's reasoning
 first.
 
 ## Context
@@ -56,25 +56,25 @@ needs more than 10 fps today.
   panel without the path does not have to pretend:
 
   ```go
-  type Framer interface {
-      Frame(ctx context.Context, img image.Image) error
-      FrameHold() time.Duration
+  type Streamer interface {
+      Stream(ctx context.Context, img image.Image) error
+      StreamHold() time.Duration
   }
   ```
 
-  - R1.1 `Frame` draws one picture and returns when the device answers
+  - R1.1 `Stream` draws one picture and returns when the device answers
     `36 02`. The device's answer paces a caller; there is no separate floor.
   - R1.2 An image of a different size from `Size()` is scaled to fit (the
     rule `fit` already applies to GIFs), and a non-RGBA image is converted.
     A caller can hand in whatever it drew.
-  - R1.3 `FrameHold` is how long a frame stays up with nothing sent after
+  - R1.3 `StreamHold` is how long a frame stays up with nothing sent after
     it: the measured 30 s, less a margin, stated as the time by which the
     caller must send again (25 s). The driver starts no goroutine and keeps
     no timer (the module's rule); resending is the caller's job.
   - R1.4 `screen.Panel` does not change. `Capabilities` does not gain a
     name: a framer is a kind of screen.
 - **R2 The nzxt driver.**
-  - R2.1 The Kraken Elite (`3012`) panel is a `Framer`, sending format `09`.
+  - R2.1 The Kraken Elite (`3012`) panel is a `Streamer`, sending format `09`, blue first.
   - R2.2 The Kraken 2024 Plus (`3014`) is not, until a bench run on one says
     the format and the hold carry over. Its 240 × 240 size is liquidctl's
     figure.
@@ -87,7 +87,7 @@ needs more than 10 fps today.
     20-byte header, the 30 s hold.
 - **R3 The testbench.**
   - R3.1 `screen --yes` gains `--frame`: it draws the gradient test card
-    through `Frame`, holds for `--hold` with a resend every `FrameHold`, and
+    through `Stream`, holds for `--hold` with a resend every `StreamHold`, and
     hands back. Without `--frame` the verb is unchanged.
   - R3.2 `--animate D` sends moving frames for D and prints the rate and
     each frame's time in all (start to `37 02`).
@@ -114,7 +114,7 @@ needs more than 10 fps today.
   - a refused `36 01` or `36 02` (result byte not `01`) is the frame's error;
   - after a frame, `Image` may reuse any bucket, and `Readout` and `Close`
     send `38 01 02`;
-  - the Kraken 2024 Plus panel is not a `Framer`.
+  - the Kraken 2024 Plus panel is not a `Streamer`.
 - [x] Live, a person watching (bench):
   - `screen --yes --frame --hold 2m`: the test card in full colour for the
     whole 2 minutes, no blink at the resends, then the readout;
@@ -130,7 +130,15 @@ needs more than 10 fps today.
   framed run) moved to the hotaru spec that adopts frames, at the
   maintainer's decision: only one program holds the cooler, so the bench and
   hotaru cannot run together.
-- [x] Docs per R4. (`docs/devices.md` prints only the Windows notes for
+- [x] Docs per R4.
+- [x] Found on hotaru's spec 080 live run, after the bench run below:
+  - [x] format `09` is blue, green, red: sent red first, a light blue
+        dashboard showed as yellow on brown. A test pins the byte order.
+  - [x] a `Frame` method on the screen hid `lighting.Canvas.Frame`, and the
+        Kraken Elite stopped being a canvas, so hotaru could not draw its
+        ring. The interface is `Streamer` with `Stream` and `StreamHold`, and
+        a test checks both models are still canvases.
+- [ ] Live: a light blue picture streamed to the panel shows light blue. (`docs/devices.md` prints only the Windows notes for
       this entry, so the Linux note is in `support` output, not the page.)
 
 ## Risks & Assumptions
@@ -154,7 +162,7 @@ needs more than 10 fps today.
 - **Windows.** The screen needs usbfs, which Windows lacks; frames do too.
   Nothing changes there.
 - **Rollback.** The interface is additive. Reverting the commit removes it;
-  a consumer that asserts `screen.Framer` falls back to `Image`.
+  a consumer that asserts `screen.Streamer` falls back to `Image`.
 
 ## Alternatives Considered
 
@@ -166,6 +174,12 @@ needs more than 10 fps today.
   unknown, and 10 fps of raw frames covers everything a consumer draws today.
 
 ## Verification
+
+**After the first PR push (2026-11-18), on hotaru's spec 080 live run.** The
+dashboard `ice1` (light text on dark blue) showed yellow text on brown: red and
+blue swapped. hotaru also never attached the cooler's ring. A diagnostic on the
+desk failed at once: `*nzxt.framePanel is not lighting.Canvas: missing method
+Frame`. Both are fixed in the second push.
 
 Bench, 2026-11-18, Kraken Elite V2 on firmware 1.2.12, hotaru stopped, the
 maintainer watching the panel.
