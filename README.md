@@ -131,6 +131,7 @@ Every lit device since has followed it.
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD, its ring and fans as a canvas, and its firmware effects. |
 | [`corsair`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsair) | The Corsair MM700 mousepad's lights as a canvas. |
 | [`asus`](https://pkg.go.dev/github.com/ushineko/sanshoku/asus) | An ASUS Aura USB mainboard's lights as a canvas with zones. |
+| [`gigabyte`](https://pkg.go.dev/github.com/ushineko/sanshoku/gigabyte) | A Gigabyte RGB Fusion 2 USB mainboard's lights as a canvas with zones, for boards whose layout has been measured. Linux only. |
 | [`keychron`](https://pkg.go.dev/github.com/ushineko/sanshoku/keychron) | The Keychron K4 HE's keys as a canvas, over VIA. |
 | [`msi`](https://pkg.go.dev/github.com/ushineko/sanshoku/msi) | The MSI RTX 4090 Suprim Liquid X's light over I2C: a colour, and the card's own effects. |
 | [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus writes. Linux only. |
@@ -248,6 +249,8 @@ is not there is said and is not a failure.
   protocol, from OpenRGB and a capture of NZXT CAM.
 - [docs/asus-aura.md](docs/asus-aura.md): the ASUS Aura mainboard
   controller's lighting protocol, from OpenRGB and the bench.
+- [docs/gigabyte-fusion2.md](docs/gigabyte-fusion2.md): the Gigabyte RGB
+  Fusion 2 USB controller's lighting protocol, from OpenRGB and the bench.
 - [docs/logitech-lights.md](docs/logitech-lights.md): the G502 X PLUS's
   lighting over HID++ 2.0, from OpenRGB and the bench.
 - [docs/msi-gpu.md](docs/msi-gpu.md): the MSI RTX 4090's lighting over
@@ -295,6 +298,15 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- **Gigabyte RGB Fusion 2 USB mainboards** (spec 039, #105), in a new
+  `gigabyte` driver: each of the Z790 AORUS MASTER X's two controllers as a
+  canvas with zones, its addressable headers sized by the consumer and its
+  single-colour lights fixed. The controller does not report its layout, so a
+  board is driven only once its layout is in the driver's table. Nothing is
+  written to the board's flash or calibration. Linux only.
 
 ### 0.4.0 (2026-11-18)
 

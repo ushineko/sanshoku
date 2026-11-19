@@ -70,6 +70,7 @@ first bench run; a capability added later names its own spec in the notes.
 | sony | DualSense | 054c:0ce6, input report 0x01 (USB) or 0x31 (Bluetooth, after feature report 0x05 is read) | battery | level in tenths and charge state from the input report's status byte, as hid-playstation reads it | tested 2026-10-09; Tested over Bluetooth; USB expected. Over Bluetooth the controller stays in its long-report mode until it reconnects | 017 |
 | sony | DualSense Edge | 054c:0df2, as the DualSense | battery | the DualSense's report; hid-playstation reads both the same way | expected | 017 |
 | powersupply | Any HID device whose battery the kernel reads | /sys/class/power_supply node with scope=Device on a HID device, unless another driver found the same device | battery | the kernel driver's own reading (hid-nintendo, xpadneo, hid-input); a level, or one of four bands where the kernel has only a capacity level; nothing is sent to the device | – | 022 |
+| gigabyte | RGB Fusion 2 USB mainboard controller | vendor 048d, usage page 0xFF89; product 048d:5702; boards in the driver's table | lighting | each controller's addressable headers and single-colour lights as a canvas with zones, for a board whose layout has been measured (the Z790 AORUS MASTER X); a header's length is the consumer's to set; nothing is written to the board's flash; not on Windows, where the board's name, and so its layout, is not read | – | 039 |
 
 ## Listed
 
