@@ -20,6 +20,7 @@ drive costs nothing.
 | AULA (2.4 GHz receiver) | `3554` | `aula` | `KERNEL=="hidraw*", KERNELS=="0003:3554:*", TAG+="uaccess"` |
 | AULA (F75 on its cable) | `258a` | `aula` | `KERNEL=="hidraw*", KERNELS=="0003:258A:010C.*", TAG+="uaccess"` |
 | Gigabyte (RGB Fusion 2 USB, ITE chip) | `048d` | `gigabyte` | `KERNEL=="hidraw*", KERNELS=="0003:048D:5702.*", TAG+="uaccess"` |
+| The chipset SMBus (Intel I801, AMD PIIX4) | – | `corsairdram` | `SUBSYSTEM=="i2c-dev", ATTR{name}=="SMBus I801 adapter *", TAG+="uaccess"` and the same for `SMBus PIIX4 adapter *` |
 | Sony (DualSense, DualSense Edge) | `054c` | `sony` | `KERNEL=="hidraw*", KERNELS=="*054C:0CE6*", TAG+="uaccess"` and the same for `0DF2` |
 
 **Every rule matches the device itself, not a parent** (#65). In one udev

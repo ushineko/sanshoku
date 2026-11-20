@@ -32,6 +32,14 @@ type Bus interface {
 	// WriteBlockData writes up to 32 bytes from a register on (I2C block
 	// write).
 	WriteBlockData(register byte, data []byte) error
+	// WriteSMBusBlock writes up to 32 bytes to a register as an SMBus block
+	// write, which carries its own length (spec 042).
+	WriteSMBusBlock(register byte, data []byte) error
+	// ReadByteData reads one byte from a register (SMBus read byte data).
+	ReadByteData(register byte) (byte, error)
+	// ReadBlockData reads n bytes, at most 32, from a register on (I2C block
+	// read). A device may return fewer.
+	ReadBlockData(register byte, n int) ([]byte, error)
 	Close() error
 }
 
@@ -39,8 +47,12 @@ type Bus interface {
 var ErrBlock = errors.New("an I2C block is at most 32 bytes")
 
 func checkBlock(data []byte) error {
-	if len(data) > 32 {
-		return fmt.Errorf("%d bytes: %w", len(data), ErrBlock)
+	return checkLen(len(data))
+}
+
+func checkLen(n int) error {
+	if n > 32 || n < 0 {
+		return fmt.Errorf("%d bytes: %w", n, ErrBlock)
 	}
 	return nil
 }

@@ -67,7 +67,9 @@ const (
 	ioctlSMBus = 0x0720
 
 	smbusWrite        = 0
+	smbusRead         = 1
 	smbusByteData     = 2
+	smbusBlockData    = 5
 	smbusI2CBlockData = 8
 )
 
@@ -115,15 +117,51 @@ func (h *handle) WriteBlockData(register byte, block []byte) error {
 	return h.smbus(register, smbusI2CBlockData, &data)
 }
 
+func (h *handle) WriteSMBusBlock(register byte, block []byte) error {
+	if err := checkBlock(block); err != nil {
+		return err
+	}
+	var data [34]byte
+	data[0] = byte(len(block)) //nolint:gosec // at most 32, checked above
+	copy(data[1:], block)
+	return h.smbus(register, smbusBlockData, &data)
+}
+
+func (h *handle) ReadByteData(register byte) (byte, error) {
+	var data [34]byte
+	if err := h.call(smbusRead, register, smbusByteData, &data); err != nil {
+		return 0, fmt.Errorf("reading register 0x%02x on %s: %w", register, h.path, err)
+	}
+	return data[0], nil
+}
+
+func (h *handle) ReadBlockData(register byte, n int) ([]byte, error) {
+	if err := checkLen(n); err != nil {
+		return nil, err
+	}
+	var data [34]byte
+	data[0] = byte(n) //nolint:gosec // at most 32, checked above
+	if err := h.call(smbusRead, register, smbusI2CBlockData, &data); err != nil {
+		return nil, fmt.Errorf("reading register 0x%02x on %s: %w", register, h.path, err)
+	}
+	got := min(int(data[0]), n)
+	return append([]byte(nil), data[1:1+got]...), nil
+}
+
 func (h *handle) smbus(register byte, size uint32, data *[34]byte) error {
-	// The SMBus ioctl takes its argument and its data by address.
-	arg := smbusIoctl{readWrite: smbusWrite, command: register, size: size, data: uintptr(unsafe.Pointer(data))} //nolint:gosec // see above
-	err := ioctl(h.f, ioctlSMBus, uintptr(unsafe.Pointer(&arg)))                                                 //nolint:gosec // see above
-	runtime.KeepAlive(data)
-	if err != nil {
+	if err := h.call(smbusWrite, register, size, data); err != nil {
 		return fmt.Errorf("writing register 0x%02x on %s: %w", register, h.path, err)
 	}
 	return nil
+}
+
+// call is one SMBus transaction. The ioctl takes its argument and its data by
+// address.
+func (h *handle) call(readWrite uint8, register byte, size uint32, data *[34]byte) error {
+	arg := smbusIoctl{readWrite: readWrite, command: register, size: size, data: uintptr(unsafe.Pointer(data))} //nolint:gosec // see above
+	err := ioctl(h.f, ioctlSMBus, uintptr(unsafe.Pointer(&arg)))                                                //nolint:gosec // see above
+	runtime.KeepAlive(data)
+	return err
 }
 
 func (h *handle) Close() error {

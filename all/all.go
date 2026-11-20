@@ -7,6 +7,8 @@ import (
 	"github.com/ushineko/sanshoku/aula"
 	"github.com/ushineko/sanshoku/bluez"
 	"github.com/ushineko/sanshoku/corsair"
+	"github.com/ushineko/sanshoku/corsairdram"
+	"github.com/ushineko/sanshoku/evga"
 	"github.com/ushineko/sanshoku/gigabyte"
 	"github.com/ushineko/sanshoku/hwmon"
 	"github.com/ushineko/sanshoku/keychron"
@@ -38,6 +40,8 @@ func Drivers() []sanshoku.Driver {
 		sony.Driver{},
 		powersupply.Driver{},
 		gigabyte.Driver{},
+		evga.Driver{},
+		corsairdram.Driver{},
 	}
 }
 
@@ -59,5 +63,7 @@ func Support() []support.Entry {
 	out = append(out, sony.Support()...)
 	out = append(out, powersupply.Support()...)
 	out = append(out, gigabyte.Support()...)
+	out = append(out, evga.Support()...)
+	out = append(out, corsairdram.Support()...)
 	return out
 }

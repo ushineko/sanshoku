@@ -134,7 +134,9 @@ Every lit device since has followed it.
 | [`gigabyte`](https://pkg.go.dev/github.com/ushineko/sanshoku/gigabyte) | A Gigabyte RGB Fusion 2 USB mainboard's lights as a canvas with zones, for boards whose layout has been measured. Linux only. |
 | [`keychron`](https://pkg.go.dev/github.com/ushineko/sanshoku/keychron) | The Keychron K4 HE's keys as a canvas, over VIA. |
 | [`msi`](https://pkg.go.dev/github.com/ushineko/sanshoku/msi) | The MSI RTX 4090 Suprim Liquid X's light over I2C: a colour, and the card's own effects. |
-| [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus writes. Linux only. |
+| [`evga`](https://pkg.go.dev/github.com/ushineko/sanshoku/evga) | An EVGA Ampere graphics card's lights over I2C: each zone one colour, as a canvas. Linux only. |
+| [`corsairdram`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsairdram) | Corsair RGB memory modules over the chipset's SMBus, each a canvas. Linux only. |
+| [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus reads and writes. Linux only. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
@@ -253,6 +255,10 @@ is not there is said and is not a failure.
   Fusion 2 USB controller's lighting protocol, from OpenRGB and the bench.
 - [docs/logitech-lights.md](docs/logitech-lights.md): the G502 X PLUS's
   lighting over HID++ 2.0, from OpenRGB and the bench.
+- [docs/evga-gpu.md](docs/evga-gpu.md): EVGA's Ampere cards' lighting over
+  I2C, from OpenRGB and the bench.
+- [docs/corsair-dram.md](docs/corsair-dram.md): Corsair RGB memory over the
+  chipset's SMBus, from OpenRGB and the bench.
 - [docs/msi-gpu.md](docs/msi-gpu.md): the MSI RTX 4090's lighting over
   I2C, from OpenRGB and hotaru's spike.
 - [docs/keychron.md](docs/keychron.md): the Keychron K4 HE's lighting
@@ -312,6 +318,20 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 - **317 more Gigabyte boards, expected** (spec 040, #111): the boards OpenRGB
   lists on the same controller, each with the layout OpenRGB's table gives
   it. Nine boards OpenRGB lists twice with different layouts are left out.
+- **EVGA Ampere graphics cards** (spec 041, #109), in a new `evga` driver: the
+  card's logos and addressable header, each one colour, as a canvas over
+  I2C. Release puts back what the card showed. The RTX 3080 FTW3 Ultra LHR
+  first; the 59 other cards OpenRGB pairs with the same controller,
+  expected. The card's save register is never written.
+- **Corsair RGB memory** (spec 042, #108), in a new `corsairdram` driver:
+  each module's LEDs as a canvas, by direct frames over the chipset's SMBus.
+  Modules are found by reads only, and written only through the registers
+  that read their device information and take frames. The Dominator
+  Platinum RGB DDR5 first; eight other families, expected.
+- **Breaking:** `i2c.Bus` gains `ReadByteData`, `ReadBlockData` and
+  `WriteSMBusBlock`, which both drivers need; an implementation outside the
+  module needs them too.
+- The udev rules tag the chipset's SMBus adapters (Intel I801, AMD PIIX4).
 
 ### 0.4.0 (2026-11-18)
 

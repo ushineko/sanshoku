@@ -513,6 +513,54 @@ Driver finds and opens Corsair V2 devices.
 
 - `func Support() []support.Entry`: Support is the corsair driver's support table: the MM700, Tested on the bench run spec 026 records.
 
+## corsairdram
+
+`import "github.com/ushineko/sanshoku/corsairdram"`
+
+Package corsairdram is the driver for Corsair's RGB memory modules, over the chipset's SMBus: the Dominator Platinum RGB DDR5's first (spec 042).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens Corsair RGB memory modules.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: Corsair memory modules' lights.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per module on a memory bus OpenRGB names.
+- `func (Driver) Name() string`: Name is "corsairdram".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the corsairdram driver's support table: the Dominator Platinum RGB DDR5, Tested on the bench run spec 042 records, and the other module families OpenRGB knows, Expected.
+
+## evga
+
+`import "github.com/ushineko/sanshoku/evga"`
+
+Package evga is the driver for the lighting controller of EVGA's Ampere graphics cards, over I2C: the RTX 3080 FTW3 Ultra LHR's first (spec 041).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens EVGA Ampere graphics cards' lighting controllers.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: an EVGA graphics card's lights.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per NVIDIA adapter 1 on a card the allow-list names.
+- `func (Driver) Name() string`: Name is "evga".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the evga driver's support table: the RTX 3080 FTW3 Ultra LHR, Tested on the bench run spec 041 records, and the other cards OpenRGB pairs with the same controller, Expected.
+
 ## gigabyte
 
 `import "github.com/ushineko/sanshoku/gigabyte"`
@@ -792,6 +840,12 @@ type Bus interface {
 	WriteByteData(register, value byte) error
 
 	WriteBlockData(register byte, data []byte) error
+
+	WriteSMBusBlock(register byte, data []byte) error
+
+	ReadByteData(register byte) (byte, error)
+
+	ReadBlockData(register byte, n int) ([]byte, error)
 	Close() error
 }
 ```

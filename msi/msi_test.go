@@ -2,6 +2,7 @@ package msi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -29,6 +30,10 @@ func (b *bus) WriteBlockData(register byte, data []byte) error {
 	b.writes = append(b.writes, fmt.Sprintf("%02x=% x", register, data))
 	return nil
 }
+
+func (b *bus) WriteSMBusBlock(byte, []byte) error      { return errors.New("not used") }
+func (b *bus) ReadByteData(byte) (byte, error)         { return 0, errors.New("not used") }
+func (b *bus) ReadBlockData(byte, int) ([]byte, error) { return nil, errors.New("not used") }
 
 func (b *bus) Close() error { b.closed = true; return nil }
 
