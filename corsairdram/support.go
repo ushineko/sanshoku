@@ -26,6 +26,7 @@ func Support() []support.Entry {
 		Spec:         42,
 		Notes: "each module's 12 LEDs as a canvas, by direct frames; found by reads only; writes go only to the " +
 			"device-information and frame registers",
+		Windows: windowsPort,
 	}, {
 		Driver:       driverName,
 		Device:       "Corsair RGB memory, other families",
@@ -37,8 +38,26 @@ func Support() []support.Entry {
 		Spec:         42,
 		Notes: "Vengeance RGB Pro, Dominator Platinum RGB, Vengeance RGB Pro SL and Vengeance RGB RS DDR4; Dominator " +
 			"Titanium RGB, Vengeance RGB, Vengeance Shugo Series and Vengeance RGB RS DDR5; protocol 4 and later only",
+		Windows: windowsPort,
+	}, {
+		Driver:       driverName,
+		Device:       "Corsair Vengeance RGB (DDR4, the original)",
+		Match:        "the chipset SMBus, addresses 0x58 to 0x5F and 0x18 to 0x1F; registers 0xA0 to 0xAF read 0xBA",
+		Vendor:       0x1B1C,
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         46,
+		Notes:        "one light per module, a colour written register by register; found by reads only",
+		Windows: &support.Port{
+			Tier:  support.Expected,
+			Notes: "through PawnIO (spec 044), on two modules on an AMD B450",
+		},
 	}}
 }
+
+// windowsPort is where the newer families stand on Windows: reached through
+// PawnIO (spec 044), and not benched there.
+var windowsPort = &support.Port{Tier: support.Expected, Notes: "through PawnIO's SMBus modules (spec 044), as Administrator"}
 
 // Describe is what the driver reads: Corsair memory modules' lights.
 func (Driver) Describe() sanshoku.Description {
@@ -46,7 +65,7 @@ func (Driver) Describe() sanshoku.Description {
 		Name:         "Corsair memory",
 		Finds:        "memory module",
 		Capabilities: []string{"lighting"},
-		Platforms:    []string{"linux"},
+		Platforms:    []string{"linux", "windows"},
 		Quiet:        false,
 	}
 }

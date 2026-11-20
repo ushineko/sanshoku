@@ -65,12 +65,6 @@ func readHex(path string) uint16 {
 const (
 	ioctlSlave = 0x0703
 	ioctlSMBus = 0x0720
-
-	smbusWrite        = 0
-	smbusRead         = 1
-	smbusByteData     = 2
-	smbusBlockData    = 5
-	smbusI2CBlockData = 8
 )
 
 // smbusIoctl is struct i2c_smbus_ioctl_data.

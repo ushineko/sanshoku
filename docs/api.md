@@ -37,6 +37,7 @@ Bus is the kind of connection a device is found on.
 - `const BusBluetooth Bus`: BusBluetooth is a device on Bluetooth, classic or LE.
 - `const BusHwmon Bus`: BusHwmon is a kernel sensor chip under /sys/class/hwmon, which has no bus of its own a program can talk to.
 - `const BusI2C Bus`: BusI2C is a device on an I2C adapter, a graphics card's lighting controller (spec 029).
+- `const BusSuperIO Bus`: BusSuperIO is a mainboard's Super I/O chip, reached through its configuration ports (spec 045).
 - `func (b Bus) String() string`: String names a bus for the testbench and a consumer's diagnostics.
 
 #### type Candidate
@@ -1250,6 +1251,18 @@ Package msi is the driver for an MSI graphics card's lighting controller over I2
 
 ### Types
 
+#### type Board
+
+```go
+type Board struct{}
+```
+
+Board finds and opens the RGB header of an MSI mainboard driven by its Super I/O chip.
+
+- `func (Board) Describe() sanshoku.Description`: Describe is what the board driver reads: an MSI mainboard's RGB header.
+- `func (Board) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns the board as a candidate when its DMI maker is MSI and its name carries an MS- number OpenRGB drives this way, named as OpenRGB names it ("MSI B450 TOMAHAWK MAX (MS-7C02)").
+- `func (Board) Name() string`: Name is "msi-board".
+
 #### type Driver
 
 ```go
@@ -1264,6 +1277,7 @@ Driver finds and opens MSI graphics cards' lighting controllers.
 
 ### Functions
 
+- `func BoardSupport() []support.Entry`: BoardSupport is the board driver's support table: the B450 Tomahawk Max, which spec 045's bench run tests, and the other boards OpenRGB drives through the same Super I/O registers, Expected.
 - `func Support() []support.Entry`: Support is the msi driver's support table: the RTX 4090 Suprim Liquid X, Tested on the bench run spec 029 records, and the cards that share its controller, Expected (spec 033).
 
 ## nzxt
@@ -1322,6 +1336,63 @@ Size is a panel's width and height in pixels.
 
 - `func DecodeStatus(reply []byte) (cooling.Status, error)`: DecodeStatus reads a `75 01` status reply.
 - `func Support() []support.Entry`: Support is the nzxt driver's support table: each product in Known.
+
+## pawnio
+
+`import "github.com/ushineko/sanshoku/pawnio"`
+
+Package pawnio runs functions of PawnIO modules on Windows: the signed, scripted kernel driver through which a program reaches the SMBus and a mainboard's Super I/O chip once WinRing0 is gone (spec 044).
+
+### Variables
+
+- `var ErrDenied = errors.New("PawnIO needs Administrator rights")`: ErrDenied is PawnIO refusing a process without Administrator rights.
+- `var ErrNoModule = errors.New("the PawnIO module is not there")`: ErrNoModule is a module blob not found where ModuleDir says.
+- `var ErrNoPawnIO = errors.New("PawnIO is not available")`: ErrNoPawnIO is a system without PawnIO: not Windows, or PawnIO not installed.
+- `var ModuleDir string`: ModuleDir is where module blobs are read from ("SmbusPIIX4.bin").
+
+### Types
+
+#### type Chip
+
+```go
+type Chip interface {
+	Inb(register byte) (byte, error)
+	Outb(register, value byte) error
+}
+```
+
+Chip is the Super I/O chip while In holds it: a configuration register read or written.
+
+#### type Executor
+
+```go
+type Executor interface {
+	Execute(function string, in []uint64, out int) ([]uint64, error)
+	Close() error
+}
+```
+
+Executor is one loaded module: Execute runs one of its functions, with up to in's values in, and returns up to out values.
+
+- `func Open(module string) (Executor, error)`: Open loads a module by its file name, "LpcIO.bin" for example, into a new PawnIO executor.
+
+#### type SuperIO
+
+```go
+type SuperIO struct {
+	// contains filtered or unexported fields
+}
+```
+
+SuperIO is a mainboard's Super I/O chip at one configuration port, through PawnIO's LpcIO module.
+
+- `func NewSuperIO(e Executor, port int) (*SuperIO, error)`: NewSuperIO selects the chip at port (0x2E or 0x4E) on a loaded LpcIO module and enters its configuration mode.
+- `func (s *SuperIO) Close() error`: Close unloads the module.
+- `func (s *SuperIO) In(fn func(c Chip) error) error`: In runs fn with the chip to itself: the ISA bus mutex held throughout.
+
+### Functions
+
+- `func Lock(string) (func(), error)`: Lock is a no-op where there is no PawnIO to share a bus through.
 
 ## powersupply
 

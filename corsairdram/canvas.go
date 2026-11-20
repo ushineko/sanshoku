@@ -15,8 +15,13 @@ import (
 // four modules (spec 042).
 const frameFloor = 50 * time.Millisecond
 
-// zoneName is the module's one zone, as OpenRGB names it.
-const zoneName = "Corsair DRAM"
+// zoneName is the module's one zone, as OpenRGB names it; the original
+// Vengeance RGB's zone and light are named apart.
+const (
+	zoneName      = "Corsair DRAM"
+	vengeanceZone = "Corsair Zone"
+	vengeanceLED  = "Corsair LED"
+)
 
 var (
 	_ lighting.Canvas = (*device)(nil)
@@ -28,6 +33,9 @@ var (
 func (d *device) Keys() []lighting.Key {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if d.family == familyVengeance {
+		return []lighting.Key{{ID: 0, Name: vengeanceLED}}
+	}
 	out := make([]lighting.Key, len(d.held))
 	for i := range d.held {
 		out[i] = lighting.Key{ID: byte(i), Name: zoneName + " LED " + strconv.Itoa(i)} //nolint:gosec // at most 12
@@ -39,6 +47,9 @@ func (d *device) Keys() []lighting.Key {
 func (d *device) Zones() []lighting.Zone {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if d.family == familyVengeance {
+		return []lighting.Zone{{Name: vengeanceZone, First: 0, Count: 1, Shape: lighting.ShapeSingle}}
+	}
 	return []lighting.Zone{{Name: zoneName, First: 0, Count: len(d.held), Shape: lighting.ShapeLine}}
 }
 
@@ -74,6 +85,13 @@ func (d *device) Frame(_ context.Context, px []lighting.Pixel) error {
 		}
 	}
 	if d.sent {
+		return nil
+	}
+	if d.family == familyVengeance {
+		if err := d.colour(d.held[0]); err != nil {
+			return fmt.Errorf("a frame to %s: %w", d.id, err)
+		}
+		d.sent = true
 		return nil
 	}
 	packet := framePacket(d.held, d.product.reverse)
@@ -118,5 +136,23 @@ func (d *device) Release(context.Context) error {
 	}
 	clear(d.held)
 	d.sent = false
+	return nil
+}
+
+/*
+colour sets an original Vengeance RGB's colour as OpenRGB does: no fade, the
+red, green and blue registers, then the single-colour mode. The caller holds
+mu.
+*/
+func (d *device) colour(c colour) error {
+	for _, w := range [][2]byte{
+		{regVengeanceFade, 0x00},
+		{regVengeanceRed, c.r}, {regVengeanceGreen, c.g}, {regVengeanceBlue, c.b},
+		{regVengeanceMode, 0x00},
+	} {
+		if err := d.write(w[0], w[1]); err != nil {
+			return err
+		}
+	}
 	return nil
 }

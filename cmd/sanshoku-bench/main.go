@@ -15,6 +15,8 @@ import (
 	"io"
 	"os"
 	"os/signal"
+
+	"github.com/ushineko/sanshoku/pawnio"
 )
 
 const usage = `usage: sanshoku-bench <verb> [flags]
@@ -38,9 +40,13 @@ const usage = `usage: sanshoku-bench <verb> [flags]
                        and --restore FILE, with --yes, write its flash, saving first
   host                 read the graphics card and, through LibreHardwareMonitor, the CPU temperature (Windows)
                        --lhm URL  --repeat N  --interval D
+
+On Windows, SANSHOKU_PAWNIO_MODULES names the directory PawnIO's module blobs
+are read from (SmbusPIIX4.bin, LpcIO.bin); the default is the bench's own.
 `
 
 func main() {
+	pawnio.ModuleDir = os.Getenv("SANSHOKU_PAWNIO_MODULES")
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	code := run(ctx, os.Args[1:], os.Stdout, os.Stderr)
 	stop()
