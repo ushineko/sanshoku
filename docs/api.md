@@ -535,7 +535,7 @@ Driver finds and opens Corsair RGB memory modules.
 
 ### Functions
 
-- `func Support() []support.Entry`: Support is the corsairdram driver's support table: the Dominator Platinum RGB DDR5, which spec 042's bench run tests, and the other module families OpenRGB knows, Expected.
+- `func Support() []support.Entry`: Support is the corsairdram driver's support table: the Dominator Platinum RGB DDR5, Tested on the bench run spec 042 records, and the other module families OpenRGB knows, Expected.
 
 ## evga
 
@@ -559,7 +559,7 @@ Driver finds and opens EVGA Ampere graphics cards' lighting controllers.
 
 ### Functions
 
-- `func Support() []support.Entry`: Support is the evga driver's support table: the RTX 3080 FTW3 Ultra LHR, which spec 041's bench run tests, and the other cards OpenRGB pairs with the same controller, Expected.
+- `func Support() []support.Entry`: Support is the evga driver's support table: the RTX 3080 FTW3 Ultra LHR, Tested on the bench run spec 041 records, and the other cards OpenRGB pairs with the same controller, Expected.
 
 ## gigabyte
 

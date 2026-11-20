@@ -2,11 +2,16 @@
 
 **Issue**: #108
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
-(Written last.)
+A new `corsairdram` driver lights Corsair RGB memory over the chipset's
+SMBus: each module a canvas by direct frames. Modules are found by reads
+only, once per process, and written only through the four registers that read
+device information and take frames. Four Dominator Platinum RGB DDR5 modules
+are tested; eight other families are expected. Review the probing and the
+write allow-list in `corsairdram/driver.go` first.
 
 ## Context
 
@@ -52,8 +57,8 @@ to package `i2c`.
 - R2.2 A frame that changed is sent whole: the count, the LEDs in R, G, B
   (last first where the product says), and a CRC-8, 32 bytes to `31` and the
   rest to `32`.
-- R2.3 `Floor`, and whether the module holds a frame or goes back to its own
-  effect (`Fading`), are measured on the bench.
+- R2.3 `Floor` is 50 ms, and a module holds its frame: not `Fading` (the
+  bench run).
 - R2.4 `Release` forgets the frame and sends nothing. `Close` sends nothing.
 
 ### R3. Documentation
@@ -63,18 +68,18 @@ to package `i2c`.
 
 ## Acceptance Criteria
 
-- [ ] The checks as spec 041's.
-- [ ] Tests on fake modules: find probes only the memory bus, only the
+- [x] The checks as spec 041's.
+- [x] Tests on fake modules: find probes only the memory bus, only the
       addresses, only by reads, and once; an address the kernel owns and
       something else answering are not modules; open names the module from
       its product; a bad CRC, an unknown product and an old protocol are
       refused; a frame's layout, order, CRC and blocks; an unchanged frame
       sends nothing; only the allowed registers are written; CRC-8 against
       its check value.
-- [ ] Live on the test machine: `sanshoku-bench light --yes --driver
+- [x] Live on the test machine: `sanshoku-bench light --yes --driver
       corsairdram` finds the four modules and shows steady, breathe and wave
       on them; the floor and the hold are measured.
-- [ ] Docs per R3.
+- [x] Docs per R3.
 
 ## Out of scope
 
@@ -97,4 +102,20 @@ to package `i2c`.
 
 ## Verification
 
-(Results pasted here.)
+### Bench run (2026-11-20, the Linux test machine, hotaru and OpenRGB stopped, the maintainer watching)
+
+- `sanshoku-bench light --yes --driver corsairdram --hold 5s` found four
+  modules on `/dev/i2c-21`, at `0x18`, `0x19`, `0x1A` and `0x1B`, and opened
+  each: device information with a good CRC, a known product, protocol 4 or
+  later, 12 keys. The SPD hubs at `0x50` to `0x53` are the kernel's
+  (`spd5118`), and probing does not touch them.
+- Steady, breathe and wave at 50 ms on each, one module after another, 100
+  frames each, none timed out; a frame wrote in 6.1 to 7.1 ms at the median,
+  8.0 ms at most. The maintainer: all four showed all three.
+- The hold: nothing sent for three minutes after the last module: "Last
+  frame held". Not `Fading`.
+- The bench prints a candidate's name, which before open is `Corsair memory
+  (0x18)`; the opened name (`Corsair Dominator Platinum RGB DDR5 (0x18)`) is
+  covered by the tests.
+- hotaru and OpenRGB were restarted after; hotaru 0.1.29 found the modules
+  again.

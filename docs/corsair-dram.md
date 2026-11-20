@@ -67,3 +67,11 @@ uses for effects and the bootloader (O):
 | `23` | switches between the bootloader and normal mode |
 | `26` | selects a configuration buffer |
 | `82` | writes and applies a configuration |
+
+## On the bench (B)
+
+Four Dominator Platinum RGB DDR5 modules at `0x18` to `0x1B` on an Intel
+Raptor Lake SMBus, beside SPD hubs the kernel owns at `0x50` to `0x53`: each
+identified, read its device information with a good CRC, and took direct
+frames, about 7 ms each. A module keeps its last frame with nothing sent, for
+minutes at least.

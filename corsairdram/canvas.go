@@ -10,11 +10,9 @@ import (
 	"github.com/ushineko/sanshoku/lighting"
 )
 
-/*
-frameFloor is the shortest interval at which frames are sent.
-
-Provisional until spec 042's bench run measures a module.
-*/
+// frameFloor is the shortest interval at which frames are sent. A frame took
+// about 7 ms to write, and a breathe and a wave at 50 ms looked smooth on the
+// four modules (spec 042).
 const frameFloor = 50 * time.Millisecond
 
 // zoneName is the module's one zone, as OpenRGB names it.
@@ -108,9 +106,9 @@ func framePacket(held []colour, reverse bool) []byte {
 }
 
 /*
-Release forgets the frame and sends nothing. Whether a module goes back to
-its stored effect when frames stop is spec 042's bench run to find; no
-command is sent that writes its configuration.
+Release forgets the frame and sends nothing: a module keeps its last frame,
+for minutes at least (spec 042), and no command is sent that writes its
+configuration.
 */
 func (d *device) Release(context.Context) error {
 	d.mu.Lock()

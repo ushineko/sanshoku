@@ -2,11 +2,16 @@
 
 **Issue**: #109
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
-(Written last.)
+A new `evga` driver lights EVGA's Ampere graphics cards over I2C: each zone
+one colour, as a canvas, with release putting back what the card showed. The
+RTX 3080 FTW3 Ultra LHR is tested on the Linux test machine; 59 other cards
+are expected. `i2c.Bus` gains reads and the SMBus block write, a breaking
+change. Review `evga/canvas.go` (the claim and the release) and the `i2c`
+additions first.
 
 ## Context
 
@@ -44,7 +49,7 @@ controller is read at open.
 - R2.4 `Release` writes back the static registers and the modes register read
   at open, after the unlock, so a card running its own effect runs it again.
   A handle that drew nothing sends nothing. `Close` sends nothing.
-- R2.5 `Floor` is measured on the bench.
+- R2.5 `Floor` is 50 ms (the bench run).
 
 ### R3. Package i2c
 
@@ -59,18 +64,18 @@ controller is read at open.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries`, `CGO_ENABLED=0 make build`, and `go vet` for
       windows, linux and darwin pass.
-- [ ] Tests on a fake controller: find by the four IDs on adapter 1 only;
+- [x] Tests on a fake controller: find by the four IDs on adapter 1 only;
       open reads and writes nothing; a card that does not answer is not
       opened; zones without LEDs are not keys; the first frame claims the card
       and writes each zone, the next only what changed; release puts back
       what was read; the save register is never written.
-- [ ] Live on the test machine: `sanshoku-bench light --yes --driver evga`
+- [x] Live on the test machine: `sanshoku-bench light --yes --driver evga`
       shows steady, breathe and wave on the card's zones; the floor is
       measured; release puts back what the card showed.
-- [ ] Docs per R4.
+- [x] Docs per R4.
 
 ## Out of scope
 
@@ -82,8 +87,8 @@ controller is read at open.
 
 ## Risks & Assumptions
 
-- **The zones in step.** OpenRGB writes the sync byte as 1 in Direct mode.
-  Whether each zone still takes its own colour is a live check.
+- **The zones in step.** OpenRGB writes the sync byte as 1 in Direct mode;
+  the bench showed every zone taking its frame with it.
 - **Writes to a graphics card.** Only to the address OpenRGB uses, on a card
   identified by four PCI IDs, and never the save register.
 - **Rollback:** revert; nothing else uses the package. The `i2c.Bus` change
@@ -91,4 +96,16 @@ controller is read at open.
 
 ## Verification
 
-(Results pasted here.)
+### Bench run (2026-11-20, the Linux test machine, hotaru and OpenRGB stopped, the maintainer watching)
+
+- `sanshoku-bench light --keys --driver evga`: `EVGA GeForce RTX 3080 FTW3
+  Ultra LHR (3842:4897)` on `/dev/i2c-10`, four keys: Front Logo, End plate
+  Logo, Back Logo, Addressable Header. Opening read the firmware, the modes
+  register and four static registers, and wrote nothing.
+- `sanshoku-bench light --yes --driver evga --hold 5s`: steady, breathe and
+  wave at 50 ms, 100 frames each, none timed out; a frame wrote in 11.2 to
+  14.0 ms at the median, 21.1 ms at most. The maintainer: all three showed,
+  "then back" to the card's earlier look on release (15.1 ms). The zones in
+  step (sync 1) still each took their colour.
+- hotaru and OpenRGB were restarted after; hotaru 0.1.29 found the card
+  again.

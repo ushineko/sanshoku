@@ -44,6 +44,8 @@ first bench run; a capability added later names its own spec in the notes.
 | msi | GeForce RTX 4090 Suprim Liquid X | PCI 10de:2684, subsystem 1462:5104; NVIDIA i2c adapter 1, address 0x68 | lighting, onboard | MSI GeForce RTX 4090 Suprim Liquid X | – | 2026-11-17 | – | 029 |
 | powersupply | Nintendo Switch Pro Controller | 057e:2009, hid-nintendo's power_supply node | battery | 8BitDo controller in its Switch (Bluetooth) mode | – | 2026-10-28 | – | 022 |
 | gigabyte | RGB Fusion 2 USB mainboard controller | vendor 048d, usage page 0xFF89; product 048d:5702; boards in the driver's table | lighting | Gigabyte Z790 AORUS MASTER X (048d:5702, IT5701 and IT5702) | IT5701-GIGABYTE V7.0.18.1, IT5702-Z490XE V1.11.1.0 | 2026-11-19 | – | 039 |
+| evga | EVGA GeForce RTX 3080 FTW3 Ultra LHR | NVIDIA adapter 1 on PCI 10de:2216, subsystem 3842:4897; address 0x2D | lighting | EVGA GeForce RTX 3080 FTW3 Ultra LHR (10de:2216, 3842:4897) | – | 2026-11-20 | – | 041 |
+| corsairdram | Corsair Dominator Platinum RGB DDR5 | the chipset SMBus, addresses 0x18 to 0x1F; registers 0x43 and 0x44; product 0600 or 0601 | lighting | four Corsair Dominator Platinum RGB DDR5 modules on an Intel Raptor Lake SMBus (8086:7a23) | – | 2026-11-20 | – | 042 |
 
 ## Expected
 
@@ -72,9 +74,7 @@ first bench run; a capability added later names its own spec in the notes.
 | sony | DualSense Edge | 054c:0df2, as the DualSense | battery | the DualSense's report; hid-playstation reads both the same way | expected | 017 |
 | powersupply | Any HID device whose battery the kernel reads | /sys/class/power_supply node with scope=Device on a HID device, unless another driver found the same device | battery | the kernel driver's own reading (hid-nintendo, xpadneo, hid-input); a level, or one of four bands where the kernel has only a capacity level; nothing is sent to the device | – | 022 |
 | gigabyte | RGB Fusion 2 USB mainboard controller, other boards | vendor 048d, usage page 0xFF89; product 048d:5702; the boards OpenRGB 1.1 lists on it | lighting | 317 boards, each with its layout from OpenRGB 1.1's table; left out, because OpenRGB lists each twice with different layouts: A620M DS3H, A620M GAMING X, A620M GAMING X AX, A620M H, A620M S2H, B650M DS3H, B650M GAMING X AX, B650M K, Z690 AORUS ELITE AX | – | 040 |
-| evga | EVGA GeForce RTX 3080 FTW3 Ultra LHR | NVIDIA adapter 1 on PCI 10de:2216, subsystem 3842:4897; address 0x2D | lighting | each lit zone (the logos and the addressable header) one colour, as a canvas; release puts back what the card showed at open; the card's save register is never written | – | 041 |
 | evga | EVGA Ampere graphics cards | NVIDIA adapter 1 on the cards' PCI IDs; address 0x2D | lighting | 59 cards OpenRGB 1.1 pairs with the same controller | – | 041 |
-| corsairdram | Corsair Dominator Platinum RGB DDR5 | the chipset SMBus, addresses 0x18 to 0x1F; registers 0x43 and 0x44; product 0600 or 0601 | lighting | each module's 12 LEDs as a canvas, by direct frames; found by reads only; writes go only to the device-information and frame registers | – | 042 |
 | corsairdram | Corsair RGB memory, other families | the chipset SMBus, addresses 0x18 to 0x1F (DDR5) and 0x58 to 0x5F (DDR4); the product ID | lighting | Vengeance RGB Pro, Dominator Platinum RGB, Vengeance RGB Pro SL and Vengeance RGB RS DDR4; Dominator Titanium RGB, Vengeance RGB, Vengeance Shugo Series and Vengeance RGB RS DDR5; protocol 4 and later only | – | 042 |
 
 ## Listed

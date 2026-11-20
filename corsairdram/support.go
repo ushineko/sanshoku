@@ -1,13 +1,15 @@
 package corsairdram
 
 import (
+	"time"
+
 	"github.com/ushineko/sanshoku"
 	"github.com/ushineko/sanshoku/support"
 )
 
 /*
 Support is the corsairdram driver's support table: the Dominator Platinum
-RGB DDR5, which spec 042's bench run tests, and the other module families
+RGB DDR5, Tested on the bench run spec 042 records, and the other module families
 OpenRGB knows, Expected.
 */
 func Support() []support.Entry {
@@ -18,7 +20,9 @@ func Support() []support.Entry {
 		Vendor:       0x1B1C,
 		Products:     []uint16{0x0600, 0x0601},
 		Capabilities: []string{"lighting"},
-		Tier:         support.Expected,
+		Tier:         support.Tested,
+		Hardware:     "four Corsair Dominator Platinum RGB DDR5 modules on an Intel Raptor Lake SMBus (8086:7a23)",
+		Tested:       time.Date(2026, time.November, 20, 0, 0, 0, 0, time.UTC),
 		Spec:         42,
 		Notes: "each module's 12 LEDs as a canvas, by direct frames; found by reads only; writes go only to the " +
 			"device-information and frame registers",

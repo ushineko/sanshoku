@@ -51,3 +51,10 @@ OpenRGB's Direct mode sets every zone to static, with the zones in step, then
 writes each zone's static register (O). The driver does the same, after the
 unlock. It reads `C0` and each zone's static register at open, and writes them
 back on release.
+
+## On the bench (B)
+
+The RTX 3080 FTW3 Ultra LHR has all four zones. A frame of four zones took 11
+to 14 ms to write at the median; steady, breathe and wave at 50 ms showed on
+every zone, and writing back what was read at open returned the card to its
+earlier look.

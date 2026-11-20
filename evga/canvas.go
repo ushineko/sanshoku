@@ -9,11 +9,9 @@ import (
 	"github.com/ushineko/sanshoku/lighting"
 )
 
-/*
-frameFloor is the shortest interval at which frames are sent.
-
-Provisional until spec 041's bench run measures the card.
-*/
+// frameFloor is the shortest interval at which frames are sent. A frame of
+// four zones took 11 to 14 ms to write at the median, 21 ms at most, and a
+// breathe and a wave at 50 ms looked smooth (spec 041).
 const frameFloor = 50 * time.Millisecond
 
 var _ lighting.Canvas = (*device)(nil)
