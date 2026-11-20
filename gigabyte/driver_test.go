@@ -63,7 +63,7 @@ func TestAControllerWithNoAnswerIsNotOpened(t *testing.T) {
 // A board not in the table is asked its report and given nothing else.
 func TestAnUnmeasuredBoardIsRefused(t *testing.T) {
 	f := newFake(0)
-	c := candidate(masterXNode, func(string) (node, error) { return f, nil }, "Z790 AORUS ELITE AX")
+	c := candidate(masterXNode, func(string) (node, error) { return f, nil }, "NOT A REAL BOARD")
 	_, err := c.Open(context.Background())
 	require.ErrorIs(t, err, sanshoku.ErrUnsupported)
 	assert.Equal(t, []string{"60"}, f.told(1))

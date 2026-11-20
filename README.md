@@ -309,6 +309,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
   written to the board's flash or calibration. The bench lit the board's
   single-colour lights; nothing was plugged into its addressable headers.
   Linux only.
+- **317 more Gigabyte boards, expected** (spec 040, #111): the boards OpenRGB
+  lists on the same controller, each with the layout OpenRGB's table gives
+  it. Nine boards OpenRGB lists twice with different layouts are left out.
 
 ### 0.4.0 (2026-11-18)
 

@@ -225,7 +225,7 @@ func (d *device) start(ctx context.Context, board string) error {
 		return fmt.Errorf("%s: its report: %w", d.id, err)
 	}
 	num := info[infoController]
-	layout, ok := boards[boardKey{board, num}]
+	layout, ok := layoutFor(boardKey{board, num})
 	if !ok {
 		return fmt.Errorf("%s: controller %d of a board whose layout has not been measured: %w", d.id, num, sanshoku.ErrUnsupported)
 	}

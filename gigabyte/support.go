@@ -1,6 +1,8 @@
 package gigabyte
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ushineko/sanshoku"
@@ -9,7 +11,8 @@ import (
 
 /*
 Support is the gigabyte driver's support table: the Fusion 2 USB controllers
-on the Z790 AORUS MASTER X, Tested on the bench run spec 039 records.
+on the Z790 AORUS MASTER X, Tested on the bench run spec 039 records, and the
+other boards OpenRGB lists on the same product, Expected (spec 040).
 */
 func Support() []support.Entry {
 	return []support.Entry{{
@@ -28,7 +31,27 @@ func Support() []support.Entry {
 			"board whose layout has been measured; a header's length is the consumer's to set; the bench lit " +
 			"the single-colour lights only, as nothing was plugged into the headers; nothing is written to the " +
 			"board's flash; not on Windows, where the board's name, and so its layout, is not read",
+	}, {
+		Driver:       driverName,
+		Device:       "RGB Fusion 2 USB mainboard controller, other boards",
+		Match:        "vendor 048d, usage page 0xFF89; product 048d:5702; the boards OpenRGB 1.1 lists on it",
+		Vendor:       vendor,
+		Products:     []uint16{0x5702},
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         40,
+		Notes: fmt.Sprintf("%d boards, each with its layout from OpenRGB 1.1's table; left out, because OpenRGB "+
+			"lists each twice with different layouts: %s", expectedBoards(), strings.Join(expectedTwice, ", ")),
 	}}
+}
+
+// expectedBoards is how many boards the expected table names.
+func expectedBoards() int {
+	seen := map[string]bool{}
+	for k := range expected {
+		seen[k.board] = true
+	}
+	return len(seen)
 }
 
 // Describe is what the driver reads: a Gigabyte mainboard's lights.

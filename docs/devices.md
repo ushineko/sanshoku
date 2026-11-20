@@ -71,6 +71,7 @@ first bench run; a capability added later names its own spec in the notes.
 | sony | DualSense | 054c:0ce6, input report 0x01 (USB) or 0x31 (Bluetooth, after feature report 0x05 is read) | battery | level in tenths and charge state from the input report's status byte, as hid-playstation reads it | tested 2026-10-09; Tested over Bluetooth; USB expected. Over Bluetooth the controller stays in its long-report mode until it reconnects | 017 |
 | sony | DualSense Edge | 054c:0df2, as the DualSense | battery | the DualSense's report; hid-playstation reads both the same way | expected | 017 |
 | powersupply | Any HID device whose battery the kernel reads | /sys/class/power_supply node with scope=Device on a HID device, unless another driver found the same device | battery | the kernel driver's own reading (hid-nintendo, xpadneo, hid-input); a level, or one of four bands where the kernel has only a capacity level; nothing is sent to the device | – | 022 |
+| gigabyte | RGB Fusion 2 USB mainboard controller, other boards | vendor 048d, usage page 0xFF89; product 048d:5702; the boards OpenRGB 1.1 lists on it | lighting | 317 boards, each with its layout from OpenRGB 1.1's table; left out, because OpenRGB lists each twice with different layouts: A620M DS3H, A620M GAMING X, A620M GAMING X AX, A620M H, A620M S2H, B650M DS3H, B650M GAMING X AX, B650M K, Z690 AORUS ELITE AX | – | 040 |
 
 ## Listed
 

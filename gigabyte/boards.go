@@ -43,3 +43,13 @@ var boards = map[boardKey][]zoneDef{
 		single("I/O Cover", 0),
 	},
 }
+
+// layoutFor is a controller's layout: a measured board's, else an expected
+// one's (expected.go).
+func layoutFor(k boardKey) ([]zoneDef, bool) {
+	if l, ok := boards[k]; ok {
+		return l, true
+	}
+	l, ok := expected[k]
+	return l, ok
+}
