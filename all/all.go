@@ -42,6 +42,7 @@ func Drivers() []sanshoku.Driver {
 		gigabyte.Driver{},
 		evga.Driver{},
 		corsairdram.Driver{},
+		razer.Lights{},
 	}
 }
 
@@ -65,5 +66,6 @@ func Support() []support.Entry {
 	out = append(out, gigabyte.Support()...)
 	out = append(out, evga.Support()...)
 	out = append(out, corsairdram.Support()...)
+	out = append(out, razer.LightsSupport()...)
 	return out
 }

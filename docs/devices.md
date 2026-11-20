@@ -46,6 +46,7 @@ first bench run; a capability added later names its own spec in the notes.
 | gigabyte | RGB Fusion 2 USB mainboard controller | vendor 048d, usage page 0xFF89; product 048d:5702; boards in the driver's table | lighting | Gigabyte Z790 AORUS MASTER X (048d:5702, IT5701 and IT5702) | IT5701-GIGABYTE V7.0.18.1, IT5702-Z490XE V1.11.1.0 | 2026-11-19 | – | 039 |
 | evga | EVGA GeForce RTX 3080 FTW3 Ultra LHR | NVIDIA adapter 1 on PCI 10de:2216, subsystem 3842:4897; address 0x2D | lighting | EVGA GeForce RTX 3080 FTW3 Ultra LHR (10de:2216, 3842:4897) | – | 2026-11-20 | – | 041 |
 | corsairdram | Corsair Dominator Platinum RGB DDR5 | the chipset SMBus, addresses 0x18 to 0x1F; registers 0x43 and 0x44; product 0600 or 0601 | lighting | four Corsair Dominator Platinum RGB DDR5 modules on an Intel Raptor Lake SMBus (8086:7a23) | – | 2026-11-20 | – | 042 |
+| razer-lights | Mouse Dock Pro, and the Basilisk V3 Pro on it | vendor 1532, usage page 0xFF00 or 0xFF01; 1532:00a4, and 1532:00ab through it | lighting | Razer Mouse Dock Pro with a Basilisk V3 Pro paired to it | – | 2026-11-20 | expected | 043 |
 
 ## Expected
 
@@ -76,6 +77,7 @@ first bench run; a capability added later names its own spec in the notes.
 | gigabyte | RGB Fusion 2 USB mainboard controller, other boards | vendor 048d, usage page 0xFF89; product 048d:5702; the boards OpenRGB 1.1 lists on it | lighting | 317 boards, each with its layout from OpenRGB 1.1's table; left out, because OpenRGB lists each twice with different layouts: A620M DS3H, A620M GAMING X, A620M GAMING X AX, A620M H, A620M S2H, B650M DS3H, B650M GAMING X AX, B650M K, Z690 AORUS ELITE AX | – | 040 |
 | evga | EVGA Ampere graphics cards | NVIDIA adapter 1 on the cards' PCI IDs; address 0x2D | lighting | 59 cards OpenRGB 1.1 pairs with the same controller | – | 041 |
 | corsairdram | Corsair RGB memory, other families | the chipset SMBus, addresses 0x18 to 0x1F (DDR5) and 0x58 to 0x5F (DDR4); the product ID | lighting | Vengeance RGB Pro, Dominator Platinum RGB, Vengeance RGB Pro SL and Vengeance RGB RS DDR4; Dominator Titanium RGB, Vengeance RGB, Vengeance Shugo Series and Vengeance RGB RS DDR5; protocol 4 and later only | – | 042 |
+| razer-lights | Razer devices on the standard, extended and linear matrix reports | vendor 1532, usage page 0xFF00 or 0xFF01; the products OpenRGB 1.1 lists | lighting | 130 products: mice, docks, mats, keyboards and keypads (keys named by position, not by legend), speakers and accessories; a device behind a receiver through the receiver; laptops and 58 devices on other reports left out | expected | 043 |
 
 ## Listed
 

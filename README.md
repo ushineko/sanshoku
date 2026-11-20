@@ -125,7 +125,7 @@ Every lit device since has followed it.
 | [`screen`](https://pkg.go.dev/github.com/ushineko/sanshoku/screen) | The `Panel` capability for a device with a display, `Streamer` for one that takes streamed frames, and `Mover` for one that takes frames made for motion. |
 | [`lighting`](https://pkg.go.dev/github.com/ushineko/sanshoku/lighting) | The `Canvas` capability for a device whose lights a program streams frames to, and `Onboard` for a device whose firmware effect has a colour of its own. |
 | [`logitech`](https://pkg.go.dev/github.com/ushineko/sanshoku/logitech) | HID++ 1.0 and 2.0 batteries over hidraw, and the G502 X PLUS's lights as a canvas. |
-| [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock. |
+| [`razer`](https://pkg.go.dev/github.com/ushineko/sanshoku/razer) | Battery through feature reports, including a mouse behind its dock; and lighting as canvases, the dock's and the mouse's behind it. |
 | [`steelseries`](https://pkg.go.dev/github.com/ushineko/sanshoku/steelseries) | Battery over hidraw, with a product allow-list; the Apex Pro TKL Gen 3's lighting frames. |
 | [`apple`](https://pkg.go.dev/github.com/ushineko/sanshoku/apple) | AirPods over the Accessory Protocol: left, right and case. |
 | [`nzxt`](https://pkg.go.dev/github.com/ushineko/sanshoku/nzxt) | Kraken Elite telemetry and LCD, its ring and fans as a canvas, and its firmware effects. |
@@ -249,6 +249,8 @@ is not there is said and is not a failure.
   the Apex's nodes with OpenRGB and a second program measured.
 - [docs/kraken-lighting.md](docs/kraken-lighting.md): the Kraken's lighting
   protocol, from OpenRGB and a capture of NZXT CAM.
+- [docs/razer-lights.md](docs/razer-lights.md): Razer lighting by custom
+  frames, from OpenRGB and the bench.
 - [docs/asus-aura.md](docs/asus-aura.md): the ASUS Aura mainboard
   controller's lighting protocol, from OpenRGB and the bench.
 - [docs/gigabyte-fusion2.md](docs/gigabyte-fusion2.md): the Gigabyte RGB
@@ -332,6 +334,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
   `WriteSMBusBlock`, which both drivers need; an implementation outside the
   module needs them too.
 - The udev rules tag the chipset's SMBus adapters (Intel I801, AMD PIIX4).
+- **Razer lighting** (spec 043, #106), in a new `razer-lights` driver beside
+  the batteries: a device's lights as a canvas by custom frames, and a mouse
+  behind its receiver as its own, reached through the receiver. The Mouse
+  Dock Pro and the Basilisk V3 Pro behind it first; the other devices OpenRGB
+  lights through the same reports, expected. Only custom frames are sent;
+  nothing is stored on a device.
 
 ### 0.4.0 (2026-11-18)
 
