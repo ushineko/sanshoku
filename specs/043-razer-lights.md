@@ -2,11 +2,17 @@
 
 **Issue**: #106
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
-(Written last.)
+A new `razer-lights` driver lights Razer devices by OpenRGB's custom frames,
+and a mouse behind its receiver as a canvas of its own through the receiver.
+The Mouse Dock Pro and the Basilisk V3 Pro behind it are tested on the Linux
+test machine; 130 other devices OpenRGB lights through the same reports are
+expected. Only six reports can be built, none of which stores anything.
+Review `razer/lights.go` (the pairing question, the relay, the report
+allow-list) first.
 
 ## Context
 
@@ -47,7 +53,8 @@ OpenRGB lists as Expected (2026-11-20). The protocol is in
 
 - R2.1 A frame that changed is sent whole: each row, then the custom mode.
   An unchanged frame sends nothing.
-- R2.2 `Floor` and the hold are measured on the bench.
+- R2.2 `Floor` is 50 ms, and both devices hold a frame: not `Fading` (the
+  bench run).
 - R2.3 `Release` forgets the frame and sends nothing; `Close` sends nothing.
 
 ### R3. Documentation
@@ -57,19 +64,19 @@ OpenRGB lists as Expected (2026-11-20). The protocol is in
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries`, `CGO_ENABLED=0 make build`, and `go vet` for
       windows, linux and darwin pass.
-- [ ] Tests on a fake node: the dock and the mouse it lists are candidates,
+- [x] Tests on a fake node: the dock and the mouse it lists are candidates,
       named as OpenRGB names them, the dock asked once; only products in the
       table; the mouse's keys and zones; an extended frame and its mode on
       the dock's and the mouse's transaction IDs; a standard frame; a linear
       frame declared `32`; only the six reports built; release and close;
       every device in the table fits the reports.
-- [ ] Live on the test machine: `sanshoku-bench light --yes --driver
+- [x] Live on the test machine: `sanshoku-bench light --yes --driver
       razer-lights` finds the dock and the mouse behind it and shows steady,
       breathe and wave on both; the floor and the hold are noted.
-- [ ] Docs per R3.
+- [x] Docs per R3.
 
 ## Out of scope
 
@@ -90,4 +97,16 @@ OpenRGB lists as Expected (2026-11-20). The protocol is in
 
 ## Verification
 
-(Results pasted here.)
+### Bench run (2026-11-20, the Linux test machine, hotaru and OpenRGB stopped, the maintainer watching)
+
+- `sanshoku-bench light --keys --driver razer-lights`: `Razer Mouse Dock Pro
+  (1532:00a4)` on `/dev/hidraw0`, zone Base, 9 keys `Base LED 1` to `9`; and
+  `Razer Basilisk V3 Pro (Wireless) (Razer Mouse Dock Pro) (1532:00ab)` on the
+  same node, zones Scroll Wheel, Logo and LED Strip, 13 keys: the names
+  hotaru 0.1.29 showed through OpenRGB.
+- `sanshoku-bench light --yes --driver razer-lights --hold 5s`: steady,
+  breathe and wave at 50 ms on each, none timed out. The dock wrote a frame
+  in 0.3 ms at the median; the mouse, relayed, in 13.7 to 13.9 ms, 113 ms at
+  most once. The maintainer: both showed all three.
+- The hold: about a minute after, nothing sent: "Both held".
+- hotaru and OpenRGB were restarted after.

@@ -98,7 +98,7 @@ func Support() []support.Entry {
 
 /*
 LightsSupport is the lighting driver's support table: the Mouse Dock Pro and
-the Basilisk V3 Pro behind it, which spec 043's bench run tests, and the other
+the Basilisk V3 Pro behind it, Tested on spec 043's bench run, and the other
 devices OpenRGB lights through the same reports, Expected.
 */
 func LightsSupport() []support.Entry {
@@ -109,7 +109,9 @@ func LightsSupport() []support.Entry {
 		Vendor:       razerVendor,
 		Products:     []uint16{productMouseDockPro, 0x00AB},
 		Capabilities: []string{"lighting"},
-		Tier:         support.Expected,
+		Tier:         support.Tested,
+		Hardware:     "Razer Mouse Dock Pro with a Basilisk V3 Pro paired to it",
+		Tested:       time.Date(2026, time.November, 20, 0, 0, 0, 0, time.UTC),
 		Spec:         43,
 		Notes: "the dock's 9 LEDs and the mouse's 13 as canvases, the mouse reached through the dock on its own " +
 			"transaction ID; custom frames only, nothing stored",

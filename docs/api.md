@@ -1390,7 +1390,7 @@ Lights finds and opens the lights of Razer devices: one candidate per control no
 ### Functions
 
 - `func Decode(reply []byte) (level int, charging bool, err error)`: Decode reads a reply to one of the two battery getters, with its leading report number: class 0x07 command 0x80, the level, or class 0x07 command 0x84, the charge state.
-- `func LightsSupport() []support.Entry`: LightsSupport is the lighting driver's support table: the Mouse Dock Pro and the Basilisk V3 Pro behind it, which spec 043's bench run tests, and the other devices OpenRGB lights through the same reports, Expected.
+- `func LightsSupport() []support.Entry`: LightsSupport is the lighting driver's support table: the Mouse Dock Pro and the Basilisk V3 Pro behind it, Tested on spec 043's bench run, and the other devices OpenRGB lights through the same reports, Expected.
 - `func Support() []support.Entry`: Support is the razer driver's support table.
 
 ## screen

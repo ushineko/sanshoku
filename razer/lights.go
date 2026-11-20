@@ -254,11 +254,9 @@ var (
 	_ lighting.Zoned  = (*lightDevice)(nil)
 )
 
-/*
-frameFloor is the shortest interval at which frames are sent.
-
-Provisional until spec 043's bench run measures the dock and the mouse.
-*/
+// frameFloor is the shortest interval at which frames are sent. The dock
+// wrote a frame in under a millisecond and the mouse, through it, in about
+// 14 ms; a breathe and a wave at 50 ms showed on both (spec 043).
 const frameFloor = 50 * time.Millisecond
 
 // Keys is every zone's lights in matrix order, named as OpenRGB names them:
@@ -377,7 +375,7 @@ func customMode(m matrix) (class, command byte, args []byte) {
 /*
 Release forgets the frame and sends nothing: no report is known that returns
 a device to the effect stored in it short of writing one, and that would
-store it.
+store it. The dock and the mouse keep their last frame (spec 043).
 */
 func (d *lightDevice) Release(context.Context) error {
 	d.mu.Lock()

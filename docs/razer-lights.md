@@ -52,3 +52,10 @@ so OpenRGB polls for the answer, up to 50 times 2 ms apart, before the next
 The driver builds only `00:BF`, `0F:02`, `0F:03`, `03:0A`, `03:0B` and
 `03:0C`. Effects, brightness and the device mode are not among them; some of
 them store what they set.
+
+## On the bench (B)
+
+The Mouse Dock Pro listed the Basilisk V3 Pro as paired. The dock wrote a
+frame in under a millisecond; the mouse, relayed, in about 14 ms at the
+median. Steady, breathe and wave at 50 ms showed on both, and both kept their
+last frame with nothing sent.
