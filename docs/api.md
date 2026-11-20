@@ -1375,9 +1375,22 @@ Driver reads Razer batteries through feature reports.
 - `func (d Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per Razer hidraw node whose descriptor declares usage page 0xFF00 or 0xFF01.
 - `func (Driver) Name() string`: Name is "razer".
 
+#### type Lights
+
+```go
+type Lights struct{}
+```
+
+Lights finds and opens the lights of Razer devices: one candidate per control node of a product in lit, and one per device a receiver reports paired to it.
+
+- `func (Lights) Describe() sanshoku.Description`: Describe is what the lighting driver reads.
+- `func (Lights) Find(ctx context.Context) ([]sanshoku.Candidate, error)`: Find returns a candidate per Razer control node whose product is in lit, and one per device in lit that a receiver lists as paired to it, named after both as OpenRGB names it: "Razer Basilisk V3 Pro (Wireless) (Razer Mouse Dock Pro)".
+- `func (Lights) Name() string`: Name is "razer-lights".
+
 ### Functions
 
 - `func Decode(reply []byte) (level int, charging bool, err error)`: Decode reads a reply to one of the two battery getters, with its leading report number: class 0x07 command 0x80, the level, or class 0x07 command 0x84, the charge state.
+- `func LightsSupport() []support.Entry`: LightsSupport is the lighting driver's support table: the Mouse Dock Pro and the Basilisk V3 Pro behind it, which spec 043's bench run tests, and the other devices OpenRGB lights through the same reports, Expected.
 - `func Support() []support.Entry`: Support is the razer driver's support table.
 
 ## screen

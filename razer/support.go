@@ -1,6 +1,7 @@
 package razer
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ushineko/sanshoku"
@@ -93,6 +94,59 @@ func Support() []support.Entry {
 			},
 		},
 	}
+}
+
+/*
+LightsSupport is the lighting driver's support table: the Mouse Dock Pro and
+the Basilisk V3 Pro behind it, which spec 043's bench run tests, and the other
+devices OpenRGB lights through the same reports, Expected.
+*/
+func LightsSupport() []support.Entry {
+	return []support.Entry{{
+		Driver:       lightsName,
+		Device:       "Mouse Dock Pro, and the Basilisk V3 Pro on it",
+		Match:        razerMatch + "; 1532:00a4, and 1532:00ab through it",
+		Vendor:       razerVendor,
+		Products:     []uint16{productMouseDockPro, 0x00AB},
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         43,
+		Notes: "the dock's 9 LEDs and the mouse's 13 as canvases, the mouse reached through the dock on its own " +
+			"transaction ID; custom frames only, nothing stored",
+		Windows: &support.Port{Tier: support.Expected},
+	}, {
+		Driver:       lightsName,
+		Device:       "Razer devices on the standard, extended and linear matrix reports",
+		Match:        razerMatch + "; the products OpenRGB 1.1 lists",
+		Vendor:       razerVendor,
+		Capabilities: []string{"lighting"},
+		Tier:         support.Expected,
+		Spec:         43,
+		Notes: fmt.Sprintf("%d products: mice, docks, mats, keyboards and keypads (keys named by position, not "+
+			"by legend), speakers and accessories; a device behind a receiver through the receiver; laptops and "+
+			"%d devices on other reports left out", len(lit)-2, leftOut()),
+		Windows: &support.Port{Tier: support.Expected},
+	}}
+}
+
+// Describe is what the lighting driver reads.
+func (Lights) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "Razer lights",
+		Finds:        "device",
+		Capabilities: []string{"lighting"},
+		Platforms:    []string{"linux", "windows"},
+		Quiet:        false,
+	}
+}
+
+// leftOut is how many devices OpenRGB lists that lit leaves out.
+func leftOut() int {
+	n := 0
+	for _, names := range litLeftOut {
+		n += len(names)
+	}
+	return n
 }
 
 // wiredBenched is the date of spec 015's bench run of the mouse on its cable.
