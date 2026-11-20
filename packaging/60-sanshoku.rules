@@ -27,6 +27,9 @@ KERNEL=="hidraw*", KERNELS=="0003:3434:*", TAG+="uaccess"
 KERNEL=="hidraw*", KERNELS=="0003:0B05:*", TAG+="uaccess"
 # Corsair: the MM700's lighting interface (spec 026)
 KERNEL=="hidraw*", KERNELS=="0003:1B1C:*", TAG+="uaccess"
+# Gigabyte RGB Fusion 2 USB mainboard controllers (spec 039): by product,
+# because 048d is ITE's, a chip maker's, and is on keyboards and other devices.
+KERNEL=="hidraw*", KERNELS=="0003:048D:5702.*", TAG+="uaccess"
 # AULA keyboards' 2.4 GHz receiver (Compx chip).
 KERNEL=="hidraw*", KERNELS=="0003:3554:*", TAG+="uaccess"
 # The AULA F75 on its cable (Sino Wealth chip): by product, because the vendor

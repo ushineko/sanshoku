@@ -513,6 +513,30 @@ Driver finds and opens Corsair V2 devices.
 
 - `func Support() []support.Entry`: Support is the corsair driver's support table: the MM700, Tested on the bench run spec 026 records.
 
+## gigabyte
+
+`import "github.com/ushineko/sanshoku/gigabyte"`
+
+Package gigabyte is the driver for Gigabyte RGB Fusion 2 USB mainboard controllers: the Z790 AORUS MASTER X's two first (spec 039).
+
+### Types
+
+#### type Driver
+
+```go
+type Driver struct{}
+```
+
+Driver finds and opens Gigabyte RGB Fusion 2 USB controllers.
+
+- `func (Driver) Describe() sanshoku.Description`: Describe is what the driver reads: a Gigabyte mainboard's lights.
+- `func (Driver) Find(context.Context) ([]sanshoku.Candidate, error)`: Find returns one candidate per ITE node on usage page 0xFF89.
+- `func (Driver) Name() string`: Name is "gigabyte".
+
+### Functions
+
+- `func Support() []support.Entry`: Support is the gigabyte driver's support table: the Fusion 2 USB controllers on the Z790 AORUS MASTER X, Tested on the bench run spec 039 records, and the other boards OpenRGB lists on the same product, Expected (spec 040).
+
 ## gpu
 
 `import "github.com/ushineko/sanshoku/gpu"`
