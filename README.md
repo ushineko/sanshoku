@@ -306,7 +306,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
   canvas with zones, its addressable headers sized by the consumer and its
   single-colour lights fixed. The controller does not report its layout, so a
   board is driven only once its layout is in the driver's table. Nothing is
-  written to the board's flash or calibration. Linux only.
+  written to the board's flash or calibration. The bench lit the board's
+  single-colour lights; nothing was plugged into its addressable headers.
+  Linux only.
 
 ### 0.4.0 (2026-11-18)
 

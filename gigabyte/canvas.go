@@ -40,12 +40,10 @@ const (
 	headerMax = 256
 )
 
-/*
-frameFloor is the shortest interval at which frames are sent.
-
-Provisional until spec 039 E5 measures the board.
-*/
-const frameFloor = 33 * time.Millisecond
+// frameFloor is the shortest interval at which frames are sent. A breathe on
+// LED_C was smooth at 33 ms and at 16 ms, writing a frame in about 3.8 ms
+// (spec 039 E5).
+const frameFloor = 16 * time.Millisecond
 
 type colour struct{ r, g, b uint8 }
 

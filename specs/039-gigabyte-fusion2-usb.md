@@ -2,11 +2,18 @@
 
 **Issue**: #105
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
-(Written last.)
+A new `gigabyte` driver lights Gigabyte RGB Fusion 2 USB mainboards: each
+controller's addressable headers and single-colour lights as a canvas with
+zones, for boards whose layout has been measured, starting with the Z790
+AORUS MASTER X. It never sends the commands that write calibration or flash.
+On the test machine the strips turned out to be on `LED_C`, so the bench lit
+the single-colour lights and the header packets are covered by tests only.
+Review `gigabyte/driver.go` (identification, start, the refused commands)
+first.
 
 ## Context
 
@@ -92,12 +99,11 @@ credited, not translated) gives the protocol:
   reported (E3). A single-colour light: a static effect in its colour. One
   commit (`CC 28` with the lights' mask) after the single-colour lights. A
   key not in `Keys` is an error and nothing is sent.
-- R3.2 `Floor` is measured (E5).
-- R3.3 Hold: whether the controller keeps a frame with nothing sent (E4)
-  decides whether it is `Fading`.
-- R3.4 `Release`: E7 decides. If turning the headers' own effect back on
-  returns the board to its stored lighting, `Release` does that; otherwise it
-  forgets the frame and sends nothing, as the Aura driver does. `Close` sends
+- R3.2 `Floor` is 16 ms (E5).
+- R3.3 The controller holds a frame with nothing sent (E4). Not `Fading`.
+- R3.4 `Release` forgets the frame and sends nothing, as the Aura driver
+  does: no command is known that returns a single-colour light to a stored
+  effect, and the headers had nothing on them to try (E7). `Close` sends
   nothing.
 
 ### R4. The bench
@@ -137,21 +143,22 @@ hotaru and OpenRGB stopped there, and the maintainer watching the board.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries`, `CGO_ENABLED=0 make build`, and `go vet` for
       windows, linux and darwin pass.
-- [ ] Tests on a fake controller: open decodes a `CC 60` report and lays
+- [x] Tests on a fake controller: open decodes a `CC 60` report and lays
       out each of the board's controllers; no answer is not opened; an
       unknown board and an unmeasured product are refused and never written
       beyond what R1.3 allows; the opening reports; the never-sent commands
       (R1.5) across open, resize, frames, release and close; resize and its
       refusals; header packets split at 19 in the reported colour order;
       single-colour lights and the commit; only changed zones sent.
-- [ ] E0 to E7 run, recorded in Verification, and R1.6, R3.2, R3.3 and R3.4
-      settled.
-- [ ] Live: `sanshoku-bench light --yes --driver gigabyte` with the measured
-      lengths shows steady, breathe and wave across both controllers.
-- [ ] Docs per R5.
+- [x] E0, E1 and E4 to E7 run, recorded in Verification, and R1.6, R3.2,
+      R3.3 and R3.4 settled. E2 and E3 could not be run: nothing is plugged
+      into the test machine's addressable headers. See Verification.
+- [x] Live: `sanshoku-bench light --yes --driver gigabyte` shows steady,
+      breathe and wave across both controllers.
+- [x] Docs per R5.
 
 ## Out of scope
 
@@ -217,3 +224,49 @@ The board's two controllers on the test machine, through sysfs and
 The chip IDs are the suffixes hotaru 0.1.29 shows, which settles R1.6. No
 flag is set, so neither controller has a lamp array or Gen2 strips, and
 start sends no `CC 48`. Nothing visible changed.
+
+### The experiments (2026-11-19, hotaru and OpenRGB stopped, the maintainer watching)
+
+Raw reports from a script, as the driver sends them, unless noted.
+
+- **E6, opening.** `sanshoku-bench light --keys --driver gigabyte` opened
+  both controllers, which sends the reset; run twice. The strips (red, as
+  hotaru had left them through OpenRGB) did not change. The bench listed
+  controller 0 as `ARGB_V2_1/ARGB_V2_3` and `ARGB_V2_2` at no lights and
+  `LED_C`, and controller 1 as `I/O Cover`, as R2 lays them out.
+- **E1, the map.** Header 1 green and header 2 blue at 64 lights, `LED_C`
+  magenta, the I/O cover white: nothing turned green or blue, and the
+  machine's two chained light strips turned magenta. Header 1 alone: no
+  change. OpenRGB's own sequence (each header's effect off just before its
+  lights, 50 ms after it, a commit at the end) with headers at OpenRGB's
+  saved 30 lights each and `LED_C` black: the strips went dark. The I/O cover
+  green through controller 1 and `LED_C` red: the cover green, the strips red
+  end to end. **The strips are on `LED_C`, one colour for the whole strip;
+  nothing is plugged into the addressable headers;** the I/O cover is
+  controller 1's light 0, as OpenRGB's table has it. Once, with `LED_C`
+  magenta, the strips' last LED stayed red; it was not seen again.
+- **E2, lengths, and E3, the headers' colour order.** Not run: nothing is on
+  the headers. The header packets follow OpenRGB and the reported GRB order,
+  and are covered by the tests only. The single-colour lights showed red,
+  green, blue, magenta and white as sent, which settles their blue, green,
+  red order.
+- **E4, the hold.** The strips red and the cover green, nothing sent for
+  over three minutes with every handle closed: unchanged.
+- **E5, the rate.** A white breathe on `LED_C`: 30.2 fps at 33 ms and 62.2
+  fps at 16 ms, writing a frame (a static effect and a commit) in 3.7 to
+  3.8 ms; smooth at both, no difference seen.
+- **E7, release.** Not run as planned: the headers' own effect has nothing to
+  show. `Release` sends nothing (R3.4).
+
+### Live through the driver
+
+`sanshoku-bench light --yes --driver gigabyte --hold 5s --zone
+"ARGB_V2_1/ARGB_V2_3=30" --zone "ARGB_V2_2=30"`, the zones only to exercise
+the header packets: controller 0 with 61 keys, controller 1 with 1, floor
+16 ms. Steady red, a red breathe and a wave on each, 313 frames apiece, none
+timed out. Controller 0 wrote a frame (four header packets, `LED_C` and the
+commit) in 7.9 to 8.2 ms at the median, 15.1 ms at most; controller 1 in
+2.6 ms. The strips and the cover showed all three; after release the last
+frame stayed. The bench refused the two `--zone` options on controller 1,
+which has no headers, naming it `Z790 AORUS MASTER X (0x57020100)`. hotaru
+and OpenRGB were restarted after, and hotaru 0.1.29 found the board again.

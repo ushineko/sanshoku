@@ -92,6 +92,13 @@ refuses to send them:
 | `CC 47` | turns persistent lighting on |
 | `CC 5E` | saves the lighting to the board's flash |
 
+## Timing and hold (B)
+
+- A static effect and its commit take about 3.8 ms to write. A breathe on a
+  single-colour light was smooth at 33 ms and at 16 ms.
+- The controller keeps what it was given with nothing sent, and with every
+  handle closed, for minutes at least.
+
 ## The Z790 AORUS MASTER X
 
 | Controller | Zone | Kind | Index (O) |
@@ -100,3 +107,7 @@ refuses to send them:
 | 0 | `ARGB_V2_2` | header 2 | packet `59` |
 | 0 | `LED_C` | single colour | 4 |
 | 1 | `I/O Cover` | single colour | 0 |
+
+On the bench machine `LED_C` drives two chained light strips, one colour for
+the whole strip, and nothing is plugged into the addressable headers. So the
+header packets have not been seen on this board (B).

@@ -535,7 +535,7 @@ Driver finds and opens Gigabyte RGB Fusion 2 USB controllers.
 
 ### Functions
 
-- `func Support() []support.Entry`: Support is the gigabyte driver's support table: the Fusion 2 USB controllers on the Z790 AORUS MASTER X. Expected until spec 039's bench run on the board.
+- `func Support() []support.Entry`: Support is the gigabyte driver's support table: the Fusion 2 USB controllers on the Z790 AORUS MASTER X, Tested on the bench run spec 039 records.
 
 ## gpu
 
