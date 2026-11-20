@@ -21,6 +21,11 @@ SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="1e71", TAG+="uacc
 # MSI graphics cards: the NVIDIA driver's I2C adapters, where the lighting
 # controller sits (spec 029). Needs the i2c-dev module.
 SUBSYSTEM=="i2c-dev", ATTR{name}=="NVIDIA i2c adapter *", TAG+="uaccess"
+# The chipset's SMBus, where RGB memory modules sit (spec 042): Intel's and
+# AMD's. The kernel refuses an address one of its drivers owns, such as a DDR5
+# module's SPD hub. Needs the i2c-dev module.
+SUBSYSTEM=="i2c-dev", ATTR{name}=="SMBus I801 adapter *", TAG+="uaccess"
+SUBSYSTEM=="i2c-dev", ATTR{name}=="SMBus PIIX4 adapter *", TAG+="uaccess"
 # Keychron: VIA's raw interface (spec 028)
 KERNEL=="hidraw*", KERNELS=="0003:3434:*", TAG+="uaccess"
 # ASUS: the Aura USB mainboard controller (spec 027)
