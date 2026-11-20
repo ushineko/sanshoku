@@ -154,11 +154,25 @@ func Lock(name string) (func(), error) {
 	if err != nil {
 		return nil, err //nolint:wrapcheck // a constant name
 	}
-	h, err := windows.CreateMutex(nil, false, n)
-	if err != nil && h == 0 {
-		return nil, fmt.Errorf("the %s mutex: %w", name, err)
+	/*
+		Opened, asking only to wait on it, before it is created: the mutex
+		usually exists already, made by a service running as SYSTEM
+		(OpenRGB's, LibreHardwareMonitor's), and its security refuses the
+		full access CreateMutex asks for, even to an administrator (spec
+		044's bench run). Waiting and releasing need no more.
+	*/
+	h, err := windows.OpenMutex(windows.SYNCHRONIZE, false, n)
+	if err != nil {
+		h, err = windows.CreateMutex(nil, false, n)
+		if err != nil && h == 0 {
+			return nil, fmt.Errorf("the %s mutex: %w", name, err)
+		}
 	}
-	ev, err := windows.WaitForSingleObject(h, windows.INFINITE)
+	ev, err := windows.WaitForSingleObject(h, lockWait)
+	if err == nil && ev == uint32(windows.WAIT_TIMEOUT) {
+		_ = windows.CloseHandle(h)
+		return nil, fmt.Errorf("the %s mutex: %w", name, ErrBusy)
+	}
 	if err != nil {
 		_ = windows.CloseHandle(h)
 		return nil, fmt.Errorf("waiting for the %s mutex: %w", name, err)
@@ -172,6 +186,13 @@ func Lock(name string) (func(), error) {
 		_ = windows.CloseHandle(h)
 	}, nil
 }
+
+/*
+lockWait bounds the wait for a bus mutex. Another program holds one for a
+transaction, milliseconds; one held longer is a program that does not let go,
+which is reported rather than waited on for ever (spec 044's bench run).
+*/
+const lockWait = 2000 // milliseconds
 
 // errAt names the function a failure was in.
 func errAt(function string, err error) error {

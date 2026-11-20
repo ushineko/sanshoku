@@ -1345,6 +1345,7 @@ Package pawnio runs functions of PawnIO modules on Windows: the signed, scripted
 
 ### Variables
 
+- `var ErrBusy = errors.New("another program holds the bus")`: ErrBusy is a bus another program holds and does not let go of.
 - `var ErrDenied = errors.New("PawnIO needs Administrator rights")`: ErrDenied is PawnIO refusing a process without Administrator rights.
 - `var ErrNoModule = errors.New("the PawnIO module is not there")`: ErrNoModule is a module blob not found where ModuleDir says.
 - `var ErrNoPawnIO = errors.New("PawnIO is not available")`: ErrNoPawnIO is a system without PawnIO: not Windows, or PawnIO not installed.

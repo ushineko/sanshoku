@@ -85,8 +85,9 @@ func BoardSupport() []support.Entry {
 		Spec:         45,
 		Notes:        "found on Linux and refused: the Super I/O chip is reached through PawnIO, which is Windows's",
 		Windows: &support.Port{
-			Tier:  support.Expected,
-			Notes: "its one RGB header as a canvas, through PawnIO's LpcIO module (spec 044), as Administrator",
+			Tier:   support.Tested,
+			Tested: time.Date(2026, time.November, 20, 0, 0, 0, 0, time.UTC),
+			Notes:  "its one RGB header as a canvas, through PawnIO's LpcIO module (spec 044), as Administrator",
 		},
 	}, {
 		Driver:       boardName,

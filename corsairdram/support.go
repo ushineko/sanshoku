@@ -42,6 +42,7 @@ func Support() []support.Entry {
 	}, {
 		Driver:       driverName,
 		Device:       "Corsair Vengeance RGB (DDR4, the original)",
+		Hardware:     "two Corsair Vengeance RGB DDR4 modules on an AMD B450's SMBus (1022:790b)",
 		Match:        "the chipset SMBus, addresses 0x58 to 0x5F and 0x18 to 0x1F; registers 0xA0 to 0xAF read 0xBA",
 		Vendor:       0x1B1C,
 		Capabilities: []string{"lighting"},
@@ -49,8 +50,9 @@ func Support() []support.Entry {
 		Spec:         46,
 		Notes:        "one light per module, a colour written register by register; found by reads only",
 		Windows: &support.Port{
-			Tier:  support.Expected,
-			Notes: "through PawnIO (spec 044), on two modules on an AMD B450",
+			Tier:   support.Tested,
+			Tested: time.Date(2026, time.November, 20, 0, 0, 0, 0, time.UTC),
+			Notes:  "through PawnIO (spec 044), as Administrator; a colour takes about 157 ms",
 		},
 	}}
 }

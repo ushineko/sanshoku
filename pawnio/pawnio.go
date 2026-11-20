@@ -40,6 +40,9 @@ var ErrNoPawnIO = errors.New("PawnIO is not available")
 // ErrNoModule is a module blob not found where ModuleDir says.
 var ErrNoModule = errors.New("the PawnIO module is not there")
 
+// ErrBusy is a bus another program holds and does not let go of.
+var ErrBusy = errors.New("another program holds the bus")
+
 // ErrDenied is PawnIO refusing a process without Administrator rights.
 var ErrDenied = errors.New("PawnIO needs Administrator rights")
 

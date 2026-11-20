@@ -2,11 +2,16 @@
 
 **Issue**: #110
 
-## Status: INCOMPLETE
+## Status: COMPLETE
 
 ## Executive Summary
 
-(Written last.)
+A new `pawnio` package runs PawnIO's modules on Windows, and package `i2c`
+reaches the chipset's SMBus through it, so memory and Super I/O lighting
+work there (specs 045, 046). Bus mutexes are opened with wait rights and
+waited on for at most two seconds. LibreHardwareMonitor holds them long
+enough to stall both; hotaru has to settle how to share with it. Review
+`pawnio/pawnio_windows.go` (the DLL calls, `Lock`) first.
 
 ## Context
 
@@ -41,13 +46,13 @@ comes later (2026-11-20). The protocol is in `docs/pawnio.md`.
 
 ## Acceptance Criteria
 
-- [ ] `make test`, `make lint`, `make check-api`, `make check-support`,
+- [x] `make test`, `make lint`, `make check-api`, `make check-support`,
       `make check-no-binaries`, `CGO_ENABLED=0 make build`, and `go vet` for
       windows, linux and darwin pass.
-- [ ] Tests: the SMBus transfer's packing, its byte and block reads and
+- [x] Tests: the SMBus transfer's packing, its byte and block reads and
       writes, the mutex held; the Super I/O slot, the ISA mutex held across a
       sequence; no PawnIO off Windows.
-- [ ] Live on the Windows test machine, as Administrator over SSH, with
+- [x] Live on the Windows test machine, as Administrator over SSH, with
       OpenRGB's modules: the AMD SMBus listed with its PCI IDs, and spec 046's
       modules found on it.
 
@@ -70,4 +75,26 @@ comes later (2026-11-20). The protocol is in `docs/pawnio.md`.
 
 ## Verification
 
-(Results pasted here.)
+### Bench run (2026-11-20, the Windows test machine, over an elevated SSH session, OpenRGB's module copies)
+
+- `pawnio.Open`: `SmbusI801.bin` refused as unsupported (an AMD board);
+  `SmbusPIIX4.bin` loaded, its identity `1022:790b`, the AMD FCH SMBus;
+  `LpcIO.bin` loaded and found the Super I/O chip (spec 045).
+- The SMBus mutex already existed, made by a service running as SYSTEM, and
+  `CreateMutex` was refused ("Access is denied"). `Lock` now opens an
+  existing mutex asking only to wait on it, and creates it otherwise.
+- A raw transfer read `BA` from `0x5A` register `A0` (spec 046's module).
+- With hotaru and OpenRGB stopped and LibreHardwareMonitor closed: both
+  memory modules found on `pawnio:SmbusPIIX4.bin:0` and drawn (spec 046);
+  the board header drawn (spec 045).
+
+### LibreHardwareMonitor holds the buses
+
+With LibreHardwareMonitor running, the global mutexes were held for more than
+two seconds at a time: the first SMBus run waited for ever (the wait was
+then unbounded), and once bounded the board took a few frames and then timed
+out on every one. With LHM closed, both ran at full rate. hotaru on Windows
+reads the processor's temperature through LHM, so the two have to share; that
+is a hotaru question (#197 is likely the same cause under OpenRGB, which takes
+no ISA mutex at all).
+

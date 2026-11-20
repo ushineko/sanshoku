@@ -302,6 +302,7 @@ func TestAnOriginalVengeanceIsOneLight(t *testing.T) {
 
 	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 0x12, G: 0x34, B: 0x56}}))
 	assert.Equal(t, []string{"a4=00", "b0=12", "b1=34", "b2=56", "a6=00"}, mods[0x5A].writes)
+	assert.Equal(t, vengeanceFloor, d.Floor())
 	mods[0x5A].writes = nil
 	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 0x12, G: 0x34, B: 0x56}}))
 	assert.Empty(t, mods[0x5A].writes, "an unchanged frame wrote")
