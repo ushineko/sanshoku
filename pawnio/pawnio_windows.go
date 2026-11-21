@@ -147,7 +147,9 @@ func (e *executor) Close() error {
 Lock takes a named global mutex, the convention by which programs that touch
 the same bus take turns: "Global\Access_SMBUS.HTP.Method" for the SMBus and
 "Global\Access_ISABUS.HTP.Method" for the Super I/O chip, as OpenRGB,
-LibreHardwareMonitor and HWiNFO name them. The returned function releases it.
+LibreHardwareMonitor and HWiNFO name them. The returned function releases it,
+and is called from the goroutine that took it: the goroutine is held to its
+thread until then.
 */
 func Lock(name string) (func(), error) {
 	n, err := windows.UTF16PtrFromString(name)
@@ -168,21 +170,33 @@ func Lock(name string) (func(), error) {
 			return nil, fmt.Errorf("the %s mutex: %w", name, err)
 		}
 	}
+	/*
+		A mutex is owned by the thread that waited on it, and only that
+		thread can release it: a goroutine that moved to another thread
+		before releasing it would fail to, and the first thread would hold
+		the bus until it ended, every other program and goroutine timing out
+		(#120's live run). So the goroutine stays on its thread from the wait
+		to the release, which the caller makes from the same goroutine.
+	*/
+	runtime.LockOSThread()
 	ev, err := windows.WaitForSingleObject(h, lockWait)
-	if err == nil && ev == uint32(windows.WAIT_TIMEOUT) {
+	fail := func(e error) (func(), error) {
+		runtime.UnlockOSThread()
 		_ = windows.CloseHandle(h)
-		return nil, fmt.Errorf("the %s mutex: %w", name, ErrBusy)
+		return nil, e
+	}
+	if err == nil && ev == uint32(windows.WAIT_TIMEOUT) {
+		return fail(fmt.Errorf("the %s mutex: %w", name, ErrBusy))
 	}
 	if err != nil {
-		_ = windows.CloseHandle(h)
-		return nil, fmt.Errorf("waiting for the %s mutex: %w", name, err)
+		return fail(fmt.Errorf("waiting for the %s mutex: %w", name, err))
 	}
 	if ev != windows.WAIT_OBJECT_0 && ev != windows.WAIT_ABANDONED {
-		_ = windows.CloseHandle(h)
-		return nil, fmt.Errorf("waiting for the %s mutex: wait result %#x", name, ev)
+		return fail(fmt.Errorf("waiting for the %s mutex: wait result %#x", name, ev))
 	}
 	return func() {
 		_ = windows.ReleaseMutex(h)
+		runtime.UnlockOSThread()
 		_ = windows.CloseHandle(h)
 	}, nil
 }

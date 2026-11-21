@@ -96,10 +96,18 @@ func Open(path string, address uint8) (Bus, error) {
 }
 
 /*
-openPawn loads a module and readies it as OpenRGB does: the PIIX4 port
-selected, under the SMBus mutex, and the module's sleep mode set to always
-sleep (2) while it waits on the controller.
+openPawn loads a module and readies it: the PIIX4 port selected, under the
+SMBus mutex, as OpenRGB does, and the module's sleep mode set to short busy
+(1). OpenRGB sets always sleep (2), where every wait on the controller is a
+kernel sleep, which Windows rounds up to its timer tick (about 15 ms): a
+Vengeance colour, five transfers, took 157 ms. Short busy spins through the
+short waits and sleeps on the completion wait: 78 ms. Always busy (0) took
+2.1 ms and spun about 9% of a core while a module breathed, and drawn
+frames did not look smoother for it, so it is not used (#120).
 */
+// sleepShortBusy is the modules' SleepMode_ShortBusy (sleepmode.inc).
+const sleepShortBusy = 1
+
 func openPawn(module, short string, port int) (*pawnBus, error) {
 	e, err := pawnio.Open(module)
 	if err != nil {
@@ -119,7 +127,7 @@ func openPawn(module, short string, port int) (*pawnBus, error) {
 			return nil, err //nolint:wrapcheck // pawnio names the function
 		}
 	}
-	if _, err := e.Execute("ioctl_set_sleep_mode", []uint64{2}, 0); err != nil {
+	if _, err := e.Execute("ioctl_set_sleep_mode", []uint64{sleepShortBusy}, 0); err != nil {
 		_ = e.Close()
 		return nil, err //nolint:wrapcheck // pawnio names the function
 	}
