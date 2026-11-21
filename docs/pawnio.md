@@ -39,7 +39,7 @@ HRESULT.
 |---|---|---|
 | `ioctl_identity` | 0 | three values; the third is the controller's PCI vendor, device, subsystem vendor and subsystem device, 16 bits each from the bottom |
 | `ioctl_piix4_port_sel` | the port, 0 or 1 | one value |
-| `ioctl_set_sleep_mode` | 0 always busy, 1 short busy, 2 always sleep; OpenRGB uses 2, sanshoku 0 (a sleep is Windows' timer tick, about 15 ms: a Vengeance colour took 157 ms at 2, 78 at 1, 2.1 at 0) | none |
+| `ioctl_set_sleep_mode` | 0 always busy, 1 short busy, 2 always sleep; OpenRGB uses 2, sanshoku 1 (a sleep is Windows' timer tick, about 15 ms: a Vengeance colour took 157 ms at 2, 78 at 1, 2.1 at 0, which spins a core) | none |
 | `ioctl_smbus_xfer` | the address, read (1) or write (0), the command, the transaction size, and Linux's 34-byte data union in five values | the data union in five values |
 
 The transaction sizes are Linux's: 2 byte data, 5 SMBus block, 8 I2C block.

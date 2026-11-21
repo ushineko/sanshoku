@@ -316,9 +316,8 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 ### Unreleased
 
 - **Fix:** SMBus through PawnIO no longer sleeps a timer tick (about 15 ms)
-  on every wait: the modules busy-wait through a transfer. A Vengeance colour
-  takes 2.1 ms, not 157, and its floor is 50 ms, not 200; a breathing module
-  drew three frames a second (#120).
+  on every short wait: the modules' short-busy mode. A Vengeance colour takes
+  78 ms, not 157, and its floor is 100 ms, not 200 (#120).
 - **Fix:** `pawnio.Lock` holds the goroutine to its thread until the release.
   A Windows mutex is released only by the thread that took it, and a
   goroutine that had moved left the bus held, every other user timing out.

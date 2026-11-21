@@ -67,10 +67,9 @@ func (d *device) Floor() time.Duration {
 }
 
 // vengeanceFloor is the original Vengeance RGB's: a colour, five byte writes,
-// takes 2.1 ms through PawnIO on an AMD B450's SMBus with the module busy
-// waiting (#120; 157 ms when it slept, spec 046), so the floor is the DDR5
-// modules' own.
-const vengeanceFloor = frameFloor
+// takes 78 ms through PawnIO on an AMD B450's SMBus with the module's short
+// busy waits (#120; 157 ms when it always slept, spec 046).
+const vengeanceFloor = 100 * time.Millisecond
 
 /*
 Frame draws px over the held frame and, if it changed, sends it whole: the
