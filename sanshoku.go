@@ -28,6 +28,9 @@ const (
 	// BusI2C is a device on an I2C adapter, a graphics card's lighting
 	// controller (spec 029).
 	BusI2C
+	// BusSuperIO is a mainboard's Super I/O chip, reached through its
+	// configuration ports (spec 045).
+	BusSuperIO
 )
 
 // String names a bus for the testbench and a consumer's diagnostics.
@@ -41,6 +44,8 @@ func (b Bus) String() string {
 		return "hwmon"
 	case BusI2C:
 		return "i2c"
+	case BusSuperIO:
+		return "superio"
 	default:
 		return "unknown"
 	}

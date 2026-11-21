@@ -31,9 +31,42 @@ const (
 	directProtocol = 4
 )
 
-// writable are the only registers this driver writes (spec 042 R1.5): the
-// device-information read and the direct frame.
-var writable = map[byte]bool{regDeviceInfo: true, regBinaryStart: true, regFrame1: true, regFrame2: true}
+// family is which of Corsair's two memory protocols a module speaks.
+type family int
+
+const (
+	// familyDRAM is the device-information block and direct frames: the
+	// Vengeance RGB Pro, Dominator and later (spec 042).
+	familyDRAM family = iota
+	// familyVengeance is the original Vengeance RGB: one colour, written
+	// register by register (spec 046).
+	familyVengeance
+)
+
+// The original Vengeance RGB's registers (OpenRGB 1.1's
+// CorsairVengeanceController).
+const (
+	regVengeanceID    = 0xA0 // A0 to AF all read BA on a module
+	vengeanceID       = 0xBA
+	regVengeanceFade  = 0xA4 // the fade time, 0 for a still colour
+	regVengeanceMode  = 0xA6 // 0 is a single colour
+	regVengeanceRed   = 0xB0
+	regVengeanceGreen = 0xB1
+	regVengeanceBlue  = 0xB2
+)
+
+/*
+writable are the only registers this driver writes, per family (spec 042
+R1.5, spec 046): the device-information read and the direct frame, or the
+original Vengeance's colour and its single-colour mode.
+*/
+var writable = map[family]map[byte]bool{
+	familyDRAM: {regDeviceInfo: true, regBinaryStart: true, regFrame1: true, regFrame2: true},
+	familyVengeance: {
+		regVengeanceFade: true, regVengeanceMode: true,
+		regVengeanceRed: true, regVengeanceGreen: true, regVengeanceBlue: true,
+	},
+}
 
 // addresses are where a module answers: 18 to 1F on DDR5, 58 to 5F on DDR4,
 // as OpenRGB's detector tries them.
@@ -138,8 +171,14 @@ time.
 */
 var probed = struct {
 	sync.Mutex
-	found map[string][]uint8
-}{found: map[string][]uint8{}}
+	found map[string][]sighting
+}{found: map[string][]sighting{}}
+
+// sighting is a module probing found: its address and family.
+type sighting struct {
+	addr   uint8
+	family family
+}
 
 /*
 Find returns one candidate per module on a memory bus OpenRGB names.
@@ -160,8 +199,8 @@ func (Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 		if _, ok := memoryBuses[pciID{a.Vendor, a.Device}]; !ok {
 			continue
 		}
-		for _, addr := range probe(a.Path) {
-			out = append(out, candidate(a, addr))
+		for _, m := range probe(a.Path) {
+			out = append(out, candidate(a, m))
 		}
 	}
 	if len(out) == 0 {
@@ -170,44 +209,57 @@ func (Driver) Find(context.Context) ([]sanshoku.Candidate, error) {
 	return out, nil
 }
 
-// probe is the addresses on an adapter where a module answered, probing the
-// adapter the first time it is asked.
-func probe(path string) []uint8 {
+// probe is the modules on an adapter, probing the adapter the first time it
+// is asked.
+func probe(path string) []sighting {
 	probed.Lock()
 	defer probed.Unlock()
 	if found, ok := probed.found[path]; ok {
 		return found
 	}
-	var found []uint8
+	var found []sighting
 	for i, addr := range addresses {
 		if i > 0 {
 			time.Sleep(probePause)
 		}
-		if isModule(path, addr) {
-			found = append(found, addr)
+		if f, ok := identify(path, addr); ok {
+			found = append(found, sighting{addr, f})
 		}
 	}
 	probed.found[path] = found
 	return found
 }
 
-// isModule is whether a Corsair module answers at an address, by its two
-// identification registers.
-func isModule(path string, addr uint8) bool {
+/*
+identify is whether a Corsair module answers at an address, and which family:
+the newer modules by their two identification registers, the original
+Vengeance RGB by sixteen registers that all read BA (OpenRGB's detectors).
+Only reads.
+*/
+func identify(path string, addr uint8) (family, bool) {
 	bus, err := openBus(path, addr)
 	if err != nil {
-		return false
+		return 0, false
 	}
 	defer func() { _ = bus.Close() }()
-	v, err := bus.ReadByteData(regIdentify1)
-	if err != nil || (v != 0x1A && v != 0x1B && v != 0x1C) {
-		return false
+	v1, err1 := bus.ReadByteData(regIdentify1)
+	v2, err2 := bus.ReadByteData(regIdentify2)
+	if err1 == nil && err2 == nil && (v1 == 0x1A || v1 == 0x1B || v1 == 0x1C) && (v2 == 0x01 || v2 == 0x03 || v2 == 0x04) {
+		return familyDRAM, true
 	}
-	v, err = bus.ReadByteData(regIdentify2)
-	return err == nil && (v == 0x01 || v == 0x03 || v == 0x04)
+	if err1 != nil && err2 != nil {
+		return 0, false // nothing answers here
+	}
+	for r := byte(regVengeanceID); r < regVengeanceID+16; r++ {
+		if v, err := bus.ReadByteData(r); err != nil || v != vengeanceID {
+			return 0, false
+		}
+	}
+	return familyVengeance, true
 }
 
-func candidate(a i2c.Adapter, addr uint8) sanshoku.Candidate {
+func candidate(a i2c.Adapter, m sighting) sanshoku.Candidate {
+	addr := m.addr
 	id := sanshoku.Identity{
 		Vendor: 0x1B1C, Bus: sanshoku.BusI2C,
 		Name: fmt.Sprintf("Corsair memory (0x%02X)", addr),
@@ -222,7 +274,7 @@ func candidate(a i2c.Adapter, addr uint8) sanshoku.Candidate {
 			if err != nil {
 				return nil, err //nolint:wrapcheck // i2c names the node
 			}
-			d := &device{id: id, bus: bus, addr: addr}
+			d := &device{id: id, bus: bus, addr: addr, family: m.family}
 			if err := d.start(); err != nil {
 				_ = bus.Close()
 				return nil, err
@@ -234,8 +286,9 @@ func candidate(a i2c.Adapter, addr uint8) sanshoku.Candidate {
 
 // device is one open module.
 type device struct {
-	id   sanshoku.Identity
-	addr uint8
+	id     sanshoku.Identity
+	addr   uint8
+	family family
 
 	mu  sync.Mutex
 	bus i2c.Bus
@@ -262,6 +315,14 @@ Dominator Platinum RGB DDR5 (0x18)". A product not known, or one too old for
 direct frames, is refused. The caller has not shared the device.
 */
 func (d *device) start() error {
+	if d.family == familyVengeance {
+		// The original Vengeance RGB has no information to read: one LED,
+		// named as OpenRGB names it.
+		d.product = product{name: "Corsair Vengeance RGB", leds: 1}
+		d.id.Name = fmt.Sprintf("%s (0x%02X)", d.product.name, d.addr)
+		d.held = make([]colour, 1)
+		return nil
+	}
 	if err := d.write(regDeviceInfo, 0x00); err != nil {
 		return err
 	}
@@ -319,7 +380,7 @@ func (d *device) write(register, value byte) error {
 	if d.bus == nil {
 		return fmt.Errorf("%s: %w", d.id.Path, os.ErrClosed)
 	}
-	if !writable[register] {
+	if !writable[d.family][register] {
 		return fmt.Errorf("%s: register %02x is not one this driver writes", d.id, register)
 	}
 	if err := d.bus.WriteByteData(register, value); err != nil {
@@ -334,7 +395,7 @@ func (d *device) block(register byte, data []byte) error {
 	if d.bus == nil {
 		return fmt.Errorf("%s: %w", d.id.Path, os.ErrClosed)
 	}
-	if !writable[register] {
+	if !writable[d.family][register] {
 		return fmt.Errorf("%s: register %02x is not one this driver writes", d.id, register)
 	}
 	if err := d.bus.WriteSMBusBlock(register, data); err != nil {

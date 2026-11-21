@@ -1,6 +1,7 @@
 package msi
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
@@ -63,6 +64,51 @@ func (Driver) Describe() sanshoku.Description {
 		Finds:        "graphics card",
 		Capabilities: []string{"lighting", "onboard"},
 		Platforms:    []string{"linux"},
+		Quiet:        false,
+	}
+}
+
+/*
+BoardSupport is the board driver's support table: the B450 Tomahawk Max,
+which spec 045's bench run tests, and the other boards OpenRGB drives through
+the same Super I/O registers, Expected. Windows only: found on Linux and
+refused there, as PawnIO is Windows's.
+*/
+func BoardSupport() []support.Entry {
+	return []support.Entry{{
+		Driver:       boardName,
+		Device:       "MSI B450 TOMAHAWK MAX (MS-7C02)",
+		Match:        "DMI maker MSI, name with MS-7C02; a Nuvoton NCT6795D or NCT6797D at 0x2E or 0x4E",
+		Vendor:       0x1462,
+		Capabilities: []string{"lighting"},
+		Tier:         support.Listed,
+		Spec:         45,
+		Notes:        "found on Linux and refused: the Super I/O chip is reached through PawnIO, which is Windows's",
+		Windows: &support.Port{
+			Tier:   support.Tested,
+			Tested: time.Date(2026, time.November, 20, 0, 0, 0, 0, time.UTC),
+			Notes:  "its one RGB header as a canvas, through PawnIO's LpcIO module (spec 044), as Administrator",
+		},
+	}, {
+		Driver:       boardName,
+		Device:       "MSI mainboards with a Super I/O RGB header",
+		Match:        "DMI maker MSI, the boards OpenRGB 1.1's MSI-RGB detector lists; an NCT6795D or NCT6797D",
+		Vendor:       0x1462,
+		Capabilities: []string{"lighting"},
+		Tier:         support.Listed,
+		Spec:         45,
+		Notes:        fmt.Sprintf("%d boards", len(boards)-1),
+		Windows:      &support.Port{Tier: support.Expected},
+	}}
+}
+
+// Describe is what the board driver reads: an MSI mainboard's RGB header.
+func (Board) Describe() sanshoku.Description {
+	return sanshoku.Description{
+		Name:         "MSI board",
+		Finds:        "mainboard",
+		Capabilities: []string{"lighting"},
+		Platforms:    []string{"linux", "windows"},
 		Quiet:        false,
 	}
 }

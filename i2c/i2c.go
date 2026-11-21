@@ -2,8 +2,11 @@
 Package i2c is a device on an I2C (SMBus) adapter: the bus a graphics card's
 lighting controller sits on (spec 029).
 
-Linux only: an adapter is /dev/i2c-N, through the kernel's i2c-dev module. On
-other systems Adapters finds none.
+On Linux an adapter is /dev/i2c-N, through the kernel's i2c-dev module. On
+Windows the chipset's SMBus is reached through PawnIO, which must be
+installed, with its SMBus modules where package pawnio looks (spec 044); a
+process without Administrator rights finds none. Elsewhere Adapters finds
+none.
 */
 package i2c
 
@@ -42,6 +45,16 @@ type Bus interface {
 	ReadBlockData(register byte, n int) ([]byte, error)
 	Close() error
 }
+
+// The SMBus transaction kinds and sizes, Linux's (i2c-dev.h), which PawnIO's
+// SMBus modules take as well.
+const (
+	smbusWrite        = 0
+	smbusRead         = 1
+	smbusByteData     = 2
+	smbusBlockData    = 5
+	smbusI2CBlockData = 8
+)
 
 // ErrBlock is a block longer than an I2C block write takes.
 var ErrBlock = errors.New("an I2C block is at most 32 bytes")

@@ -75,3 +75,17 @@ Raptor Lake SMBus, beside SPD hubs the kernel owns at `0x50` to `0x53`: each
 identified, read its device information with a good CRC, and took direct
 frames, about 7 ms each. A module keeps its last frame with nothing sent, for
 minutes at least.
+
+## The original Vengeance RGB (spec 046)
+
+The first Vengeance RGB DDR4 modules speak another protocol (OpenRGB 1.1's
+`CorsairVengeanceController`, O):
+
+- A module answers `BA` for every register from `A0` to `AF`. OpenRGB asks
+  at each Corsair module's SPD address + 8, and also at the DDR5 range; this
+  driver asks at the same addresses as for the newer family, by reads only.
+- One light. A colour is `A4` = `00` (no fade), `B0`, `B1`, `B2` the red,
+  green and blue, then `A6` = `00`, the single-colour mode. `A6` = `01` and
+  `02` are its fade and pulse, which this driver does not send.
+- Named `Corsair Vengeance RGB` and the address, its zone `Corsair Zone` and
+  its light `Corsair LED`.

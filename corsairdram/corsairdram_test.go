@@ -23,11 +23,14 @@ identification registers, streams its device-information block after 61 and
 made up in the module's layout.
 */
 type module struct {
-	id1, id2 byte
-	info     [infoLen]byte
-	badCRC   bool
-	at       int
-	writes   []string
+	// vengeance is an original Vengeance RGB: A0 to AF read BA, and the
+	// newer family's registers read 00.
+	vengeance bool
+	id1, id2  byte
+	info      [infoLen]byte
+	badCRC    bool
+	at        int
+	writes    []string
 }
 
 func newModule(pid uint16, protocol byte) *module {
@@ -58,6 +61,12 @@ func (c conn) WriteSMBusBlock(register byte, data []byte) error {
 }
 
 func (c conn) ReadByteData(register byte) (byte, error) {
+	if c.m.vengeance {
+		if register >= 0xA0 && register <= 0xAF {
+			return 0xBA, nil
+		}
+		return 0x00, nil
+	}
 	switch register {
 	case regIdentify1:
 		return c.m.id1, nil
@@ -109,7 +118,7 @@ func withModules(t *testing.T, modules map[uint8]*module, busy map[uint8]bool, a
 	}
 	probePause = 0
 	probed.Lock()
-	probed.found = map[string][]uint8{}
+	probed.found = map[string][]sighting{}
 	probed.Unlock()
 	t.Cleanup(func() { listAdapters, openBus, probePause = wasList, wasOpen, wasPause })
 	return &opened
@@ -262,4 +271,53 @@ func TestOnlyTheAllowedRegistersAreWritten(t *testing.T) {
 
 func TestCRC8(t *testing.T) {
 	assert.Equal(t, byte(0xF4), crc8([]byte("123456789")))
+}
+
+// The Windows test machine's modules: two original Vengeance RGB at 5A and 5B.
+func vengeances() map[uint8]*module {
+	return map[uint8]*module{0x5A: {vengeance: true}, 0x5B: {vengeance: true}}
+}
+
+var fch = i2c.Adapter{Path: "pawnio:SmbusPIIX4.bin:0", Name: "PawnIO SMBus piix4 0", Vendor: 0x1022, Device: 0x790B}
+
+/*
+An original Vengeance RGB is found by A0 to AF reading BA, only by reads,
+named as OpenRGB names it, and drawn as one light: no fade, the colour, then
+the single-colour mode.
+*/
+func TestAnOriginalVengeanceIsOneLight(t *testing.T) {
+	mods := vengeances()
+	withModules(t, mods, nil, fch)
+	found, err := Driver{}.Find(context.Background())
+	require.NoError(t, err)
+	require.Len(t, found, 2)
+	assert.Empty(t, mods[0x5A].writes, "probing wrote")
+	dev, err := found[0].Open(context.Background())
+	require.NoError(t, err)
+	d := dev.(*device)
+	assert.Equal(t, "Corsair Vengeance RGB (0x5A)", d.Identity().Name)
+	assert.Equal(t, []lighting.Key{{ID: 0, Name: "Corsair LED"}}, d.Keys())
+	assert.Equal(t, []lighting.Zone{{Name: "Corsair Zone", Count: 1, Shape: lighting.ShapeSingle}}, d.Zones())
+	assert.Empty(t, mods[0x5A].writes, "opening wrote")
+
+	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 0x12, G: 0x34, B: 0x56}}))
+	assert.Equal(t, []string{"a4=00", "b0=12", "b1=34", "b2=56", "a6=00"}, mods[0x5A].writes)
+	assert.Equal(t, vengeanceFloor, d.Floor())
+	mods[0x5A].writes = nil
+	require.NoError(t, d.Frame(context.Background(), []lighting.Pixel{{ID: 0, R: 0x12, G: 0x34, B: 0x56}}))
+	assert.Empty(t, mods[0x5A].writes, "an unchanged frame wrote")
+}
+
+// Each family writes only its own registers.
+func TestEachFamilyWritesOnlyItsOwnRegisters(t *testing.T) {
+	withModules(t, vengeances(), nil, fch)
+	found, err := Driver{}.Find(context.Background())
+	require.NoError(t, err)
+	dev, err := found[0].Open(context.Background())
+	require.NoError(t, err)
+	d := dev.(*device)
+	for _, reg := range []byte{regDeviceInfo, regBinaryStart, regFrame1, 0x23, 0x82, 0xA5} {
+		require.Error(t, d.write(reg, 0), "%02x", reg)
+	}
+	require.Error(t, d.block(regFrame1, []byte{1}))
 }

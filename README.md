@@ -133,10 +133,11 @@ Every lit device since has followed it.
 | [`asus`](https://pkg.go.dev/github.com/ushineko/sanshoku/asus) | An ASUS Aura USB mainboard's lights as a canvas with zones. |
 | [`gigabyte`](https://pkg.go.dev/github.com/ushineko/sanshoku/gigabyte) | A Gigabyte RGB Fusion 2 USB mainboard's lights as a canvas with zones, for boards whose layout has been measured. Linux only. |
 | [`keychron`](https://pkg.go.dev/github.com/ushineko/sanshoku/keychron) | The Keychron K4 HE's keys as a canvas, over VIA. |
-| [`msi`](https://pkg.go.dev/github.com/ushineko/sanshoku/msi) | The MSI RTX 4090 Suprim Liquid X's light over I2C: a colour, and the card's own effects. |
+| [`msi`](https://pkg.go.dev/github.com/ushineko/sanshoku/msi) | The MSI RTX 4090 Suprim Liquid X's light over I2C: a colour, and the card's own effects; and an MSI mainboard's Super I/O RGB header, on Windows. |
 | [`evga`](https://pkg.go.dev/github.com/ushineko/sanshoku/evga) | An EVGA Ampere graphics card's lights over I2C: each zone one colour, as a canvas. Linux only. |
 | [`corsairdram`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsairdram) | Corsair RGB memory modules over the chipset's SMBus, each a canvas. Linux only. |
-| [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus reads and writes. Linux only. |
+| [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus reads and writes. Linux, and Windows through PawnIO. |
+| [`pawnio`](https://pkg.go.dev/github.com/ushineko/sanshoku/pawnio) | PawnIO on Windows: its modules run by name, the SMBus and a mainboard's Super I/O chip through them, and the global mutexes programs share those buses by. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
 | [`powersupply`](https://pkg.go.dev/github.com/ushineko/sanshoku/powersupply) | The batteries the kernel reads for HID devices, from `/sys/class/power_supply`, for a device no other driver reads: a Bluetooth gamepad BlueZ has no battery for. |
@@ -257,6 +258,10 @@ is not there is said and is not a failure.
   Fusion 2 USB controller's lighting protocol, from OpenRGB and the bench.
 - [docs/logitech-lights.md](docs/logitech-lights.md): the G502 X PLUS's
   lighting over HID++ 2.0, from OpenRGB and the bench.
+- [docs/pawnio.md](docs/pawnio.md): PawnIO on Windows, its SMBus and Super
+  I/O modules, from OpenRGB and the bench.
+- [docs/msi-board.md](docs/msi-board.md): an MSI mainboard's Super I/O RGB
+  header, from OpenRGB and the bench.
 - [docs/evga-gpu.md](docs/evga-gpu.md): EVGA's Ampere cards' lighting over
   I2C, from OpenRGB and the bench.
 - [docs/corsair-dram.md](docs/corsair-dram.md): Corsair RGB memory over the
@@ -306,6 +311,21 @@ MIT. See [LICENSE](LICENSE). The protocols were learned from other people's
 open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
+
+### Unreleased
+
+- **PawnIO on Windows** (spec 044, #110), in a new `pawnio` package: its
+  modules loaded from a directory the consumer names and run by name, under
+  the global mutexes LibreHardwareMonitor, HWiNFO and OpenRGB share the SMBus
+  and Super I/O chip by. Package `i2c` reaches the chipset's SMBus on Windows
+  through it, so `corsairdram` runs there. PawnIO and its modules are
+  installed apart, and PawnIO serves Administrator processes only.
+- **MSI mainboards' Super I/O RGB header** (spec 045, #107), in a new
+  `msi.Board` driver: the B450 Tomahawk Max (MS-7C02) first, and the boards
+  OpenRGB drives the same way. Windows only, through PawnIO.
+- **The original Corsair Vengeance RGB** (spec 046, #108), in `corsairdram`:
+  one light per module, found by reads only.
+- `sanshoku.BusSuperIO`, a mainboard's Super I/O chip.
 
 ### 0.5.0 (2026-11-20)
 
