@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.6.1
+**Version**: 0.6.2
 
 Device drivers for Linux, and for HID devices on Windows, in Go, without cgo:
 peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -313,7 +313,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.6.2 (2026-11-21)
 
 - **Added:** hardware effects for the MSI Super I/O header (Breathing, the
   chip's own pulse; Flashing; Color Cycle, up to eight colours) and the
