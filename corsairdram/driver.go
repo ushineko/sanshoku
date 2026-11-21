@@ -65,7 +65,7 @@ R1.5, spec 046): the device-information read and the direct frame, or the
 original Vengeance's colour and its single-colour mode.
 */
 var writable = map[family]map[byte]bool{
-	familyDRAM: {regDeviceInfo: true, regBinaryStart: true, regFrame1: true, regFrame2: true},
+	familyDRAM:      {regDeviceInfo: true, regBinaryStart: true, regFrame1: true, regFrame2: true},
 	familyVengeance: vengeanceWritable(),
 }
 
