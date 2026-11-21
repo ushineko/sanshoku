@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ushineko/sanshoku/cpu"
 	"github.com/ushineko/sanshoku/gpu"
 	"github.com/ushineko/sanshoku/lhm"
+	"github.com/ushineko/sanshoku/pawnio"
 )
 
 /*
@@ -37,6 +39,10 @@ func host(ctx context.Context, args []string, out, errOut io.Writer) int {
 	var reader gpu.Reader
 	defer func() { _ = reader.Close() }()
 	client := &http.Client{Timeout: lhm.Timeout}
+	direct, directErr := cpu.Open()
+	if direct != nil {
+		defer func() { _ = direct.Close() }()
+	}
 
 	code := 0
 	for i := range max(*repeat, 1) {
@@ -47,7 +53,7 @@ func host(ctx context.Context, args []string, out, errOut io.Writer) int {
 			case <-time.After(*interval):
 			}
 		}
-		if !hostCard(ctx, &reader, out) || !hostProcessor(ctx, client, *url, out) {
+		if !hostCard(ctx, &reader, out) || !hostProcessor(ctx, client, *url, out) || !hostDirect(direct, directErr, out) {
 			code = 1
 		}
 	}
@@ -88,6 +94,28 @@ func hostProcessor(ctx context.Context, client *http.Client, url string, out io.
 	writef(out, "cpu  none: %v\n     PawnIO installed: %v, LibreHardwareMonitor running: %v, startup task: %v\n",
 		err, have.PawnIO, have.Running, have.Task)
 	return errors.Is(err, lhm.ErrUnreachable) || errors.Is(err, lhm.ErrNoSensor) || errors.Is(err, lhm.ErrAuth)
+}
+
+/*
+hostDirect prints the processor's temperature read through PawnIO (spec
+047), beside LibreHardwareMonitor's, or why there is none: no PawnIO, no
+module, or no Administrator rights is an ordinary absence.
+*/
+func hostDirect(r *cpu.Reader, openErr error, out io.Writer) bool {
+	if r == nil {
+		writef(out, "cpu  direct: none: %v\n", openErr)
+		return errors.Is(openErr, pawnio.ErrNoPawnIO) || errors.Is(openErr, pawnio.ErrNoModule) ||
+			errors.Is(openErr, pawnio.ErrDenied)
+	}
+	start := time.Now()
+	degrees, label, err := r.Temperature()
+	took := time.Since(start)
+	if err != nil {
+		writef(out, "cpu  direct: failed: %v\n", err)
+		return false
+	}
+	writef(out, "cpu  %.1f °C  %s, through PawnIO (%s)  (%.1f ms)\n", degrees, label, r.Name(), float64(took.Microseconds())/1000)
+	return true
 }
 
 // figure is a reading, or a dash where the source gave none.

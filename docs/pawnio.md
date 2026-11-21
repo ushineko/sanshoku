@@ -48,6 +48,28 @@ OpenRGB loads the Intel module once and the AMD one twice, for ports 0 and 1
 `Global\Access_SMBUS.HTP.Method`, which LibreHardwareMonitor, HWiNFO and
 OpenRGB take for the same bus.
 
+## The processor's temperature (spec 047)
+
+| Module | Function | In | Out (M, L) |
+|---|---|---|---|
+| `AMDFamily17.bin` | `ioctl_read_smn` | an SMN address | its value |
+| `IntelMSR.bin` | `ioctl_read_msr` | an MSR on its read allow-list | its value |
+
+- AMD (families 17h to 1Ah; the module refuses others): SMN `0x59800`, bits
+  31:21 at 0.125 °C, less 49 °C where bit 19 is set or bits 17:16 are both
+  set (L). The module's comment asks for the `Access_PCI` mutex around an SMN
+  read (M), as LibreHardwareMonitor takes it (L). Some processors' Tctl runs
+  above the die: 20 °C on the 1600X, 1700X and 1800X, 10 °C on the 2700X,
+  27 °C on Threadripper 19xx and 29xx (Linux k10temp, as LibreHardwareMonitor
+  uses it).
+- Intel: TjMax is MSR `1A2` bits 23:16; the package's distance below it is
+  MSR `1B1` bits 22:16, valid when bit 31 is set.
+- The modules are in PawnIO.Modules' signed release (0.2.12 on the bench),
+  with the SMBus and LpcIO modules.
+
+Sources here: **M**, the modules' source (`AMDFamily17.p`, `IntelMSR.p`,
+LGPL-2.1); **L**, LibreHardwareMonitor's `Amd17Cpu.cs` (MPL-2.0). Facts only.
+
 ## The Super I/O chip
 
 | Function | In | Out (O) |

@@ -538,6 +538,39 @@ Driver finds and opens Corsair RGB memory modules.
 
 - `func Support() []support.Entry`: Support is the corsairdram driver's support table: the Dominator Platinum RGB DDR5, Tested on the bench run spec 042 records, and the other module families OpenRGB knows, Expected.
 
+## cpu
+
+`import "github.com/ushineko/sanshoku/cpu"`
+
+Package cpu reads the processor's temperature on Windows directly, through PawnIO, the way LibreHardwareMonitor reads it (spec 047): so that a program that wants it no longer needs LibreHardwareMonitor running.
+
+### Constants
+
+- `const LabelTctlTdie = "Core (Tctl/Tdie)"`: an AMD processor with no offset: the two are one
+- `const LabelTdie = "Core (Tdie)"`: an AMD processor's die, Tctl less its offset
+- `const LabelPackage = "CPU Package"`: an Intel processor's package
+
+### Variables
+
+- `var ErrNoReading = errors.New("the processor gave no temperature")`: ErrNoReading is a register that held no temperature this read.
+
+### Types
+
+#### type Reader
+
+```go
+type Reader struct {
+	// contains filtered or unexported fields
+}
+```
+
+Reader reads one processor's temperature through a loaded PawnIO module.
+
+- `func Open() (*Reader, error)`: Open is pawnio.ErrNoPawnIO: on Linux package hwmon reads the processor.
+- `func (r *Reader) Close() error`: Close unloads the module.
+- `func (r *Reader) Name() string`: Name is the processor's own name, as Windows keeps it.
+- `func (r *Reader) Temperature() (float64, string, error)`: Temperature is the processor's temperature in degrees and its label.
+
 ## evga
 
 `import "github.com/ushineko/sanshoku/evga"`
