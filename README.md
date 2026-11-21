@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ushineko/sanshoku.svg)](https://pkg.go.dev/github.com/ushineko/sanshoku)
 
-**Version**: 0.6.0
+**Version**: 0.6.1
 
 Device drivers for Linux, and for HID devices on Windows, in Go, without cgo:
 peripheral batteries over HID++ and vendor report protocols, AirPods over
@@ -313,7 +313,7 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
-### Unreleased
+### 0.6.1 (2026-11-21)
 
 - **Fix:** SMBus through PawnIO no longer sleeps a timer tick (about 15 ms)
   on every short wait: the modules' short-busy mode. A Vengeance colour takes
