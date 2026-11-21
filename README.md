@@ -318,6 +318,9 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 - **Fix:** SMBus through PawnIO no longer sleeps a timer tick (about 15 ms)
   on every wait: the modules' short-busy mode spins through a transfer's
   short waits. A Vengeance module drew three frames a second (#120).
+- **Fix:** `pawnio.Lock` holds the goroutine to its thread until the release.
+  A Windows mutex is released only by the thread that took it, and a
+  goroutine that had moved left the bus held, every other user timing out.
 - **Fix:** an EVGA card's lit zones are `lighting.Zoned` zones of one light,
   under OpenRGB's names (Front Logo, End plate Logo, Back Logo, Addressable
   Header), so scenes and rules made through OpenRGB find them (#118).
