@@ -137,6 +137,7 @@ Every lit device since has followed it.
 | [`evga`](https://pkg.go.dev/github.com/ushineko/sanshoku/evga) | An EVGA Ampere graphics card's lights over I2C: each zone one colour, as a canvas. Linux only. |
 | [`corsairdram`](https://pkg.go.dev/github.com/ushineko/sanshoku/corsairdram) | Corsair RGB memory modules over the chipset's SMBus, each a canvas. Linux only. |
 | [`i2c`](https://pkg.go.dev/github.com/ushineko/sanshoku/i2c) | A device on an I2C adapter: the adapters with their PCI devices, and SMBus reads and writes. Linux, and Windows through PawnIO. |
+| [`cpu`](https://pkg.go.dev/github.com/ushineko/sanshoku/cpu) | The processor's temperature on Windows, read directly through PawnIO (AMD Zen and Intel), labelled as LibreHardwareMonitor labels it. |
 | [`pawnio`](https://pkg.go.dev/github.com/ushineko/sanshoku/pawnio) | PawnIO on Windows: its modules run by name, the SMBus and a mainboard's Super I/O chip through them, and the global mutexes programs share those buses by. |
 | [`aula`](https://pkg.go.dev/github.com/ushineko/sanshoku/aula) | The AULA F75: its battery through its 2.4 GHz receiver, its lights as a canvas through the receiver or on its cable, and the colour of its own effect through the receiver. |
 | [`sony`](https://pkg.go.dev/github.com/ushineko/sanshoku/sony) | A DualSense controller's battery from its input report, over USB or Bluetooth. |
@@ -326,6 +327,11 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 - **The original Corsair Vengeance RGB** (spec 046, #108), in `corsairdram`:
   one light per module, found by reads only.
 - `sanshoku.BusSuperIO`, a mainboard's Super I/O chip.
+- **The processor's temperature without LibreHardwareMonitor** (spec 047,
+  #116), in a new `cpu` package: an AMD Zen processor's Tctl through PawnIO's
+  AMDFamily17 module, with Linux k10temp's offsets for Tdie, and an Intel
+  processor's package temperature through IntelMSR, labelled as LHM labels
+  them. The bench's `host` prints it beside LHM's.
 
 ### 0.5.0 (2026-11-20)
 
