@@ -117,6 +117,18 @@ func TestOpenReadsTheZonesAndWritesNothing(t *testing.T) {
 	}, d.Keys())
 }
 
+// Each lit zone is a zone of one light under OpenRGB's name, so a scene made
+// through OpenRGB finds it (#118); none can be resized.
+func TestTheZonesAreOpenRGBs(t *testing.T) {
+	d := open(t, newBus())
+	assert.Equal(t, []lighting.Zone{
+		{Name: "Front Logo", First: 0, Count: 1, Shape: lighting.ShapeSingle},
+		{Name: "End plate Logo", First: 1, Count: 1, Shape: lighting.ShapeSingle},
+		{Name: "Back Logo", First: 2, Count: 1, Shape: lighting.ShapeSingle},
+	}, d.Zones())
+	require.ErrorIs(t, d.Resize("Front Logo", 2), lighting.ErrNoZone)
+}
+
 func TestACardThatDoesNotAnswerIsNotOpened(t *testing.T) {
 	b := newBus()
 	delete(b.regs, regFirmware)

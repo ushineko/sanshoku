@@ -313,6 +313,12 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **Fix:** an EVGA card's lit zones are `lighting.Zoned` zones of one light,
+  under OpenRGB's names (Front Logo, End plate Logo, Back Logo, Addressable
+  Header), so scenes and rules made through OpenRGB find them (#118).
+
 ### 0.6.0 (2026-11-20)
 
 - **PawnIO on Windows** (spec 044, #110), in a new `pawnio` package: its
