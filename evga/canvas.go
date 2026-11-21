@@ -27,6 +27,27 @@ func (d *device) Keys() []lighting.Key {
 	return out
 }
 
+var _ lighting.Zoned = (*device)(nil)
+
+/*
+Zones are the card's lit zones, one light each, under the names OpenRGB gives
+them, so scenes and rules made through OpenRGB find them (#118).
+*/
+func (d *device) Zones() []lighting.Zone {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	out := make([]lighting.Zone, len(d.zones))
+	for i, z := range d.zones {
+		out[i] = lighting.Zone{Name: zoneNames[z.index], First: i, Count: 1, Shape: lighting.ShapeSingle}
+	}
+	return out
+}
+
+// Resize refuses: each zone is one light.
+func (d *device) Resize(zone string, _ int) error {
+	return fmt.Errorf("%q on %s: %w", zone, d.id, lighting.ErrNoZone)
+}
+
 // Floor is the shortest interval at which frames are sent.
 func (d *device) Floor() time.Duration { return frameFloor }
 
