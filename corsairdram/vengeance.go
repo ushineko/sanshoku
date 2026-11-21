@@ -20,7 +20,10 @@ equal by Corsair Link; A7 is how many of the seven colour slots (B0 to C4) an
 effect uses; A6 is the mode: 0 a still colour, or with A4 non-zero one colour
 breathing; 1 fading through two to seven colours; 2 breathing through two or
 more. A7 left at two with red in slot two is why mode 2 with one colour
-written breathed blue and then showed red (the first live run).
+written breathed blue and then showed red (the first live run). Corsair Link
+also clears every slot and sets A4 to 0 before an effect; without that the
+module faded out and snapped back on, and with it, replayed byte for byte,
+it breathed smoothly both ways (the third live run).
 */
 
 // vengeance is an original Vengeance RGB module: a canvas of one light, and
@@ -48,12 +51,14 @@ var vengeanceEffects = []vengeanceEffect{
 
 /*
 vengeanceSpeeds are the timing values offered, slowest first, liquidctl's
-presets, and vengeanceSpeed the one an effect starts at, its "normal". A4
-and A5 are both set to it, as Corsair Link sets them.
+presets, and vengeanceSpeed the one an effect starts at. A4 and A5 are both
+set to it, as Corsair Link sets them. At 0x21, Corsair Link's middle, a fade
+took six or seven seconds and the dark between them two or three (the third
+live run), slower than the drawn effects, so an effect starts at 16.
 */
 var (
 	vengeanceSpeeds = []int{63, 48, 32, 16, 1}
-	vengeanceSpeed  = 32
+	vengeanceSpeed  = 16
 )
 
 var (
@@ -208,10 +213,10 @@ func (v *vengeance) effectColours(least int) []colour {
 }
 
 /*
-run writes an effect as Corsair Link writes it: the timing, both values the
-speed; the colours into the slots from B0; the count; then the mode. One
-colour breathing is mode 0 with the count 1, as Corsair Link and liquidctl
-write it. The caller holds mu.
+run writes an effect as Corsair Link writes it: every slot cleared, A4 set
+to 0, the timing, both values the speed; the colours into the slots from
+B0; the count; then the mode. One colour breathing is mode 0 with the count
+1, as Corsair Link and liquidctl write it. The caller holds mu.
 */
 func (v *vengeance) run(at int) error {
 	e := vengeanceEffects[at]
@@ -224,7 +229,11 @@ func (v *vengeance) run(at int) error {
 		}
 	}
 	t := byte(v.speed) //nolint:gosec // 1 to 63
-	ws := [][2]byte{{regVengeanceFade, t}, {regVengeanceHold, t}}
+	var ws [][2]byte
+	for r := byte(regVengeanceRed); r < regVengeanceRed+3*vengeanceSlots; r++ {
+		ws = append(ws, [2]byte{r, 0})
+	}
+	ws = append(ws, [2]byte{regVengeanceFade, 0}, [2]byte{regVengeanceFade, t}, [2]byte{regVengeanceHold, t})
 	for i, c := range cs {
 		r := byte(regVengeanceRed + 3*i) //nolint:gosec // seven slots at most
 		ws = append(ws, [2]byte{r, c.r}, [2]byte{r + 1, c.g}, [2]byte{r + 2, c.b})
