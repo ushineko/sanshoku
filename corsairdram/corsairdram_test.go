@@ -294,7 +294,7 @@ func TestAnOriginalVengeanceIsOneLight(t *testing.T) {
 	assert.Empty(t, mods[0x5A].writes, "probing wrote")
 	dev, err := found[0].Open(context.Background())
 	require.NoError(t, err)
-	d := dev.(*device)
+	d := dev.(*vengeance)
 	assert.Equal(t, "Corsair Vengeance RGB (0x5A)", d.Identity().Name)
 	assert.Equal(t, []lighting.Key{{ID: 0, Name: "Corsair LED"}}, d.Keys())
 	assert.Equal(t, []lighting.Zone{{Name: "Corsair Zone", Count: 1, Shape: lighting.ShapeSingle}}, d.Zones())
@@ -315,9 +315,54 @@ func TestEachFamilyWritesOnlyItsOwnRegisters(t *testing.T) {
 	require.NoError(t, err)
 	dev, err := found[0].Open(context.Background())
 	require.NoError(t, err)
-	d := dev.(*device)
+	d := dev.(*vengeance)
 	for _, reg := range []byte{regDeviceInfo, regBinaryStart, regFrame1, 0x23, 0x82, 0xA5} {
 		require.Error(t, d.write(reg, 0), "%02x", reg)
 	}
 	require.Error(t, d.block(regFrame1, []byte{1}))
+}
+
+/*
+The original Vengeance runs its own Breathing (Pulse) and Fading (Fade): the
+fade time as the speed, the colour, then the mode; A5 is never written. A
+frame afterwards shows the colour still, even an unchanged one (#122).
+*/
+func TestAnOriginalVengeanceRunsItsOwnEffects(t *testing.T) {
+	mods := vengeances()
+	withModules(t, mods, nil, fch)
+	found, err := Driver{}.Find(context.Background())
+	require.NoError(t, err)
+	dev, err := found[0].Open(context.Background())
+	require.NoError(t, err)
+	v, ok := dev.(lighting.Tuned)
+	require.True(t, ok, "the original runs no effects of its own")
+	assert.Equal(t, []string{"Breathing", "Fading"}, v.Effects())
+	ctx := context.Background()
+
+	require.NoError(t, dev.(lighting.Canvas).Frame(ctx, []lighting.Pixel{{ID: 0, B: 0xFF}}))
+	mods[0x5A].writes = nil
+	wrote, err := v.SetEffectWith(ctx, "Breathing", lighting.Settings{})
+	require.NoError(t, err)
+	assert.True(t, wrote)
+	assert.Equal(t, []string{"a4=20", "b0=00", "b1=00", "b2=ff", "a6=02"}, mods[0x5A].writes, "not the module's pulse in the frame's colour")
+
+	mods[0x5A].writes = nil
+	slow := 0x40
+	_, err = v.SetEffectWith(ctx, "Fading", lighting.Settings{Speed: &slow, Colours: []lighting.Colour{{R: 0xFF}}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a4=40", "b0=ff", "b1=00", "b2=00", "a6=01"}, mods[0x5A].writes)
+	e, err := v.Effect(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "Fading", e.Name)
+
+	mods[0x5A].writes = nil
+	require.NoError(t, dev.(lighting.Canvas).Frame(ctx, []lighting.Pixel{{ID: 0, B: 0xFF}}))
+	assert.Equal(t, []string{"a4=00", "b0=00", "b1=00", "b2=ff", "a6=00"}, mods[0x5A].writes, "a frame left the effect running")
+	for _, w := range mods[0x5A].writes {
+		assert.NotContains(t, w, "a5=")
+	}
+
+	// A DDR5 module offers none: its effects are drawn.
+	_, isTuned := any(&device{}).(lighting.Tuned)
+	assert.False(t, isTuned)
 }

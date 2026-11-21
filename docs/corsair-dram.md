@@ -86,6 +86,9 @@ The first Vengeance RGB DDR4 modules speak another protocol (OpenRGB 1.1's
   driver asks at the same addresses as for the newer family, by reads only.
 - One light. A colour is `A4` = `00` (no fade), `B0`, `B1`, `B2` the red,
   green and blue, then `A6` = `00`, the single-colour mode. `A6` = `01` and
-  `02` are its fade and pulse, which this driver does not send.
+  `02` are its fade and pulse, the module's own effects: offered as
+  **Fading** and **Breathing** (#122), in one colour, with `A4` the fade time
+  as the speed (`40`, `20`, `10`, `08`, slowest first). `A5`, the hold time,
+  is never written, as OpenRGB never writes it.
 - Named `Corsair Vengeance RGB` and the address, its zone `Corsair Zone` and
   its light `Corsair LED`.

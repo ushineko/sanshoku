@@ -134,7 +134,7 @@ func openBoard(id sanshoku.Identity, invert bool) func(context.Context) (sanshok
 			})
 			if err == nil && (devID&sioIDMask == sioNCT6795 || devID&sioIDMask == sioNCT6797) {
 				id.Phys = fmt.Sprintf("Super I/O %#04x at %#x", devID, port)
-				return &boardDevice{id: id, sio: s, invert: invert}, nil
+				return &boardDevice{id: id, sio: s, invert: invert, running: -1}, nil
 			}
 		}
 		_ = e.Close()
@@ -155,6 +155,12 @@ type boardDevice struct {
 	held    colour
 	sent    bool
 	claimed bool
+	// running is the chip's own effect this handle set, an index into
+	// boardEffects, or -1 for the frame's colour. given and speed are its
+	// colours and speed (boardfx.go).
+	running int
+	given   []colour
+	speed   int
 }
 
 func (d *boardDevice) Identity() sanshoku.Identity { return d.id }
@@ -200,7 +206,7 @@ func (d *boardDevice) Frame(_ context.Context, px []lighting.Pixel) error {
 			d.held, d.sent = next, false
 		}
 	}
-	if d.sent && d.claimed {
+	if d.sent && d.claimed && d.running < 0 {
 		return nil
 	}
 	err := d.sio.In(func(c pawnio.Chip) error {
@@ -209,12 +215,19 @@ func (d *boardDevice) Frame(_ context.Context, px []lighting.Pixel) error {
 				return err
 			}
 		}
+		if d.running >= 0 {
+			// A frame replaces the chip's own effect: no pulse or blink,
+			// and the eight frames all the colour.
+			if err := d.effectRegisters(c, 0, 0); err != nil {
+				return err
+			}
+		}
 		return d.write(c)
 	})
 	if err != nil {
 		return fmt.Errorf("a frame to %s: %w", d.id, err)
 	}
-	d.claimed, d.sent = true, true
+	d.claimed, d.sent, d.running = true, true, -1
 	return nil
 }
 

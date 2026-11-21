@@ -279,6 +279,10 @@ func candidate(a i2c.Adapter, m sighting) sanshoku.Candidate {
 				_ = bus.Close()
 				return nil, err
 			}
+			if m.family == familyVengeance {
+				// The original runs effects of its own (#122).
+				return &vengeance{device: d, running: -1}, nil
+			}
 			return d, nil
 		},
 	}
