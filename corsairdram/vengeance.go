@@ -36,6 +36,8 @@ type vengeance struct {
 	running int
 	given   []colour
 	speed   int
+	// cleared is whether this handle has cleared the colour slots once.
+	cleared bool
 }
 
 // vengeanceEffect is one of the module's own effects.
@@ -213,10 +215,13 @@ func (v *vengeance) effectColours(least int) []colour {
 }
 
 /*
-run writes an effect as Corsair Link writes it: every slot cleared, A4 set
-to 0, the timing, both values the speed; the colours into the slots from
-B0; the count; then the mode. One colour breathing is mode 0 with the count
-1, as Corsair Link and liquidctl write it. The caller holds mu.
+run writes an effect as Corsair Link writes it: every slot cleared (the
+first time on this handle: 21 transfers, about half a second, which set two
+modules one after the other half a second apart), A4 set to 0, the timing;
+the colours into the slots from B0; the count; then the mode. One colour
+breathing is mode 0 with the count 1, as Corsair Link and liquidctl write
+it. The hold is a quarter of the fade: held as long as the fade, the dark
+between breaths was too long (the fourth live run). The caller holds mu.
 */
 func (v *vengeance) run(at int) error {
 	e := vengeanceEffects[at]
@@ -230,10 +235,12 @@ func (v *vengeance) run(at int) error {
 	}
 	t := byte(v.speed) //nolint:gosec // 1 to 63
 	var ws [][2]byte
-	for r := byte(regVengeanceRed); r < regVengeanceRed+3*vengeanceSlots; r++ {
-		ws = append(ws, [2]byte{r, 0})
+	if !v.cleared {
+		for r := byte(regVengeanceRed); r < regVengeanceRed+3*vengeanceSlots; r++ {
+			ws = append(ws, [2]byte{r, 0})
+		}
 	}
-	ws = append(ws, [2]byte{regVengeanceFade, 0}, [2]byte{regVengeanceFade, t}, [2]byte{regVengeanceHold, t})
+	ws = append(ws, [2]byte{regVengeanceFade, 0}, [2]byte{regVengeanceFade, t}, [2]byte{regVengeanceHold, max(t/4, 1)})
 	for i, c := range cs {
 		r := byte(regVengeanceRed + 3*i) //nolint:gosec // seven slots at most
 		ws = append(ws, [2]byte{r, c.r}, [2]byte{r + 1, c.g}, [2]byte{r + 2, c.b})
@@ -244,6 +251,6 @@ func (v *vengeance) run(at int) error {
 			return fmt.Errorf("setting %s on %s: %w", e.name, v.id, err)
 		}
 	}
-	v.running, v.sent = at, false
+	v.running, v.sent, v.cleared = at, false, true
 	return nil
 }

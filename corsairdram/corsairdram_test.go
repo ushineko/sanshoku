@@ -354,19 +354,20 @@ func TestAnOriginalVengeanceRunsItsOwnEffects(t *testing.T) {
 		cleared = append(cleared, fmt.Sprintf("%02x=00", r))
 	}
 	effect := func(tail ...string) []string { return append(append(slices.Clone(cleared), "a4=00"), tail...) }
-	assert.Equal(t, effect("a4=10", "a5=10", "b0=00", "b1=00", "b2=ff", "a7=01", "a6=00"), mods[0x5A].writes,
+	assert.Equal(t, effect("a4=10", "a5=04", "b0=00", "b1=00", "b2=ff", "a7=01", "a6=00"), mods[0x5A].writes,
 		"not one colour breathing as Corsair Link writes it")
+	effect = func(tail ...string) []string { return append([]string{"a4=00"}, tail...) } // cleared once
 
 	mods[0x5A].writes = nil
 	slow := 63
 	_, err = v.SetEffectWith(ctx, "Breathing", lighting.Settings{Speed: &slow, Colours: []lighting.Colour{{R: 0xFF}, {G: 0xFF}}})
 	require.NoError(t, err)
-	assert.Equal(t, effect("a4=3f", "a5=3f", "b0=ff", "b1=00", "b2=00", "b3=00", "b4=ff", "b5=00", "a7=02", "a6=02"), mods[0x5A].writes)
+	assert.Equal(t, effect("a4=3f", "a5=0f", "b0=ff", "b1=00", "b2=00", "b3=00", "b4=ff", "b5=00", "a7=02", "a6=02"), mods[0x5A].writes)
 
 	mods[0x5A].writes = nil
 	_, err = v.SetEffectWith(ctx, "Fading", lighting.Settings{Colours: []lighting.Colour{{R: 0xFF}}})
 	require.NoError(t, err)
-	assert.Equal(t, effect("a4=3f", "a5=3f", "b0=ff", "b1=00", "b2=00", "b3=ff", "b4=00", "b5=00", "a7=02", "a6=01"), mods[0x5A].writes,
+	assert.Equal(t, effect("a4=3f", "a5=0f", "b0=ff", "b1=00", "b2=00", "b3=ff", "b4=00", "b5=00", "a7=02", "a6=01"), mods[0x5A].writes,
 		"fading takes two colours at least, the one repeated")
 	e, err := v.Effect(ctx)
 	require.NoError(t, err)
