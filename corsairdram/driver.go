@@ -44,15 +44,19 @@ const (
 )
 
 // The original Vengeance RGB's registers (OpenRGB 1.1's
-// CorsairVengeanceController).
+// CorsairVengeanceController; liquidctl's vengeance_rgb.md and Corsair
+// Link's captures for the hold time, the colour count and the slots, #122).
 const (
-	regVengeanceID    = 0xA0 // A0 to AF all read BA on a module
-	vengeanceID       = 0xBA
-	regVengeanceFade  = 0xA4 // the fade time, 0 for a still colour
-	regVengeanceMode  = 0xA6 // 0 is a single colour
-	regVengeanceRed   = 0xB0
-	regVengeanceGreen = 0xB1
-	regVengeanceBlue  = 0xB2
+	regVengeanceID     = 0xA0 // A0 to AF all read BA on a module
+	vengeanceID        = 0xBA
+	regVengeanceFade   = 0xA4 // the fade time, 0 for a still colour
+	regVengeanceHold   = 0xA5 // the hold time
+	regVengeanceMode   = 0xA6 // 0 a single colour, or one breathing; 1 fade; 2 breathe through colours
+	regVengeanceColors = 0xA7 // how many slots an effect uses, 1 to 7
+	regVengeanceRed    = 0xB0 // slot 1; slot n is B0 + 3(n-1), to C4
+	regVengeanceGreen  = 0xB1
+	regVengeanceBlue   = 0xB2
+	vengeanceSlots     = 7
 )
 
 /*
@@ -62,10 +66,17 @@ original Vengeance's colour and its single-colour mode.
 */
 var writable = map[family]map[byte]bool{
 	familyDRAM: {regDeviceInfo: true, regBinaryStart: true, regFrame1: true, regFrame2: true},
-	familyVengeance: {
-		regVengeanceFade: true, regVengeanceMode: true,
-		regVengeanceRed: true, regVengeanceGreen: true, regVengeanceBlue: true,
-	},
+	familyVengeance: vengeanceWritable(),
+}
+
+// vengeanceWritable are the original's timing, mode and count registers and
+// its seven colour slots, the registers Corsair Link writes (#122).
+func vengeanceWritable() map[byte]bool {
+	out := map[byte]bool{regVengeanceFade: true, regVengeanceHold: true, regVengeanceMode: true, regVengeanceColors: true}
+	for r := byte(regVengeanceRed); r < regVengeanceRed+3*vengeanceSlots; r++ {
+		out[r] = true
+	}
+	return out
 }
 
 // addresses are where a module answers: 18 to 1F on DDR5, 58 to 5F on DDR4,

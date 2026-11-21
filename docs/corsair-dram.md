@@ -85,10 +85,20 @@ The first Vengeance RGB DDR4 modules speak another protocol (OpenRGB 1.1's
   at each Corsair module's SPD address + 8, and also at the DDR5 range; this
   driver asks at the same addresses as for the newer family, by reads only.
 - One light. A colour is `A4` = `00` (no fade), `B0`, `B1`, `B2` the red,
-  green and blue, then `A6` = `00`, the single-colour mode. `A6` = `01` and
-  `02` are its fade and pulse, the module's own effects: offered as
-  **Fading** and **Breathing** (#122), in one colour, with `A4` the fade time
-  as the speed (`40`, `20`, `10`, `08`, slowest first). `A5`, the hold time,
-  is never written, as OpenRGB never writes it.
+  green and blue, then `A6` = `00`, the single-colour mode.
+- The module's own effects (#122; L, C): `A4` is the time spent changing and
+  `A5` the time held, 1 to 63 each, set equal; `A7` is how many of seven
+  colour slots an effect uses, slot n at `B0` + 3(n−1), to `C4`; `A6` is 0
+  for a still colour, or one colour breathing where `A4` is not 0, 1 to fade
+  through two to seven colours, 2 to breathe through two or more. Offered as
+  **Breathing** (one colour: `A4`, `A5`, `B0`–`B2`, `A7` = 1, `A6` = 0;
+  more: their slots, `A7`, `A6` = 2) and **Fading** (`A6` = 1), at
+  liquidctl's five speeds, 63 to 1. Mode 2 with one colour written and `A7`
+  left at two breathed blue and then showed red on the first live run.
+
+Sources for the effects: **L**, liquidctl's
+`docs/developer/protocol/vengeance_rgb.md` and `liquidctl/driver/ddr4.py`
+(GPL-3.0); **C**, Corsair Link's bus captures in liquidctl's
+collected-device-data. Facts only.
 - Named `Corsair Vengeance RGB` and the address, its zone `Corsair Zone` and
   its light `Corsair LED`.
