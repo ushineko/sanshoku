@@ -313,6 +313,14 @@ open-source work first; [docs/credits.md](docs/credits.md) says whose.
 
 ## Changelog
 
+### Unreleased
+
+- **Added:** hardware effects for the MSI Super I/O header (Breathing, the
+  chip's own pulse; Flashing; Color Cycle, up to eight colours) and the
+  original Vengeance RGB (Breathing and Fading, up to seven colours, as
+  liquidctl and Corsair Link write them): smooth, and nothing sent once set,
+  where a drawn effect stepped (#122).
+
 ### 0.6.1 (2026-11-21)
 
 - **Fix:** SMBus through PawnIO no longer sleeps a timer tick (about 15 ms)

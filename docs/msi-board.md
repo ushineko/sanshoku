@@ -40,3 +40,24 @@ chip's colour sequence; for one colour all four hold the same value, the four
 bits in both halves: red `F0`–`F3`, green `F4`–`F7`, blue `F8`–`FB` (O).
 
 The header is one light, `MSI LED` in the zone `MSI Zone` (O).
+
+## The chip's own effects (#122)
+
+The header runs effects of its own, which OpenRGB 1.1 does not offer; the
+registers are as nagisa's msi-rgb documents them (N):
+
+- `E4` is `pbbb`: `p` (`08`) smooth pulsing; `bbb` the blink period, `000`
+  always on, `001` every light off, `010` fastest to `111` slowest (N).
+- `F0`–`FB` hold eight frames, four bits a channel each, two to a register:
+  frames 1 and 0 in the first register of each channel, frame 1 in the high
+  nibble (N). The chip steps through them.
+- `FE`, and bit 0 of `FF`, are the nine-bit step time between frames (N).
+
+The driver offers three: **Breathing**, the pulse in one colour, at the
+chip's own pace; **Flashing**, a blink at the six periods; **Color Cycle**,
+up to eight colours stepped in turn, at five step times. A frame turns them
+off (`E4` = `00`, step time 0) and shows its colour still.
+
+Sources here: **N**, [msi-rgb](https://github.com/nagisa/msi-rgb)'s
+`src/main.rs` (ISC). Facts only.
+
