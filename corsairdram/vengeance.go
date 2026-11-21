@@ -52,14 +52,16 @@ var vengeanceEffects = []vengeanceEffect{
 }
 
 /*
-vengeanceSpeeds are the timing values offered, slowest first, liquidctl's
-presets, and vengeanceSpeed the one an effect starts at. A4 and A5 are both
+vengeanceSpeeds are the timing values offered, slowest first: liquidctl's
+presets with steps between them, as 16 to 1 was too coarse to set the pace
+a little faster (the fifth live run), and vengeanceSpeed the one an effect
+starts at. A4 and A5 are both
 set to it, as Corsair Link sets them. At 0x21, Corsair Link's middle, a fade
 took six or seven seconds and the dark between them two or three (the third
 live run), slower than the drawn effects, so an effect starts at 16.
 */
 var (
-	vengeanceSpeeds = []int{63, 48, 32, 16, 1}
+	vengeanceSpeeds = []int{63, 48, 32, 24, 16, 12, 8, 4, 1}
 	vengeanceSpeed  = 16
 )
 

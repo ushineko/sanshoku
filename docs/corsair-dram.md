@@ -93,7 +93,8 @@ The first Vengeance RGB DDR4 modules speak another protocol (OpenRGB 1.1's
   through two to seven colours, 2 to breathe through two or more. Offered as
   **Breathing** (one colour: `A4`, `A5`, `B0`–`B2`, `A7` = 1, `A6` = 0;
   more: their slots, `A7`, `A6` = 2) and **Fading** (`A6` = 1), at
-  liquidctl's five speeds, 63 to 1, starting at 16, the hold a quarter of
+  nine speeds, liquidctl's five (63, 48, 32, 16, 1) and 24, 12, 8 and 4
+  between them, starting at 16, the hold a quarter of
   the fade. A handle's first effect clears the 21 slot bytes, and every
   effect sets `A4` to 0 first, as Corsair Link does: without that the module
   faded out and snapped back on. Mode 2 with one colour written
